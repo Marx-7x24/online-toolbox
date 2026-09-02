@@ -1,0 +1,56 @@
+---
+// UUID v7 与随机 MAC：Web Crypto，本地生成
+---
+<div>
+  <div class="field-label"><span>UUID v7（按时间排序）</span></div>
+  <textarea id="uu-out" readonly rows="3"></textarea>
+  <div class="field-label" style="margin-top:10px;"><span>随机 MAC 地址</span></div>
+  <textarea id="uu-mac" readonly rows="3"></textarea>
+</div>
+<div class="btn-row">
+  <button id="uu-gen" class="primary">生成 1 个</button>
+  <button id="uu-gen5">生成 5 个</button>
+  <button id="uu-copy">复制 UUID</button>
+  <span id="uu-msg" class="msg"></span>
+</div>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  function uuidv7() {
+    const ts = Date.now();
+    const bytes = new Uint8Array(16);
+    const rnd = crypto.getRandomValues(new Uint8Array(10));
+    // 48-bit 时间戳
+    bytes[0] = (ts / 2 ** 40) & 0xff;
+    bytes[1] = (ts / 2 ** 32) & 0xff;
+    bytes[2] = (ts / 2 ** 24) & 0xff;
+    bytes[3] = (ts / 2 ** 16) & 0xff;
+    bytes[4] = (ts / 2 ** 8) & 0xff;
+    bytes[5] = ts & 0xff;
+    bytes[6] = 0x70 | (rnd[0] & 0x0f); // version 7
+    bytes[7] = rnd[1];
+    for (let i = 8; i < 16; i++) bytes[i] = rnd[i - 6];
+    bytes[8] = 0x80 | (bytes[8] & 0x3f); // RFC4122 variant
+    const hex = [...bytes].map((b) => b.toString(16).padStart(2, '0'));
+    return `${hex.slice(0, 4).join('')}-${hex.slice(4, 6).join('')}-${hex.slice(6, 8).join('')}-${hex.slice(8, 10).join('')}-${hex.slice(10).join('')}`;
+  }
+  function mac() {
+    const b = crypto.getRandomValues(new Uint8Array(6));
+    b[0] = 0x02 | (b[0] & 0xfe); // 本地管理、单播
+    return [...b].map((x) => x.toString(16).padStart(2, '0')).join(':').toUpperCase();
+  }
+  function gen(n) {
+    const u = [], m = [];
+    for (let i = 0; i < n; i++) { u.push(uuidv7()); m.push(mac()); }
+    $('uu-out').value = u.join('\n');
+    $('uu-mac').value = m.join('\n');
+  }
+  $('uu-gen').addEventListener('click', () => gen(1));
+  $('uu-gen5').addEventListener('click', () => gen(5));
+  $('uu-copy').addEventListener('click', async () => {
+    if (!$('uu-out').value) return;
+    try { await navigator.clipboard.writeText($('uu-out').value); $('uu-msg').textContent = '已复制'; $('uu-msg').className = 'msg ok'; }
+    catch { $('uu-msg').textContent = '复制失败'; $('uu-msg').className = 'msg err'; }
+  });
+  gen(1);
+</script>

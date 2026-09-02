@@ -1,0 +1,3 @@
+# Cloudflare Pages 项目配置（wrangler 方式部署用）
+name = "online-toolbox"
+pages_build_output_dir = "dist"

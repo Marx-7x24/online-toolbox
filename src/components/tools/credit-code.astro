@@ -1,0 +1,115 @@
+---
+---
+
+<div class="tip">按 GB 32100-2015 标准校验统一社会信用代码，并解析登记管理部门与机构类型。</div>
+
+<div style="max-width:460px;">
+  <div class="field-label"><span>统一社会信用代码</span></div>
+  <input type="text" id="cc-in" placeholder="输入 18 位统一社会信用代码" maxlength="18" style="text-transform:uppercase;" spellcheck="false" />
+</div>
+
+<div class="btn-row">
+  <button class="primary" id="cc-go">校验</button>
+  <button id="cc-gen">生成测试代码</button>
+  <button id="cc-clear">清空</button>
+</div>
+
+<div id="cc-out"></div>
+<p class="msg" id="cc-msg"></p>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+
+  // GB 32100-2015：字符集去掉了容易混淆的 I、O、S、V、Z
+  const CHARS = '0123456789ABCDEFGHJKLMNPQRTUWXY';
+  const WEIGHT = [1, 3, 9, 27, 19, 26, 16, 17, 20, 29, 25, 13, 8, 24, 10, 30, 28];
+
+  // 第 1 位登记管理部门
+  const DEPT = {
+    1: '机构编制', 2: '外交', 3: '司法行政', 4: '文化', 5: '民政',
+    6: '旅游', 7: '宗教', 8: '工会', 9: '工商', A: '中央军委改革和编制办公室',
+    N: '农业', Y: '其他',
+  };
+  // 第 2 位机构类别
+  const KIND = {
+    1: '机构编制类机关', 2: '机构编制类事业单位', 3: '机构编制类中央编办直接管理机构编制的群众团体',
+    4: '机构编制类其他', 9: '机构编制类其他',
+  };
+
+  function parse(code) {
+    code = code.trim().toUpperCase();
+    if (code.length !== 18) return { ok: false, reason: `长度应为 18 位，当前 ${code.length} 位` };
+    for (const ch of code) {
+      if (CHARS.indexOf(ch) === -1) {
+        return { ok: false, reason: `含有非法字符「${ch}」，标准字符集不含 I、O、S、V、Z` };
+      }
+    }
+    let sum = 0;
+    for (let i = 0; i < 17; i++) sum += CHARS.indexOf(code[i]) * WEIGHT[i];
+    let c = 31 - (sum % 31);
+    if (c === 31) c = 0;
+    const expect = CHARS[c];
+    return {
+      ok: true,
+      valid: expect === code[17],
+      expect,
+      actual: code[17],
+      dept: DEPT[code[0]] || '未知',
+      region: code.slice(2, 8),
+      orgCode: code.slice(8, 17),
+    };
+  }
+
+  // 常见省级行政区划前两位
+  const PROV = {
+    11: '北京市', 12: '天津市', 13: '河北省', 14: '山西省', 15: '内蒙古自治区',
+    21: '辽宁省', 22: '吉林省', 23: '黑龙江省', 31: '上海市', 32: '江苏省',
+    33: '浙江省', 34: '安徽省', 35: '福建省', 36: '江西省', 37: '山东省',
+    41: '河南省', 42: '湖北省', 43: '湖南省', 44: '广东省', 45: '广西壮族自治区',
+    46: '海南省', 50: '重庆市', 51: '四川省', 52: '贵州省', 53: '云南省',
+    54: '西藏自治区', 61: '陕西省', 62: '甘肃省', 63: '青海省',
+    64: '宁夏回族自治区', 65: '新疆维吾尔自治区',
+  };
+
+  function render() {
+    const raw = $('cc-in').value.trim();
+    const msg = $('cc-msg');
+    if (!raw) { $('cc-out').innerHTML = ''; msg.textContent = '请输入统一社会信用代码'; msg.className = 'msg err'; return; }
+    const r = parse(raw);
+    if (!r.ok) { $('cc-out').innerHTML = ''; msg.textContent = r.reason; msg.className = 'msg err'; return; }
+
+    const rows = [
+      ['校验结果', r.valid
+        ? '<span style="color:var(--success);">校验位正确</span>'
+        : `<span style="color:var(--danger);">校验位错误，应为 ${r.expect}，实际为 ${r.actual}</span>`],
+      ['登记管理部门', r.dept],
+      ['登记管理机关行政区划', (PROV[r.region.slice(0, 2)] || '未知') + '（' + r.region + '）'],
+      ['主体标识码（组织机构代码）', r.orgCode],
+      ['完整代码', raw.toUpperCase()],
+    ];
+    $('cc-out').innerHTML =
+      '<table class="result-table" style="margin-top:14px;max-width:560px;">' +
+      rows.map(([k, v]) => `<tr><th>${k}</th><td>${v}</td></tr>`).join('') +
+      '</table>';
+    msg.textContent = r.valid ? '校验通过' : '校验未通过';
+    msg.className = r.valid ? 'msg ok' : 'msg err';
+  }
+
+  function gen() {
+    const region = '1101' + String(Math.floor(Math.random() * 90) + 10);
+    let body = '9' + '1' + region;
+    for (let i = 0; i < 9; i++) body += CHARS[Math.floor(Math.random() * 31)];
+    let sum = 0;
+    for (let i = 0; i < 17; i++) sum += CHARS.indexOf(body[i]) * WEIGHT[i];
+    let c = 31 - (sum % 31);
+    if (c === 31) c = 0;
+    $('cc-in').value = body + CHARS[c];
+    render();
+  }
+
+  $('cc-go').onclick = render;
+  $('cc-gen').onclick = gen;
+  $('cc-clear').onclick = () => {
+    $('cc-in').value = ''; $('cc-out').innerHTML = ''; $('cc-msg').textContent = '';
+  };
+</script>

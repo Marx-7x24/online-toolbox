@@ -1,0 +1,41 @@
+---
+// 时间戳批量转换：本地计算
+---
+<div class="pane">
+  <div>
+    <div class="field-label"><span>时间戳（每行一个，自动识别秒/毫秒）</span></div>
+    <textarea id="tb-in" placeholder="1693545600&#10;1693545600000"></textarea>
+  </div>
+  <div>
+    <div class="field-label"><span>结果</span></div>
+    <textarea id="tb-out" readonly></textarea>
+  </div>
+</div>
+<div class="btn-row">
+  <button id="tb-run" class="primary">转换</button>
+  <button id="tb-copy">复制</button>
+  <span id="tb-msg" class="msg"></span>
+</div>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  function conv(v) {
+    const n = v.trim();
+    if (!/^\d+$/.test(n)) return n + ' → 非法';
+    const ms = n.length > 11 ? +n : +n * 1000;
+    const d = new Date(ms);
+    if (isNaN(d)) return n + ' → 无效';
+    return `${n} → ${d.toLocaleString('zh-CN')} (${d.toISOString()})`;
+  }
+  $('tb-run').addEventListener('click', () => {
+    const lines = $('tb-in').value.split('\n').map((x) => x.trim()).filter(Boolean);
+    if (!lines.length) { $('tb-out').value = ''; return; }
+    $('tb-out').value = lines.map(conv).join('\n');
+    $('tb-msg').textContent = `已转换 ${lines.length} 条`; $('tb-msg').className = 'msg ok';
+  });
+  $('tb-copy').addEventListener('click', async () => {
+    if (!$('tb-out').value) return;
+    try { await navigator.clipboard.writeText($('tb-out').value); $('tb-msg').textContent = '已复制'; $('tb-msg').className = 'msg ok'; }
+    catch { $('tb-msg').textContent = '复制失败'; $('tb-msg').className = 'msg err'; }
+  });
+</script>

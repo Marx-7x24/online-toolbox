@@ -1,0 +1,44 @@
+---
+// 文本行号标注：本地处理
+---
+<div class="pane">
+  <div>
+    <div class="field-label"><span>输入文本</span></div>
+    <textarea id="ln-in" placeholder="粘贴多行文本"></textarea>
+  </div>
+  <div>
+    <div class="field-label"><span>结果</span></div>
+    <textarea id="ln-out" readonly></textarea>
+  </div>
+</div>
+<div class="btn-row">
+  <button id="ln-add" class="primary">添加行号</button>
+  <button id="ln-rm">去除行号</button>
+  <button id="ln-copy">复制</button>
+  <span id="ln-msg" class="msg"></span>
+</div>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  function pad(n, w) { return String(n).padStart(w, ' '); }
+  $('ln-add').addEventListener('click', () => {
+    const v = $('ln-in').value;
+    if (!v) { $('ln-out').value = ''; return; }
+    const lines = v.split('\n');
+    const w = String(lines.length).length;
+    $('ln-out').value = lines.map((l, i) => pad(i + 1, w) + '. ' + l).join('\n');
+    $('ln-msg').textContent = `已为 ${lines.length} 行添加行号`; $('ln-msg').className = 'msg ok';
+  });
+  $('ln-rm').addEventListener('click', () => {
+    const v = $('ln-in').value;
+    if (!v) { $('ln-out').value = ''; return; }
+    const out = v.split('\n').map((l) => l.replace(/^\s*\d+[\.、)\]\s]\s*/, '')).join('\n');
+    $('ln-out').value = out;
+    $('ln-msg').textContent = '已去除行号前缀'; $('ln-msg').className = 'msg ok';
+  });
+  $('ln-copy').addEventListener('click', async () => {
+    if (!$('ln-out').value) return;
+    try { await navigator.clipboard.writeText($('ln-out').value); $('ln-msg').textContent = '已复制'; $('ln-msg').className = 'msg ok'; }
+    catch { $('ln-msg').textContent = '复制失败'; $('ln-msg').className = 'msg err'; }
+  });
+</script>

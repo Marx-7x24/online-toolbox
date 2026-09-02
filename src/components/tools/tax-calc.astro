@@ -1,0 +1,142 @@
+---
+---
+
+<div class="tip">按现行综合所得年度累进税率估算，未计入社保基数上下限与各地政策差异，结果仅供参考。</div>
+
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;">
+  <div>
+    <div class="field-label"><span>税前月薪（元）</span></div>
+    <input type="number" id="tx-salary" value="15000" min="0" />
+  </div>
+  <div>
+    <div class="field-label"><span>专项附加扣除（元/月）</span></div>
+    <input type="number" id="tx-deduct" value="1500" min="0" />
+  </div>
+  <div>
+    <div class="field-label"><span>公积金比例</span><span id="tx-fund-val">12%</span></div>
+    <input type="range" id="tx-fund" min="5" max="12" value="12" style="padding:0;" />
+  </div>
+  <div>
+    <div class="field-label"><span>社保个人比例</span><span id="tx-si-val">10.5%</span></div>
+    <input type="range" id="tx-si" min="0" max="15" step="0.5" value="10.5" style="padding:0;" />
+    <div style="font-size:12px;color:var(--text-hint);">养老8+医疗2+失业0.5 为常见值</div>
+  </div>
+  <div>
+    <div class="field-label"><span>年终奖（元，可选）</span></div>
+    <input type="number" id="tx-bonus" value="0" min="0" />
+  </div>
+</div>
+
+<div class="btn-row">
+  <button class="primary" id="tx-go">计算</button>
+  <button id="tx-clear">重置</button>
+</div>
+
+<div id="tx-out"></div>
+<p class="msg" id="tx-msg"></p>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+
+  // 年度综合所得税率表（速算扣除数为年度值）
+  const BRACKETS = [
+    [36000, 0.03, 0],
+    [144000, 0.10, 2520],
+    [300000, 0.20, 16920],
+    [420000, 0.25, 31920],
+    [660000, 0.30, 52920],
+    [960000, 0.35, 85920],
+    [Infinity, 0.45, 181920],
+  ];
+
+  function taxOf(annualTaxable) {
+    if (annualTaxable <= 0) return { tax: 0, rate: 0 };
+    for (const [cap, rate, quick] of BRACKETS) {
+      if (annualTaxable <= cap) return { tax: annualTaxable * rate - quick, rate };
+    }
+    return { tax: 0, rate: 0 };
+  }
+
+  // 年终奖单独计税：除以 12 找税率
+  function bonusTax(bonus) {
+    if (bonus <= 0) return 0;
+    const m = bonus / 12;
+    const monthly = [
+      [3000, 0.03, 0], [12000, 0.10, 210], [25000, 0.20, 1410],
+      [35000, 0.25, 2660], [55000, 0.30, 4410], [80000, 0.35, 7160], [Infinity, 0.45, 15160],
+    ];
+    for (const [cap, rate, quick] of monthly) {
+      if (m <= cap) return bonus * rate - quick;
+    }
+    return 0;
+  }
+
+  function run() {
+    const salary = +$('tx-salary').value || 0;
+    const deduct = +$('tx-deduct').value || 0;
+    const fundRate = +$('tx-fund').value / 100;
+    const siRate = +$('tx-si').value / 100;
+    const bonus = +$('tx-bonus').value || 0;
+
+    const fund = salary * fundRate;
+    const social = salary * siRate;
+    const threshold = 5000;
+
+    // 累计预扣法按年度口径折算
+    const monthlyTaxableBase = salary - fund - social - threshold - deduct;
+    const annualTaxable = Math.max(0, monthlyTaxableBase * 12);
+    const { tax: annualTax, rate } = taxOf(annualTaxable);
+    const monthlyTax = annualTax / 12;
+    const net = salary - fund - social - monthlyTax;
+
+    const bTax = bonusTax(bonus);
+    const netWithBonus = net + (bonus - bTax);
+
+    const rows = [
+      ['税前月薪', salary.toFixed(2)],
+      ['住房公积金', '-' + fund.toFixed(2) + `（${$('tx-fund').value}%）`],
+      ['社保个人部分', '-' + social.toFixed(2) + `（${$('tx-si').value}%）`],
+      ['起征点', '-' + threshold.toFixed(2)],
+      ['专项附加扣除', '-' + deduct.toFixed(2)],
+      ['适用税率', (rate * 100).toFixed(0) + '%'],
+      ['每月个税', monthlyTax.toFixed(2)],
+      ['每月到手', '<strong style="font-size:16px;">' + net.toFixed(2) + '</strong>'],
+    ];
+    if (bonus > 0) {
+      rows.push(['年终奖', bonus.toFixed(2)]);
+      rows.push(['年终奖个税', bTax.toFixed(2)]);
+      rows.push(['含年终奖月均到手', '<strong style="font-size:16px;">' + netWithBonus.toFixed(2) + '</strong>']);
+    }
+
+    $('tx-out').innerHTML =
+      '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:16px 0;">' +
+      [['每月到手', net.toFixed(0)], ['每月个税', monthlyTax.toFixed(0)], ['全年个税', annualTax.toFixed(0)],
+       ['全年到手', (net * 12 + (bonus - bTax)).toFixed(0)]]
+        .map(([k, v]) => `<div style="background:var(--bg);border-radius:10px;padding:12px;">
+          <div style="font-size:12px;color:var(--text-sub);">${k}</div>
+          <div style="font-size:20px;font-weight:500;">¥${Number(v).toLocaleString('zh-CN')}</div></div>`).join('') +
+      '</div>' +
+      '<table class="result-table" style="max-width:560px;">' +
+      rows.map(([k, v]) => `<tr><th>${k}</th><td>¥${v}</td></tr>`).join('') +
+      '</table>';
+    $('tx-msg').textContent = '计算完成';
+    $('tx-msg').className = 'msg ok';
+  }
+
+  ['tx-fund', 'tx-si'].forEach((id) => {
+    $(id).oninput = () => {
+      $('tx-fund-val').textContent = $('tx-fund').value + '%';
+      $('tx-si-val').textContent = $('tx-si').value + '%';
+      run();
+    };
+  });
+  ['tx-salary', 'tx-deduct', 'tx-bonus'].forEach((id) => { $(id).oninput = run; });
+
+  $('tx-go').onclick = run;
+  $('tx-clear').onclick = () => {
+    $('tx-salary').value = 15000; $('tx-deduct').value = 1500; $('tx-bonus').value = 0;
+    $('tx-fund').value = 12; $('tx-si').value = 10.5;
+    run();
+  };
+  run();
+</script>

@@ -1,0 +1,47 @@
+---
+// 随机用户名生成：内置词表，本地生成
+---
+<div>
+  <div class="field-label"><span>生成数量</span></div>
+  <input type="number" id="ug-n" min="1" max="20" value="5">
+  <label class="chk"><input type="checkbox" id="ug-num" checked> 末尾加数字</label>
+  <label class="chk"><input type="checkbox" id="ug-sep" checked> 单词间加分隔（_）</label>
+  <div class="field-label" style="margin-top:12px;"><span>结果</span></div>
+  <div id="ug-out" class="ug-out">点击生成</div>
+</div>
+<div class="btn-row">
+  <button id="ug-gen" class="primary">生成</button>
+  <button id="ug-copy">复制</button>
+  <span id="ug-msg" class="msg"></span>
+</div>
+
+<style>
+  .chk { display: inline-flex; align-items: center; gap: 6px; margin: 10px 14px 0 0; font-size: 13px; color: var(--text-sub); }
+  .ug-out { border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; min-height: 80px; line-height: 2; background: var(--bg-soft); font-family: ui-monospace, Menlo, Consolas, monospace; word-break: break-all; }
+</style>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  const ADJ = ['happy', 'cool', 'tiny', 'brave', 'calm', 'wild', 'swift', 'lucky', 'silent', 'clever', 'gentle', 'bold', 'misty', 'sunny', 'rapid', 'quiet', 'fuzzy', 'iron', 'golden', 'vivid'];
+  const NOUN = ['tiger', 'river', 'cloud', 'star', 'wolf', 'maple', 'ember', 'comet', 'pine', 'lotus', 'falcon', 'reef', 'nova', 'pixel', 'quartz', 'willow', 'raven', 'spark', 'cedar', 'frost'];
+  const pick = (a) => a[Math.floor(Math.random() * a.length)];
+  function gen() {
+    const n = Math.max(1, Math.min(20, parseInt($('ug-n').value, 10) || 5));
+    const sep = $('ug-sep').checked ? '_' : '';
+    const list = [];
+    for (let i = 0; i < n; i++) {
+      let u = pick(ADJ) + sep + pick(NOUN);
+      if ($('ug-num').checked) u += Math.floor(Math.random() * 900 + 100);
+      list.push(u);
+    }
+    $('ug-out').textContent = list.join('\n');
+    $('ug-msg').textContent = `已生成 ${n} 个`; $('ug-msg').className = 'msg ok';
+  }
+  $('ug-gen').addEventListener('click', gen);
+  $('ug-copy').addEventListener('click', async () => {
+    if (!$('ug-out').textContent || $('ug-out').textContent === '点击生成') return;
+    try { await navigator.clipboard.writeText($('ug-out').textContent); $('ug-msg').textContent = '已复制'; $('ug-msg').className = 'msg ok'; }
+    catch { $('ug-msg').textContent = '复制失败'; $('ug-msg').className = 'msg err'; }
+  });
+  gen();
+</script>

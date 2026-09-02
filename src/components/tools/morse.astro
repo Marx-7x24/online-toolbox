@@ -1,0 +1,58 @@
+---
+// 摩斯密码转换：本地映射
+---
+<div class="pane">
+  <div>
+    <div class="field-label"><span>文本 / 摩斯</span></div>
+    <textarea id="mo-in" placeholder="英文或数字，或摩斯码（用空格分隔字母、/ 分隔词）"></textarea>
+  </div>
+  <div>
+    <div class="field-label"><span>转换结果</span></div>
+    <textarea id="mo-out" readonly></textarea>
+  </div>
+</div>
+<div class="btn-row">
+  <button id="mo-en" class="primary">文本→摩斯</button>
+  <button id="mo-de">摩斯→文本</button>
+  <button id="mo-copy">复制</button>
+  <span id="mo-msg" class="msg"></span>
+</div>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  const MAP = {
+    A: '.-', B: '-...', C: '-.-.', D: '-..', E: '.', F: '..-.', G: '--.', H: '....', I: '..', J: '.---',
+    K: '-.-', L: '.-..', M: '--', N: '-.', O: '---', P: '.--.', Q: '--.-', R: '.-.', S: '...', T: '-',
+    U: '..-', V: '...-', W: '.--', X: '-..-', Y: '-.--', Z: '--..',
+    '0': '-----', '1': '.----', '2': '..---', '3': '...--', '4': '....-', '5': '.....',
+    '6': '-....', '7': '--...', '8': '---..', '9': '----.', '.': '.-.-.-', ',': '--..--', '?': '..--..', "'": '.----.', '!': '-.-.--', '/': '-..-.', '(': '-.--.', ')': '-.--.-', '&': '.-...', ':': '---...', ';': '-.-.-.', '=': '-...-', '+': '.-.-.', '-': '-....-', '_': '..--.-', '"': '.-..-.', '$': '...-..-', '@': '.--.-.'
+  };
+  const INV = Object.fromEntries(Object.entries(MAP).map(([k, v]) => [v, k]));
+  $('mo-en').addEventListener('click', () => {
+    const v = $('mo-in').value.toUpperCase();
+    if (!v) { $('mo-out').value = ''; return; }
+    const res = v.split('').map((ch) => {
+      if (ch === ' ') return '/';
+      return MAP[ch] || ch;
+    }).join(' ');
+    $('mo-out').value = res;
+    $('mo-msg').textContent = '已转换'; $('mo-msg').className = 'msg ok';
+  });
+  $('mo-de').addEventListener('click', () => {
+    const v = $('mo-in').value.trim();
+    if (!v) { $('mo-out').value = ''; return; }
+    try {
+      const res = v.split(' ').map((tok) => {
+        if (tok === '/') return ' ';
+        return INV[tok] || tok;
+      }).join('');
+      $('mo-out').value = res;
+      $('mo-msg').textContent = '已转换'; $('mo-msg').className = 'msg ok';
+    } catch (e) { $('mo-msg').textContent = '解析失败：' + e.message; $('mo-msg').className = 'msg err'; }
+  });
+  $('mo-copy').addEventListener('click', async () => {
+    if (!$('mo-out').value) return;
+    try { await navigator.clipboard.writeText($('mo-out').value); $('mo-msg').textContent = '已复制'; $('mo-msg').className = 'msg ok'; }
+    catch { $('mo-msg').textContent = '复制失败'; $('mo-msg').className = 'msg err'; }
+  });
+</script>

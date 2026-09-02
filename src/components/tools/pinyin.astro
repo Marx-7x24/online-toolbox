@@ -1,0 +1,49 @@
+---
+// 汉字转拼音：pinyin-pro，本地转换
+---
+<div class="pane">
+  <div>
+    <div class="field-label"><span>输入中文</span></div>
+    <textarea id="py-in" placeholder="粘贴要转换的中文，如：你好世界"></textarea>
+    <div class="field-label" style="margin-top:10px;"><span>选项</span></div>
+    <label class="chk"><input type="checkbox" id="py-tone" checked> 显示声调</label>
+    <label class="chk"><input type="checkbox" id="py-split"> 逐字分行</label>
+  </div>
+  <div>
+    <div class="field-label"><span>拼音结果</span></div>
+    <textarea id="py-out" readonly></textarea>
+  </div>
+</div>
+<div class="btn-row">
+  <button id="py-run" class="primary">转换</button>
+  <button id="py-copy">复制</button>
+  <span id="py-msg" class="msg"></span>
+</div>
+
+<style>
+  .chk { display: inline-flex; align-items: center; gap: 6px; margin-right: 14px; font-size: 13px; color: var(--text-sub); }
+</style>
+
+<script>
+  import { pinyin } from 'pinyin-pro';
+  const $ = (id) => document.getElementById(id);
+  $('py-run').addEventListener('click', () => {
+    const v = $('py-in').value;
+    if (!v) { $('py-out').value = ''; return; }
+    const toneType = $('py-tone').checked ? 'symbol' : 'none';
+    try {
+      const res = pinyin(v, {
+        toneType,
+        type: $('py-split').checked ? 'array' : 'string',
+        nonZh: 'consecutive',
+      });
+      $('py-out').value = Array.isArray(res) ? res.join('\n') : res;
+      $('py-msg').textContent = '转换完成'; $('py-msg').className = 'msg ok';
+    } catch (e) { $('py-msg').textContent = '转换失败：' + e.message; $('py-msg').className = 'msg err'; }
+  });
+  $('py-copy').addEventListener('click', async () => {
+    if (!$('py-out').value) return;
+    try { await navigator.clipboard.writeText($('py-out').value); $('py-msg').textContent = '已复制'; $('py-msg').className = 'msg ok'; }
+    catch { $('py-msg').textContent = '复制失败'; $('py-msg').className = 'msg err'; }
+  });
+</script>

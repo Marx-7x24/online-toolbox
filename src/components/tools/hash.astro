@@ -1,0 +1,113 @@
+---
+---
+
+<div class="tip">全部在本机计算，文件或文本都不会离开你的浏览器，网断了也能用。</div>
+
+<div style="max-width:620px;">
+  <div class="field-label"><span>文本输入</span></div>
+  <textarea id="h-in" placeholder="输入要计算哈希的文本" style="min-height:120px;"></textarea>
+</div>
+
+<div class="btn-row" style="align-items:center;">
+  <label for="h-file" style="font-size:13px;color:var(--text-sub);">或选择文件：</label>
+  <input type="file" id="h-file" style="width:auto;font-family:inherit;padding:6px;border:none;" />
+  <span id="h-fname" style="font-size:13px;color:var(--text-hint);"></span>
+</div>
+
+<div class="btn-row">
+  <button class="primary" id="h-go">计算</button>
+  <button id="h-clear">清空</button>
+</div>
+
+<div id="h-result"></div>
+
+<p class="msg" id="h-msg"></p>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+
+  // MD5 需要自己实现：Web Crypto 不提供 MD5，而文件校验场景又离不开它
+  function md5(bytes) {
+    const S = [7,12,17,22,7,12,17,22,7,12,17,22,7,12,17,22,5,9,14,20,5,9,14,20,5,9,14,20,5,9,14,20,4,11,16,23,4,11,16,23,4,11,16,23,4,11,16,23,6,10,15,21,6,10,15,21,6,10,15,21,6,10,15,21];
+    const K = Array.from({ length: 64 }, (_, i) => Math.floor(Math.abs(Math.sin(i + 1)) * 4294967296) >>> 0);
+    const b = Array.from(bytes);
+    const bitLen = b.length * 8;
+    b.push(0x80);
+    while (b.length % 64 !== 56) b.push(0);
+    let lo = bitLen >>> 0;
+    for (let i = 0; i < 4; i++) b.push((lo >>> (i * 8)) & 0xff);
+    lo = Math.floor(bitLen / 4294967296);
+    for (let i = 0; i < 4; i++) b.push((lo >>> (i * 8)) & 0xff);
+
+    let a0 = 0x67452301, b0 = 0xefcdab89, c0 = 0x98badcfe, d0 = 0x10325476;
+    for (let i = 0; i < b.length; i += 64) {
+      const M = [];
+      for (let j = 0; j < 16; j++) M[j] = b[i + j * 4] | (b[i + j * 4 + 1] << 8) | (b[i + j * 4 + 2] << 16) | (b[i + j * 4 + 3] << 24);
+      let A = a0, B = b0, C = c0, D = d0;
+      for (let j = 0; j < 64; j++) {
+        let F, g;
+        if (j < 16) { F = (B & C) | (~B & D); g = j; }
+        else if (j < 32) { F = (D & B) | (~D & C); g = (5 * j + 1) % 16; }
+        else if (j < 48) { F = B ^ C ^ D; g = (3 * j + 5) % 16; }
+        else { F = C ^ (B | ~D); g = (7 * j) % 16; }
+        F = (F + A + K[j] + M[g]) >>> 0;
+        A = D; D = C; C = B;
+        B = (B + ((F << S[j]) | (F >>> (32 - S[j])))) >>> 0;
+      }
+      a0 = (a0 + A) >>> 0; b0 = (b0 + B) >>> 0; c0 = (c0 + C) >>> 0; d0 = (d0 + D) >>> 0;
+    }
+    return [a0, b0, c0, d0].map((n) => n.toString(16).padStart(8, '0').match(/../g).reverse().join('')).join('');
+  }
+
+  const hex = (buf) => [...new Uint8Array(buf)].map((x) => x.toString(16).padStart(2, '0')).join('');
+
+  async function run() {
+    const msg = $('h-msg');
+    let data = null, label = '';
+    const f = $('h-file').files[0];
+    if (f) {
+      data = new Uint8Array(await f.arrayBuffer());
+      label = `${f.name}（${(f.size / 1024).toFixed(1)} KB）`;
+    } else if ($('h-in').value) {
+      data = new TextEncoder().encode($('h-in').value);
+      label = `文本 ${data.length} 字节`;
+    } else {
+      msg.textContent = '请输入文本或选择文件'; msg.className = 'msg err'; return;
+    }
+
+    const results = [['MD5', md5(data)]];
+    for (const alg of ['SHA-1', 'SHA-256', 'SHA-512']) {
+      results.push([alg, hex(await crypto.subtle.digest(alg, data))]);
+    }
+
+    $('h-result').innerHTML =
+      `<p style="font-size:13px;color:var(--text-sub);margin:0 0 10px;">计算对象：${label}</p>` +
+      '<table class="result-table"><tbody>' +
+      results.map(([k, v]) =>
+        `<tr><th>${k}</th><td style="word-break:break-all;font-family:ui-monospace,monospace;font-size:13px;">${v}
+          <button data-copy="${v}" style="margin-left:8px;padding:2px 10px;font-size:12px;">复制</button></td></tr>`
+      ).join('') +
+      '</tbody></table>';
+
+    $('h-result').querySelectorAll('button[data-copy]').forEach((btn) => {
+      btn.onclick = async () => {
+        await navigator.clipboard.writeText(btn.dataset.copy);
+        btn.textContent = '已复制';
+        setTimeout(() => (btn.textContent = '复制'), 1200);
+      };
+    });
+
+    msg.textContent = '计算完成';
+    msg.className = 'msg ok';
+  }
+
+  $('h-go').onclick = run;
+  $('h-file').onchange = (e) => {
+    $('h-fname').textContent = e.target.files[0] ? e.target.files[0].name : '';
+    if (e.target.files[0]) { $('h-in').value = ''; run(); }
+  };
+  $('h-clear').onclick = () => {
+    $('h-in').value = ''; $('h-file').value = ''; $('h-fname').textContent = '';
+    $('h-result').innerHTML = ''; $('h-msg').textContent = '';
+  };
+</script>

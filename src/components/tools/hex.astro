@@ -1,0 +1,115 @@
+---
+---
+
+<div class="tip">使用 BigInt 运算，支持超过 53 位的大整数精确转换。</div>
+
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px;">
+  <div>
+    <div class="field-label"><span>二进制 BIN</span></div>
+    <input type="text" id="x-bin" placeholder="1010" spellcheck="false" />
+  </div>
+  <div>
+    <div class="field-label"><span>八进制 OCT</span></div>
+    <input type="text" id="x-oct" placeholder="12" spellcheck="false" />
+  </div>
+  <div>
+    <div class="field-label"><span>十进制 DEC</span></div>
+    <input type="text" id="x-dec" placeholder="10" spellcheck="false" />
+  </div>
+  <div>
+    <div class="field-label"><span>十六进制 HEX</span></div>
+    <input type="text" id="x-hex" placeholder="A" spellcheck="false" />
+  </div>
+</div>
+
+<div class="btn-row">
+  <button class="primary" id="x-go">转换</button>
+  <button id="x-swap16">字节序反转</button>
+  <button id="x-sample">填入示例</button>
+  <button id="x-clear">清空</button>
+</div>
+
+<p class="msg" id="x-msg"></p>
+<div id="x-extra"></div>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  const fields = { 2: 'x-bin', 8: 'x-oct', 10: 'x-dec', 16: 'x-hex' };
+  let lastSource = null;
+
+  function convert(base, value) {
+    const num = BigInt(value);
+    return {
+      2: num.toString(2),
+      8: num.toString(8),
+      10: num.toString(10),
+      16: num.toString(16).toUpperCase(),
+    };
+  }
+
+  function fillAll(r) {
+    $('x-bin').value = r[2];
+    $('x-oct').value = r[8];
+    $('x-dec').value = r[10];
+    $('x-hex').value = r[16];
+  }
+
+  function detectSource() {
+    // 优先取用户最后编辑过的框；否则取唯一非空的框
+    if (lastSource && $(fields[lastSource]).value.trim()) return lastSource;
+    const filled = Object.keys(fields).filter((b) => $(fields[b]).value.trim());
+    return filled.length ? Number(filled[0]) : null;
+  }
+
+  function run() {
+    const msg = $('x-msg');
+    const base = detectSource();
+    if (base === null) return setMsg(msg, '请在任一输入框中填入数值', 'err');
+    const raw = $(fields[base]).value.trim().replace(/[_\s]/g, '');
+    if (!raw) return setMsg(msg, '请输入数值', 'err');
+    try {
+      const value = base === 10 ? raw : (base === 16 ? '0x' + raw : base === 8 ? '0o' + raw : '0b' + raw);
+      const r = convert(base, value);
+      fillAll(r);
+      const bytes = (r[16].length % 2 ? '0' + r[16] : r[16]).match(/../g) || [];
+      $('x-extra').innerHTML =
+        '<table class="result-table" style="margin-top:14px;max-width:560px;">' +
+        `<tr><th>字节数</th><td>${Math.max(1, Math.ceil(r[2].length / 8))} 字节</td></tr>` +
+        `<tr><th>位宽</th><td>${r[2].length} 位</td></tr>` +
+        `<tr><th>字节序列</th><td style="font-family:ui-monospace,monospace;word-break:break-all;">${bytes.join(' ') || '00'}</td></tr>` +
+        `<tr><th>带前缀</th><td style="font-family:ui-monospace,monospace;">0x${r[16]}</td></tr>` +
+        '</table>';
+      setMsg(msg, `已从 ${base} 进制转换`);
+    } catch (e) {
+      setMsg(msg, '转换失败：' + (base === 2 ? '只能是 0/1' : base === 8 ? '只能是 0-7' : base === 16 ? '只能是 0-9 A-F' : '请输入整数'), 'err');
+    }
+  }
+
+  function setMsg(el, t, type) { el.textContent = t; el.className = 'msg ' + (type || 'ok'); }
+
+  Object.entries(fields).forEach(([b, id]) => {
+    $(id).addEventListener('focus', () => { lastSource = Number(b); });
+    $(id).addEventListener('input', () => { lastSource = Number(b); });
+  });
+
+  $('x-go').onclick = run;
+  $('x-swap16').onclick = () => {
+    const h = $('x-hex').value.replace(/\s/g, '');
+    if (!h) return;
+    const bytes = (h.length % 2 ? '0' + h : h).match(/../g);
+    $('x-hex').value = bytes.reverse().join('').toUpperCase();
+    lastSource = 16;
+    run();
+  };
+  $('x-sample').onclick = () => {
+    $('x-dec').value = '48879';
+    lastSource = 10;
+    run();
+  };
+  $('x-clear').onclick = () => {
+    Object.values(fields).forEach((id) => ($(id).value = ''));
+    $('x-extra').innerHTML = '';
+    $('x-msg').textContent = '';
+    lastSource = null;
+  };
+</script>

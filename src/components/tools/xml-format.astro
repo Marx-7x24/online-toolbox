@@ -1,0 +1,155 @@
+---
+---
+
+<div class="pane">
+  <div>
+    <div class="field-label"><span>输入 XML</span></div>
+    <textarea id="xf-in" placeholder='<root><item id="1">内容</item></root>' style="min-height:200px;" spellcheck="false"></textarea>
+  </div>
+  <div>
+    <div class="field-label"><span>输出</span></div>
+    <textarea id="xf-out" placeholder="格式化结果" style="min-height:200px;" spellcheck="false"></textarea>
+  </div>
+</div>
+
+<div style="display:flex;gap:14px;flex-wrap:wrap;margin-top:12px;font-size:14px;">
+  <label><input type="checkbox" id="xf-validate" checked /> 检查标签闭合</label>
+  <label style="display:flex;align-items:center;gap:6px;">缩进
+    <select id="xf-indent" style="width:auto;padding:4px 8px;">
+      <option value="2" selected>2 空格</option>
+      <option value="4">4 空格</option>
+      <option value="tab">制表符</option>
+    </select>
+  </label>
+</div>
+
+<div class="btn-row">
+  <button class="primary" id="xf-fmt">格式化</button>
+  <button id="xf-min">压缩</button>
+  <button id="xf-escape">XML 转义</button>
+  <button id="xf-unescape">XML 反转义</button>
+  <button id="xf-copy">复制结果</button>
+  <button id="xf-clear">清空</button>
+</div>
+
+<p class="msg" id="xf-msg"></p>
+<div id="xf-stat"></div>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+
+  function indentStr() {
+    const v = $('xf-indent').value;
+    return v === 'tab' ? '\t' : ' '.repeat(+v);
+  }
+
+  function format(xml) {
+    const ind = indentStr();
+    // 按标签与文本切分
+    const tokens = xml
+      .replace(/>\s{0,}</g, '><')
+      .split(/(<[^>]+>)/)
+      .map((s) => s.trim())
+      .filter((s) => s.length);
+
+    let out = '', level = 0;
+    const stack = [];
+    const VOID = /^<\/|^<\?|^<!--|^\/>$/;
+
+    for (const t of tokens) {
+      if (/^<\?/.test(t)) { out += ind.repeat(level) + t + '\n'; continue; }
+      if (/^<!--/.test(t)) { out += ind.repeat(level) + t + '\n'; continue; }
+      if (/^<!\[CDATA/.test(t)) { out += ind.repeat(level) + t + '\n'; continue; }
+      if (/^<\//.test(t)) {
+        level = Math.max(0, level - 1);
+        const open = stack.pop();
+        out += ind.repeat(level) + t + '\n';
+        if (open && t.replace(/^<\//, '<').replace(/>$/, '>') !== open) {
+          throw new Error(`标签嵌套不匹配：期望闭合 ${open}，实际遇到 ${t}`);
+        }
+        continue;
+      }
+      if (/^<[^>]*\/>$/.test(t)) {
+        out += ind.repeat(level) + t + '\n';
+        continue;
+      }
+      if (/^<[^>]+>$/.test(t)) {
+        out += ind.repeat(level) + t + '\n';
+        if (!/^<!\S/.test(t)) {
+          stack.push(t.replace(/\s.*$/, '>').replace(/^<(.*)>$/, '<$1>').replace(/\/?>$/, '>'));
+          level++;
+        }
+        continue;
+      }
+      if (t) out += ind.repeat(level) + t + '\n';
+    }
+    if ($('xf-validate').checked && stack.length) {
+      throw new Error(`有 ${stack.length} 个标签未闭合：${stack.join(' ')}`);
+    }
+    return out.trim();
+  }
+
+  function stats(xml) {
+    const tags = (xml.match(/<([a-zA-Z_][\w:.-]*)(?=[\s/>])/g) || []).length;
+    const attrs = (xml.match(/[\w:.-]+\s*=\s*"/g) || []).length;
+    const comments = (xml.match(/<!--/g) || []).length;
+    const cdata = (xml.match(/CDATA/g) || []).length;
+    return `<table class="result-table" style="margin-top:14px;max-width:420px;">
+      <tr><th>标签数</th><td>${tags}</td></tr>
+      <tr><th>属性数</th><td>${attrs}</td></tr>
+      <tr><th>注释</th><td>${comments}</td></tr>
+      <tr><th>CDATA 段</th><td>${cdata}</td></tr>
+      <tr><th>字符数</th><td>${xml.length}</td></tr>
+    </table>`;
+  }
+
+  function fail(e) {
+    $('xf-msg').textContent = '处理失败：' + e.message;
+    $('xf-msg').className = 'msg err';
+    $('xf-out').value = '';
+  }
+
+  function ok(text, label) {
+    $('xf-out').value = text;
+    $('xf-msg').textContent = label;
+    $('xf-msg').className = 'msg ok';
+    $('xf-stat').innerHTML = stats($('xf-in').value);
+  }
+
+  $('xf-fmt').onclick = () => {
+    const v = $('xf-in').value.trim();
+    if (!v) { $('xf-msg').textContent = '请先输入 XML'; $('xf-msg').className = 'msg err'; return; }
+    try { ok(format(v), '格式化完成'); } catch (e) { fail(e); }
+  };
+
+  $('xf-min').onclick = () => {
+    const v = $('xf-in').value.trim();
+    if (!v) { $('xf-msg').textContent = '请先输入 XML'; $('xf-msg').className = 'msg err'; return; }
+    try {
+      ok(v.replace(/>\s+</g, '><').replace(/\s{2,}/g, ' ').replace(/<!--[\s\S]*?-->/g, '').trim(), '压缩完成');
+    } catch (e) { fail(e); }
+  };
+
+  $('xf-escape').onclick = () => {
+    const v = $('xf-in').value;
+    if (!v) { $('xf-msg').textContent = '请先输入内容'; $('xf-msg').className = 'msg err'; return; }
+    ok(v.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&apos;'), '转义完成');
+  };
+
+  $('xf-unescape').onclick = () => {
+    const v = $('xf-in').value;
+    if (!v) { $('xf-msg').textContent = '请先输入内容'; $('xf-msg').className = 'msg err'; return; }
+    ok(v.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&amp;/g, '&'), '反转义完成');
+  };
+
+  $('xf-copy').onclick = async () => {
+    if (!$('xf-out').value) return;
+    await navigator.clipboard.writeText($('xf-out').value);
+    $('xf-msg').textContent = '已复制';
+    $('xf-msg').className = 'msg ok';
+  };
+
+  $('xf-clear').onclick = () => {
+    $('xf-in').value = ''; $('xf-out').value = ''; $('xf-stat').innerHTML = ''; $('xf-msg').textContent = '';
+  };
+</script>

@@ -1,0 +1,153 @@
+---
+---
+
+<div class="tip">照片在你本地排版，不上传服务器。排版图可直接送打印店或家用相纸打印。</div>
+
+<div class="btn-row" style="align-items:center;">
+  <input type="file" id="ip-file" accept="image/*" style="width:auto;font-family:inherit;padding:6px;border:none;" />
+</div>
+
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px;margin-top:12px;">
+  <div>
+    <div class="field-label"><span>证件照规格</span></div>
+    <select id="ip-size">
+      <option value="25,35">一寸照 25×35 mm</option>
+      <option value="22,32">小一寸 22×32 mm</option>
+      <option value="33,48">大一寸 33×48 mm</option>
+      <option value="35,49" selected>二寸照 35×49 mm</option>
+      <option value="35,45">小二寸 35×45 mm</option>
+      <option value="35,53">大二寸 35×53 mm</option>
+      <option value="26,32">护照/签证 26×32 mm</option>
+      <option value="50,50">正方形 50×50 mm</option>
+    </select>
+  </div>
+  <div>
+    <div class="field-label"><span>相纸尺寸</span></div>
+    <select id="ip-paper">
+      <option value="89,127">五寸相纸 89×127 mm</option>
+      <option value="102,152" selected>六寸相纸 102×152 mm</option>
+      <option value="210,297">A4 纸 210×297 mm</option>
+    </select>
+  </div>
+  <div>
+    <div class="field-label"><span>打印精度</span></div>
+    <select id="ip-dpi">
+      <option value="200">200 DPI</option>
+      <option value="300" selected>300 DPI（推荐）</option>
+      <option value="400">400 DPI</option>
+    </select>
+  </div>
+  <div>
+    <div class="field-label"><span>照片留白</span><span id="ip-margin-val">2 mm</span></div>
+    <input type="range" id="ip-margin" min="0" max="6" value="2" style="padding:0;" />
+  </div>
+  <div>
+    <div class="field-label"><span>裁切线</span></div>
+    <select id="ip-line">
+      <option value="1">显示（方便裁剪）</option>
+      <option value="0">不显示</option>
+    </select>
+  </div>
+</div>
+
+<div class="btn-row">
+  <button class="primary" id="ip-go">生成排版</button>
+  <button id="ip-dl">下载排版图</button>
+  <button id="ip-clear">清空</button>
+</div>
+
+<p class="msg" id="ip-msg"></p>
+<div id="ip-box"></div>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  let outUrl = '';
+
+  $('ip-margin').oninput = () => { $('ip-margin-val').textContent = $('ip-margin').value + ' mm'; };
+
+  $('ip-go').onclick = () => {
+    const f = $('ip-file').files[0];
+    if (!f) { $('ip-msg').textContent = '请先选择照片'; $('ip-msg').className = 'msg err'; return; }
+    $('ip-msg').textContent = '生成中…';
+    $('ip-msg').className = 'msg';
+
+    const img = new Image();
+    img.onload = () => {
+      const dpi = +$('ip-dpi').value;
+      const mm = (v) => Math.round((v / 25.4) * dpi);
+      const [swMm, shMm] = $('ip-size').value.split(',').map(Number);
+      const [pwMm, phMm] = $('ip-paper').value.split(',').map(Number);
+      const gapMm = +$('ip-margin').value;
+
+      const pw = mm(pwMm), ph = mm(phMm);
+      const sw = mm(swMm - gapMm * 2), sh = mm(shMm - gapMm * 2);
+      const pad = mm(gapMm);
+
+      const cols = Math.max(1, Math.floor(pw / (sw + pad)));
+      const rows = Math.max(1, Math.floor(ph / (sh + pad)));
+      const total = cols * rows;
+
+      const canvas = document.createElement('canvas');
+      canvas.width = pw;
+      canvas.height = ph;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, pw, ph);
+
+      const offX = (pw - (cols * sw + (cols - 1) * pad)) / 2;
+      const offY = (ph - (rows * sh + (rows - 1) * pad)) / 2;
+
+      // 按目标比例居中裁剪
+      const target = sw / sh;
+      const src = img.width / img.height;
+      let sx = 0, sy = 0, sWidth = img.width, sHeight = img.height;
+      if (src > target) { sWidth = img.height * target; sx = (img.width - sWidth) / 2; }
+      else { sHeight = img.width / target; sy = (img.height - sHeight) / 2; }
+
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          const x = offX + c * (sw + pad);
+          const y = offY + r * (sh + pad);
+          ctx.drawImage(img, sx, sy, sWidth, sHeight, x, y, sw, sh);
+          if ($('ip-line').value === '1') {
+            ctx.strokeStyle = 'rgba(0,0,0,.35)';
+            ctx.lineWidth = Math.max(1, mm(0.2));
+            ctx.strokeRect(x, y, sw, sh);
+          }
+        }
+      }
+
+      canvas.toBlob((blob) => {
+        if (outUrl) URL.revokeObjectURL(outUrl);
+        outUrl = URL.createObjectURL(blob);
+        $('ip-box').innerHTML =
+          `<div style="margin-top:14px;">
+            <div class="field-label"><span>排版结果</span><span>${cols} 列 × ${rows} 行 = ${total} 张　${swMm}×${shMm}mm @${dpi}DPI</span></div>
+            <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;overflow:auto;max-height:480px;display:flex;justify-content:center;">
+              <img src="${outUrl}" alt="证件照排版" style="max-width:100%;height:auto;" />
+            </div>
+          </div>`;
+        $('ip-msg').textContent = `已排 ${total} 张，相纸 ${pw} × ${ph} px`;
+        $('ip-msg').className = 'msg ok';
+      }, 'image/jpeg', 0.95);
+    };
+    img.onerror = () => { $('ip-msg').textContent = '无法读取该图片'; $('ip-msg').className = 'msg err'; };
+    img.src = URL.createObjectURL(f);
+  };
+
+  $('ip-dl').onclick = () => {
+    if (!outUrl) { $('ip-msg').textContent = '请先生成'; $('ip-msg').className = 'msg err'; return; }
+    const a = document.createElement('a');
+    a.href = outUrl;
+    a.download = 'id-photo-layout.jpg';
+    a.click();
+  };
+
+  $('ip-clear').onclick = () => {
+    if (outUrl) URL.revokeObjectURL(outUrl);
+    outUrl = '';
+    $('ip-file').value = '';
+    $('ip-box').innerHTML = '';
+    $('ip-msg').textContent = '';
+  };
+</script>

@@ -1,0 +1,61 @@
+---
+// WCAG 颜色对比度检查：输入前景/背景色，计算对比度与达标情况
+---
+
+<div class="pane">
+  <div>
+    <div class="field-label"><span>前景色 (文字)</span></div>
+    <input id="cc-fg" type="text" value="#000000" />
+  </div>
+  <div>
+    <div class="field-label"><span>背景色</span></div>
+    <input id="cc-bg" type="text" value="#ffffff" />
+  </div>
+</div>
+
+<div class="cc-preview" id="cc-preview">Aa 对比度预览</div>
+
+<table class="result-table" style="margin-top:12px;">
+  <tbody>
+    <tr><th>对比度</th><td data-k="ratio"></td></tr>
+    <tr><th>普通文本 (AA ≥ 4.5)</th><td data-k="aa"></td></tr>
+    <tr><th>大号文本 (AA ≥ 3.0)</th><td data-k="aa-large"></td></tr>
+    <tr><th>普通文本 (AAA ≥ 7.0)</th><td data-k="aaa"></td></tr>
+  </tbody>
+</table>
+
+<style>
+  .cc-preview { margin-top: 12px; padding: 24px; border-radius: 8px; border: 1px solid var(--border); text-align: center; font-size: 28px; font-weight: 700; }
+</style>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  const fg = $('cc-fg'), bg = $('cc-bg'), preview = $('cc-preview');
+
+  function hexToRgb(hex) {
+    hex = hex.trim().replace('#', '');
+    if (hex.length === 3) hex = hex.split('').map((c) => c + c).join('');
+    if (!/^[0-9a-fA-F]{6}$/.test(hex)) return null;
+    return [0, 2, 4].map((i) => parseInt(hex.slice(i, i + 2), 16));
+  }
+  function lum([r, g, b]) {
+    const a = [r, g, b].map((v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); });
+    return 0.2126 * a[0] + 0.7152 * a[1] + 0.0722 * a[2];
+  }
+  function pass(r, threshold) { return r >= threshold ? '✅ 通过' : '❌ 不通过'; }
+
+  function update() {
+    const f = hexToRgb(fg.value), b = hexToRgb(bg.value);
+    if (!f || !b) { preview.textContent = '颜色格式错误（如 #ffffff）'; return; }
+    const ratio = (Math.max(lum(f), lum(b)) + 0.05) / (Math.min(lum(f), lum(b)) + 0.05);
+    preview.style.color = fg.value; preview.style.background = bg.value;
+    preview.textContent = 'Aa 对比度预览';
+    const t = ratio.toFixed(2);
+    document.querySelector('[data-k="ratio"]').textContent = t + ' : 1';
+    document.querySelector('[data-k="aa"]').textContent = pass(ratio, 4.5);
+    document.querySelector('[data-k="aa-large"]').textContent = pass(ratio, 3.0);
+    document.querySelector('[data-k="aaa"]').textContent = pass(ratio, 7.0);
+  }
+  [fg, bg].forEach((el) => el.addEventListener('input', update));
+  update();
+</script>

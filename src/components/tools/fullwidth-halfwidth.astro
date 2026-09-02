@@ -1,0 +1,51 @@
+---
+// 全角半角转换：本地字符映射
+---
+<div class="pane">
+  <div>
+    <div class="field-label"><span>输入文本</span></div>
+    <textarea id="fw-in" placeholder="粘贴需要转换的中英文文本"></textarea>
+  </div>
+  <div>
+    <div class="field-label"><span>转换结果</span></div>
+    <textarea id="fw-out" readonly></textarea>
+  </div>
+</div>
+<div class="btn-row">
+  <button id="fw-tohalf" class="primary">转半角</button>
+  <button id="fw-tofull">转全角</button>
+  <button id="fw-copy">复制</button>
+  <span id="fw-msg" class="msg"></span>
+</div>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  function toHalf(s) {
+    let r = '';
+    for (const ch of s) {
+      const c = ch.codePointAt(0);
+      if (c >= 0xFF01 && c <= 0xFF5E) r += String.fromCodePoint(c - 0xFEE0);
+      else if (c === 0x3000) r += ' ';
+      else r += ch;
+    }
+    return r;
+  }
+  function toFull(s) {
+    let r = '';
+    for (const ch of s) {
+      const c = ch.codePointAt(0);
+      if (c >= 0x21 && c <= 0x7E) r += String.fromCodePoint(c + 0xFEE0);
+      else if (c === 0x20) r += '　';
+      else r += ch;
+    }
+    return r;
+  }
+  const run = (fn) => { const v = $('fw-in').value; if (v) $('fw-out').value = fn(v); };
+  $('fw-tohalf').addEventListener('click', () => run(toHalf));
+  $('fw-tofull').addEventListener('click', () => run(toFull));
+  $('fw-copy').addEventListener('click', async () => {
+    if (!$('fw-out').value) return;
+    try { await navigator.clipboard.writeText($('fw-out').value); $('fw-msg').textContent = '已复制'; $('fw-msg').className = 'msg ok'; }
+    catch { $('fw-msg').textContent = '复制失败'; $('fw-msg').className = 'msg err'; }
+  });
+</script>

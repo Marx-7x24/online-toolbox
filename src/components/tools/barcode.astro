@@ -1,0 +1,64 @@
+---
+// 条形码生成：JsBarcode，本地渲染
+---
+<div>
+  <div class="field-label"><span>内容</span></div>
+  <input type="text" id="bc-text" value="1234567890" placeholder="要编码的内容">
+  <div class="field-label" style="margin-top:10px;"><span>格式</span></div>
+  <select id="bc-format">
+    <option value="CODE128">CODE128</option>
+    <option value="CODE39">CODE39</option>
+    <option value="EAN13">EAN13</option>
+    <option value="EAN8">EAN8</option>
+    <option value="UPC">UPC</option>
+    <option value="CODE93">CODE93</option>
+  </select>
+  <div class="field-label" style="margin-top:10px;"><span>预览</span></div>
+  <div class="bc-wrap"><svg id="bc-svg"></svg></div>
+</div>
+<div class="btn-row">
+  <button id="bc-dl" class="primary">下载 SVG</button>
+  <span id="bc-msg" class="msg"></span>
+</div>
+
+<style>
+  .bc-wrap {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px;
+    background: #fff;
+    display: flex;
+    justify-content: center;
+  }
+  .bc-wrap svg { max-width: 100%; }
+</style>
+
+<script>
+  import JsBarcode from 'jsbarcode';
+  const $ = (id) => document.getElementById(id);
+  function render() {
+    const text = $('bc-text').value;
+    if (!text) return;
+    try {
+      JsBarcode('#bc-svg', text, {
+        format: $('bc-format').value,
+        displayValue: true,
+        lineColor: '#111',
+        width: 2,
+        height: 60,
+      });
+      $('bc-msg').textContent = '';
+    } catch (e) { $('bc-msg').textContent = '生成失败：' + e.message; $('bc-msg').className = 'msg err'; }
+  }
+  $('bc-text').addEventListener('input', render);
+  $('bc-format').addEventListener('change', render);
+  render();
+  $('bc-dl').addEventListener('click', () => {
+    const svg = $('bc-svg');
+    if (!svg.innerHTML) return;
+    const s = new XMLSerializer().serializeToString(svg);
+    const blob = new Blob([s], { type: 'image/svg+xml' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = 'barcode.svg'; a.click();
+  });
+</script>

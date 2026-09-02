@@ -1,0 +1,187 @@
+---
+---
+
+<div class="tip">支持 5 位（分 时 日 月 周）与 6 位（秒 分 时 日 月 周）表达式，含 Quartz 不常见的 L、W、# 不做解析。</div>
+
+<div style="max-width:520px;">
+  <div class="field-label"><span>Cron 表达式</span></div>
+  <input type="text" id="cr-expr" value="0 9 * * 1-5" spellcheck="false" />
+</div>
+
+<div class="field-label" style="margin-top:12px;"><span>常用预设</span></div>
+<div id="cr-presets" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;"></div>
+
+<div class="btn-row">
+  <button class="primary" id="cr-go">解析</button>
+  <button id="cr-clear">清空</button>
+</div>
+
+<div id="cr-out"></div>
+<p class="msg" id="cr-msg"></p>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+
+  const PRESETS = [
+    ['每分钟', '* * * * *'],
+    ['每 5 分钟', '*/5 * * * *'],
+    ['每小时整点', '0 * * * *'],
+    ['每天凌晨 2 点', '0 2 * * *'],
+    ['每天上午 9 点', '0 9 * * *'],
+    ['工作日 9 点', '0 9 * * 1-5'],
+    ['每周一 8 点', '0 8 * * 1'],
+    ['每月 1 号 0 点', '0 0 1 * *'],
+    ['每季度首日', '0 0 1 1,4,7,10 *'],
+    ['每天 9 点和 18 点', '0 9,18 * * *'],
+    ['每 10 秒（6 位）', '*/10 * * * * *'],
+  ];
+  $('cr-presets').innerHTML = PRESETS.map(([n, e]) => `<button data-e="${e}" style="padding:6px 12px;font-size:13px;">${n}</button>`).join('');
+  $('cr-presets').querySelectorAll('button').forEach((b) => {
+    b.onclick = () => { $('cr-expr').value = b.dataset.e; run(); };
+  });
+
+  const FIELDS = [
+    { name: '秒', min: 0, max: 59, names: null },
+    { name: '分钟', min: 0, max: 59, names: null },
+    { name: '小时', min: 0, max: 23, names: null },
+    { name: '日', min: 1, max: 31, names: null },
+    { name: '月', min: 1, max: 12, names: ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'] },
+    { name: '星期', min: 0, max: 7, names: ['周日','周一','周二','周三','周四','周五','周六','周日'] },
+  ];
+
+  function parseField(str, min, max, names) {
+    const values = new Set();
+    for (const part of str.split(',')) {
+      const t = part.trim();
+      if (!t) continue;
+      const stepMatch = t.match(/^(\*|\d+(?:-\d+)?)\/(\d+)$/);
+      if (stepMatch) {
+        const step = +stepMatch[2];
+        if (step <= 0) throw new Error('步长必须大于 0');
+        let a = min, b = max;
+        if (stepMatch[1] !== '*') {
+          const [x, y] = stepMatch[1].split('-').map(Number);
+          a = x; b = y === undefined ? max : y;
+        }
+        for (let i = a; i <= b; i += step) values.add(i);
+        continue;
+      }
+      if (t === '*' || t === '?') {
+        for (let i = min; i <= max; i++) values.add(i);
+        continue;
+      }
+      const range = t.match(/^(\d+)-(\d+)$/);
+      if (range) {
+        const a = +range[1], b = +range[2];
+        if (a > b) throw new Error(`范围 ${t} 的起点大于终点`);
+        for (let i = a; i <= b; i++) values.add(i);
+        continue;
+      }
+      if (/^\d+$/.test(t)) { values.add(+t); continue; }
+      throw new Error(`无法识别的片段「${t}」`);
+    }
+    const out = [...values].filter((v) => v >= min && v <= max).sort((a, b) => a - b);
+    if (!out.length) throw new Error('该字段没有有效取值');
+    return out;
+  }
+
+  function describe(values, unit, names) {
+    if (values.length === (names ? names.length : (unit === '日' ? 31 : unit === '月' ? 12 : unit === '小时' ? 24 : unit === '星期' ? 7 : 60))) {
+      return unit === '星期' ? '每天' : `每${unit}`;
+    }
+    const label = (v) => (names && names[v] ? names[v] : v);
+    if (values.length <= 6) return values.map(label).join('、');
+    return `${values.length} 个取值（${label(values[0])} 至 ${label(values[values.length - 1])}）`;
+  }
+
+  function nextRuns(fields, count) {
+    const [sec, min, hour, dom, mon, dow] = fields;
+    const out = [];
+    const d = new Date();
+    d.setSeconds(d.getSeconds() + 1, 0);
+    let guard = 0;
+    while (out.length < count && guard < 400000) {
+      guard++;
+      const ds = d.getDay();
+      if (!mon.includes(d.getMonth() + 1)) { d.setDate(d.getDate() + 1); d.setHours(0, 0, 0); continue; }
+      const domOk = dom.includes(d.getDate());
+      const dowOk = dow.includes(ds);
+      const bothRestricted = dom.length < 31 && dow.length < 7;
+      if (bothRestricted ? !(domOk || dowOk) : !(domOk && dowOk)) {
+        d.setDate(d.getDate() + 1); d.setHours(0, 0, 0); continue;
+      }
+      if (!hour.includes(d.getHours())) {
+        const nextH = hour.find((h) => h > d.getHours());
+        if (nextH === undefined) { d.setDate(d.getDate() + 1); d.setHours(0, 0, 0); continue; }
+        d.setHours(nextH, 0, 0); continue;
+      }
+      if (!min.includes(d.getMinutes())) {
+        const nextM = min.find((m) => m > d.getMinutes());
+        if (nextM === undefined) { d.setHours(d.getHours() + 1, 0, 0); continue; }
+        d.setMinutes(nextM, 0); continue;
+      }
+      if (!sec.includes(d.getSeconds())) {
+        const nextS = sec.find((s) => s > d.getSeconds());
+        if (nextS === undefined) { d.setMinutes(d.getMinutes() + 1, 0); continue; }
+        d.setSeconds(nextS); continue;
+      }
+      out.push(new Date(d));
+      d.setSeconds(d.getSeconds() + 1);
+    }
+    return out;
+  }
+
+  function pad(n) { return String(n).padStart(2, '0'); }
+  function fmt(d) {
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())} 周${'日一二三四五六'[d.getDay()]}`;
+  }
+
+  function run() {
+    const msg = $('cr-msg');
+    const raw = $('cr-expr').value.trim();
+    if (!raw) { $('cr-out').innerHTML = ''; msg.textContent = '请输入 Cron 表达式'; msg.className = 'msg err'; return; }
+    const parts = raw.split(/\s+/);
+    if (parts.length !== 5 && parts.length !== 6) {
+      $('cr-out').innerHTML = '';
+      msg.textContent = `字段数应为 5 或 6，当前为 ${parts.length}`;
+      msg.className = 'msg err';
+      return;
+    }
+    const isSix = parts.length === 6;
+    const defs = isSix ? FIELDS : FIELDS.slice(1);
+
+    try {
+      const fields = parts.map((p, i) => parseField(p, defs[i].min, defs[i].max, defs[i].names));
+      const secField = isSix ? fields[0] : [0];
+      const all = [secField, ...(isSix ? fields.slice(1) : fields)];
+
+      const rows = defs.map((f, i) => `<tr><th>${f.name}</th><td>${describe(fields[i], f.name, f.names)}</td></tr>`);
+      const runs = nextRuns(all, 5);
+
+      $('cr-out').innerHTML =
+        '<table class="result-table" style="margin-top:14px;max-width:560px;">' +
+        `<tr><th>表达式位数</th><td>${isSix ? '6 位（含秒）' : '5 位（不含秒）'}</td></tr>` +
+        rows.join('') +
+        '</table>' +
+        '<div class="field-label" style="margin-top:16px;"><span>接下来 5 次执行时间</span></div>' +
+        '<table class="result-table" style="max-width:400px;">' +
+        (runs.length
+          ? runs.map((d, i) => `<tr><th>第 ${i + 1} 次</th><td style="font-family:ui-monospace,monospace;font-size:13px;">${fmt(d)}</td></tr>`).join('')
+          : '<tr><th>结果</th><td>未来 4 年内没有匹配的执行时间</td></tr>') +
+        '</table>';
+      msg.textContent = '解析成功';
+      msg.className = 'msg ok';
+    } catch (e) {
+      $('cr-out').innerHTML = '';
+      msg.textContent = '解析失败：' + e.message;
+      msg.className = 'msg err';
+    }
+  }
+
+  $('cr-go').onclick = run;
+  $('cr-expr').oninput = run;
+  $('cr-clear').onclick = () => {
+    $('cr-expr').value = ''; $('cr-out').innerHTML = ''; $('cr-msg').textContent = '';
+  };
+  run();
+</script>

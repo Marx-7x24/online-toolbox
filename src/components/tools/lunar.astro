@@ -1,0 +1,189 @@
+---
+---
+
+<div class="tip">农历数据来自浏览器内置的 Chinese 日历，无需联网。不同浏览器显示格式可能略有差异。</div>
+
+<div style="display:flex;gap:14px;flex-wrap:wrap;margin-bottom:14px;">
+  <button class="primary" id="ln-mode-s">公历 → 农历</button>
+  <button id="ln-mode-l">农历 → 公历</button>
+</div>
+
+<div id="ln-solar-box">
+  <div style="max-width:300px;">
+    <div class="field-label"><span>公历日期</span></div>
+    <input type="date" id="ln-date" />
+  </div>
+  <div class="btn-row">
+    <button class="primary" id="ln-go-s">查询</button>
+    <button id="ln-today">今天</button>
+  </div>
+</div>
+
+<div id="ln-lunar-box" style="display:none;">
+  <div style="display:flex;gap:12px;flex-wrap:wrap;">
+    <div style="min-width:130px;">
+      <div class="field-label"><span>农历年</span></div>
+      <input type="number" id="ln-y" value="2026" min="1900" max="2100" />
+    </div>
+    <div style="min-width:120px;">
+      <div class="field-label"><span>农历月</span></div>
+      <select id="ln-m">
+        <option value="1">正月</option><option value="2">二月</option><option value="3">三月</option>
+        <option value="4">四月</option><option value="5">五月</option><option value="6">六月</option>
+        <option value="7">七月</option><option value="8">八月</option><option value="9">九月</option>
+        <option value="10">十月</option><option value="11">冬月</option><option value="12">腊月</option>
+      </select>
+    </div>
+    <div style="min-width:110px;">
+      <div class="field-label"><span>农历日</span></div>
+      <select id="ln-d"></select>
+    </div>
+    <div style="min-width:120px;">
+      <div class="field-label"><span>是否闰月</span></div>
+      <select id="ln-leap">
+        <option value="0">否</option>
+        <option value="1">是</option>
+      </select>
+    </div>
+  </div>
+  <div class="btn-row">
+    <button class="primary" id="ln-go-l">查询</button>
+  </div>
+</div>
+
+<p class="msg" id="ln-msg"></p>
+<div id="ln-out"></div>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  const GAN = ['甲','乙','丙','丁','戊','己','庚','辛','壬','癸'];
+  const ZHI = ['子','丑','寅','卯','辰','巳','午','未','申','酉','戌','亥'];
+  const ANIMAL = ['鼠','牛','虎','兔','龙','蛇','马','羊','猴','鸡','狗','猪'];
+  const MONTH_NAME = ['','正月','二月','三月','四月','五月','六月','七月','八月','九月','十月','冬月','腊月'];
+  const DAY_NAME = ['','初一','初二','初三','初四','初五','初六','初七','初八','初九','初十','十一','十二','十三','十四','十五','十六','十七','十八','十九','二十','廿一','廿二','廿三','廿四','廿五','廿六','廿七','廿八','廿九','三十'];
+  const FESTIVAL = {
+    '1-1': '春节', '1-15': '元宵节', '2-2': '龙抬头', '5-5': '端午节',
+    '7-7': '七夕', '7-15': '中元节', '8-15': '中秋节', '9-9': '重阳节',
+    '12-8': '腊八节', '12-23': '北方小年', '12-24': '南方小年',
+  };
+
+  const fmt = new Intl.DateTimeFormat('zh-CN-u-ca-chinese', { year: 'numeric', month: 'numeric', day: 'numeric' });
+
+  function chineseToNum(s) {
+    const map = { 正: 1, 一: 1, 二: 2, 三: 3, 四: 4, 五: 5, 六: 6, 七: 7, 八: 8, 九: 9, 十: 10, 冬: 11, 腊: 12, 闰: 0 };
+    s = s.replace(/[月日年]/g, '');
+    if (/^\d+$/.test(s)) return parseInt(s, 10);
+    let leap = false;
+    if (s.startsWith('闰')) { leap = true; s = s.slice(1); }
+    let n = 0;
+    if (s.includes('十')) {
+      const [a, b] = s.split('十');
+      n = (a ? map[a] || 0 : 1) * 10 + (b ? map[b] || 0 : 0);
+    } else {
+      n = map[s] || 0;
+    }
+    return { n, leap };
+  }
+
+  function toLunar(date) {
+    const parts = fmt.formatToParts(date);
+    const get = (t) => (parts.find((p) => p.type === t) || {}).value || '';
+    const rawMonth = get('month');
+    const rawDay = get('day');
+    const parsed = chineseToNum(rawMonth);
+    return {
+      year: parseInt(get('year'), 10) || date.getFullYear(),
+      month: parsed.n || parseInt(rawMonth, 10) || 1,
+      day: chineseToNum(rawDay).n || parseInt(rawDay, 10) || 1,
+      leap: parsed.leap,
+      raw: fmt.format(date),
+    };
+  }
+
+  function ganzhi(year) {
+    const i = ((year - 4) % 10 + 10) % 10;
+    const j = ((year - 4) % 12 + 12) % 12;
+    return { gz: GAN[i] + ZHI[j], animal: ANIMAL[j], gan: GAN[i], zhi: ZHI[j] };
+  }
+
+  function toSolar(ly, lm, ld, leap) {
+    // 在公历候选区间内搜索匹配的农历日期
+    const start = new Date(ly - 1, 0, 1);
+    for (let i = 0; i < 800; i++) {
+      const d = new Date(start.getTime() + i * 86400000);
+      const l = toLunar(d);
+      if (l.year === ly && l.month === lm && l.day === ld && (!!l.leap === !!leap)) return d;
+    }
+    return null;
+  }
+
+  function showSolar(date) {
+    const l = toLunar(date);
+    const g = ganzhi(l.year);
+    const fest = FESTIVAL[l.month + '-' + l.day];
+    const solarStr = `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日 星期${'日一二三四五六'[date.getDay()]}`;
+    $('ln-out').innerHTML = `
+      <table class="result-table" style="margin-top:14px;max-width:520px;">
+        <tr><th>公历</th><td>${solarStr}</td></tr>
+        <tr><th>农历</th><td>${l.year}年${l.leap ? '闰' : ''}${MONTH_NAME[l.month]}${DAY_NAME[l.day] || l.day + '日'}</td></tr>
+        <tr><th>干支</th><td>${g.gz}年（${g.gan}·${g.zhi}）</td></tr>
+        <tr><th>生肖</th><td>${g.animal}</td></tr>
+        ${fest ? `<tr><th>节日</th><td style="color:var(--danger);">${fest}</td></tr>` : ''}
+        <tr><th>原始输出</th><td style="color:var(--text-hint);font-size:12px;">${l.raw}</td></tr>
+      </table>`;
+    $('ln-msg').textContent = '查询完成';
+    $('ln-msg').className = 'msg ok';
+  }
+
+  // 农历日下拉
+  for (let i = 1; i <= 30; i++) {
+    const o = document.createElement('option');
+    o.value = String(i);
+    o.textContent = DAY_NAME[i];
+    $('ln-d').appendChild(o);
+  }
+
+  $('ln-mode-s').onclick = () => {
+    $('ln-solar-box').style.display = 'block';
+    $('ln-lunar-box').style.display = 'none';
+    $('ln-mode-s').className = 'primary';
+    $('ln-mode-l').className = '';
+    $('ln-out').innerHTML = '';
+    $('ln-msg').textContent = '';
+  };
+  $('ln-mode-l').onclick = () => {
+    $('ln-solar-box').style.display = 'none';
+    $('ln-lunar-box').style.display = 'block';
+    $('ln-mode-l').className = 'primary';
+    $('ln-mode-s').className = '';
+    $('ln-out').innerHTML = '';
+    $('ln-msg').textContent = '';
+  };
+
+  $('ln-go-s').onclick = () => {
+    if (!$('ln-date').value) { $('ln-msg').textContent = '请选择日期'; $('ln-msg').className = 'msg err'; return; }
+    showSolar(new Date($('ln-date').value + 'T12:00:00'));
+  };
+  $('ln-today').onclick = () => {
+    const d = new Date();
+    $('ln-date').value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    showSolar(d);
+  };
+
+  $('ln-go-l').onclick = () => {
+    const y = +$('ln-y').value, m = +$('ln-m').value, dd = +$('ln-d').value, leap = $('ln-leap').value === '1';
+    const r = toSolar(y, m, dd, leap);
+    if (!r) { $('ln-msg').textContent = '未找到对应的公历日期，请检查输入'; $('ln-msg').className = 'msg err'; $('ln-out').innerHTML = ''; return; }
+    const g = ganzhi(y);
+    $('ln-out').innerHTML = `
+      <table class="result-table" style="margin-top:14px;max-width:520px;">
+        <tr><th>农历</th><td>${y}年${leap ? '闰' : ''}${MONTH_NAME[m]}${DAY_NAME[dd]}</td></tr>
+        <tr><th>公历</th><td style="font-size:16px;font-weight:500;">${r.getFullYear()}年${r.getMonth() + 1}月${r.getDate()}日 星期${'日一二三四五六'[r.getDay()]}</td></tr>
+        <tr><th>干支生肖</th><td>${g.gz}年 · ${g.animal}</td></tr>
+      </table>`;
+    $('ln-msg').textContent = '转换完成';
+    $('ln-msg').className = 'msg ok';
+  };
+
+  $('ln-today').click();
+</script>

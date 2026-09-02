@@ -1,0 +1,60 @@
+---
+// Grid 布局生成器：可视化生成 CSS Grid 代码
+---
+
+<div class="gen">
+  <div class="gen__controls">
+    <label>列数
+      <input id="gg-cols" type="number" value="3" min="1" max="12" />
+    </label>
+    <label>行数
+      <input id="gg-rows" type="number" value="2" min="1" max="12" />
+    </label>
+    <label>列间距 (px)
+      <input id="gg-colgap" type="number" value="10" min="0" max="60" />
+    </label>
+    <label>行间距 (px)
+      <input id="gg-rowgap" type="number" value="10" min="0" max="60" />
+    </label>
+  </div>
+
+  <div class="gen__preview">
+    <div id="gg-preview" class="gg-box"></div>
+  </div>
+
+  <pre id="gg-out" class="gen__code"></pre>
+  <div class="btn-row">
+    <button id="gg-copy" class="primary">复制 CSS</button>
+    <span id="gg-msg" class="msg"></span>
+  </div>
+</div>
+
+<style>
+  .gen__controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; margin-bottom: 14px; }
+  .gen__controls label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--text-sub); }
+  .gg-box { display: grid; gap: 10px; background: #fafbfc; border: 1px solid var(--border); border-radius: 8px; min-height: 160px; padding: 10px; }
+  .gg-box > div { background: var(--brand); color: #fff; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-weight: 600; min-height: 40px; }
+  .gen__code { background: #0f172a; color: #e2e8f0; padding: 12px 14px; border-radius: 8px; font-size: 13px; overflow: auto; }
+</style>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  const cols = $('gg-cols'), rows = $('gg-rows'), colgap = $('gg-colgap'), rowgap = $('gg-rowgap');
+  const preview = $('gg-preview'), out = $('gg-out'), msg = $('gg-msg');
+
+  function update() {
+    const c = Math.max(1, +cols.value || 1), r = Math.max(1, +rows.value || 1);
+    preview.style.cssText = `grid-template-columns: repeat(${c}, 1fr); grid-template-rows: repeat(${r}, 1fr); gap: ${rowgap.value}px ${colgap.value}px;`;
+    preview.innerHTML = '';
+    for (let i = 1; i <= c * r; i++) { const d = document.createElement('div'); d.textContent = i; preview.appendChild(d); }
+    const cssText = `  display: grid;\n  grid-template-columns: repeat(${c}, 1fr);\n  grid-template-rows: repeat(${r}, 1fr);\n  column-gap: ${colgap.value}px;\n  row-gap: ${rowgap.value}px;`;
+    out.textContent = `.grid {\n${cssText}\n}`;
+  }
+  [cols, rows, colgap, rowgap].forEach((el) => el.addEventListener('input', update));
+  update();
+
+  $('gg-copy').addEventListener('click', async () => {
+    try { await navigator.clipboard.writeText(out.textContent); msg.textContent = '已复制'; msg.className = 'msg ok'; }
+    catch { msg.textContent = '复制失败，请手动选择'; msg.className = 'msg err'; }
+  });
+</script>

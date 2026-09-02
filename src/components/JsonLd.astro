@@ -1,0 +1,11 @@
+---
+// JSON-LD 结构化数据（Schema.org），用于 Google 等搜索引擎理解页面。
+// 域名取自 astro.config 的 site（由 SITE_URL 环境变量注入），部署时自动生效，无需硬编码。
+interface Props {
+  data: Record<string, unknown> | Record<string, unknown>[];
+}
+const { data } = Astro.props;
+// 把 "<" 转义掉，避免工具描述里出现 </script> 把脚本标签提前闭合
+const json = JSON.stringify(data).replace(/</g, '\\u003c');
+---
+<script type="application/ld+json" set:html={json} />

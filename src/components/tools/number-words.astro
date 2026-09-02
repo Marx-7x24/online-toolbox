@@ -1,0 +1,56 @@
+---
+// 数字转英文：本地算法
+---
+<div>
+  <div class="field-label"><span>输入数字</span></div>
+  <input type="text" id="nw-in" placeholder="如 12345.67" inputmode="decimal">
+  <div class="field-label" style="margin-top:12px;"><span>英文读法</span></div>
+  <div id="nw-out" class="nw-out">等待输入</div>
+</div>
+
+<style>
+  .nw-out {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 14px;
+    min-height: 60px;
+    line-height: 1.7;
+    background: var(--bg-soft);
+    word-break: break-word;
+    text-transform: capitalize;
+  }
+</style>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  const ONES = ['', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen'];
+  const TENS = ['', '', 'twenty', 'thirty', 'forty', 'fifty', 'sixty', 'seventy', 'eighty', 'ninety'];
+  const SCALE = ['', 'thousand', 'million', 'billion', 'trillion'];
+  function three(n) {
+    let s = '';
+    const h = Math.floor(n / 100), t = n % 100;
+    if (h > 0) { s += ONES[h] + ' hundred'; if (t > 0) s += ' '; }
+    if (t > 0) { s += t < 20 ? ONES[t] : TENS[Math.floor(t / 10)] + (t % 10 ? '-' + ONES[t % 10] : ''); }
+    return s;
+  }
+  function toWords(num) {
+    if (num === '0') return 'zero';
+    let neg = num.startsWith('-'); if (neg) num = num.slice(1);
+    let str = '', g = 0, n = parseInt(num, 10);
+    while (n > 0) {
+      const part = n % 1000;
+      if (part > 0) { const p = three(part); str = p + (SCALE[g] ? ' ' + SCALE[g] : '') + (str ? ' ' + str : ''); }
+      n = Math.floor(n / 1000); g++;
+    }
+    return (neg ? 'negative ' : '') + str;
+  }
+  $('nw-in').addEventListener('input', () => {
+    const raw = $('nw-in').value.trim();
+    if (!raw) { $('nw-out').textContent = '等待输入'; return; }
+    if (!/^-?\d+(\.\d+)?$/.test(raw)) { $('nw-out').textContent = '请输入合法数字'; return; }
+    let out = toWords(raw.split('.')[0]);
+    const dec = raw.split('.')[1];
+    if (dec) { out += ' point ' + dec.split('').map((d) => ONES[+d]).join(' '); }
+    $('nw-out').textContent = out;
+  });
+</script>

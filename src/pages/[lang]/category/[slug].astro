@@ -1,0 +1,56 @@
+---
+import Base from '../../../layouts/Base.astro';
+import ToolCard from '../../../components/ToolCard.astro';
+import Sidebar from '../../../components/Sidebar.astro';
+import JsonLd from '../../../components/JsonLd.astro';
+
+// 结构化数据用的绝对地址：域名取自 astro.config 的 site（由 SITE_URL 环境变量注入）
+const siteUrl = (p) => new URL(p, Astro.site).href;
+import { categories, getToolsByCategory, categoryI18n, toolI18n } from '../../../data/tools.js';
+import { t } from '../../../i18n/ui.ts';
+
+export function getStaticPaths() {
+  return ['zh', 'en'].flatMap((lang) =>
+    categories.map((c) => ({ params: { lang, slug: c.slug }, props: { lang, category: c } }))
+  );
+}
+const { lang, category } = Astro.props;
+const list = getToolsByCategory(category.slug);
+const cName = categoryI18n(category, lang).name;
+---
+
+<Base
+  title={`${cName} - ${t(lang, 'siteName')}`}
+  description={`${cName} ${t(lang, 'toolsCount')}：${list.length} ${t(lang, 'toolsCount')}。`}
+  keywords={list.flatMap((tool) => toolI18n(tool, lang).keywords).join(',')}
+  lang={lang}
+>
+  {/* 结构化数据：面包屑，让搜索结果直接显示「首页 > 分类」层级 */}
+  <JsonLd data={{
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: t(lang, 'home'), item: siteUrl(`/${lang}/`) },
+      { '@type': 'ListItem', position: 2, name: cName, item: siteUrl(`/${lang}/category/${category.slug}/`) },
+    ],
+  }} />
+
+  <div class="home-layout">
+    <Sidebar lang={lang} active={category.slug} />
+
+    <div class="home-main">
+      <div class="page-head">
+        <h1>{cName}</h1>
+        <p>{list.length} {t(lang, 'toolsCount')}</p>
+      </div>
+
+      <div class="tool-grid">
+        {list.map((tool) => {
+          const ti = toolI18n(tool, lang);
+          const search = [ti.name, ti.desc, tool.name_en || '', tool.desc_en || '', ...ti.keywords].join(' ').replace(/\s+/g, ' ').trim().toLowerCase();
+          return <ToolCard lang={lang} slug={tool.slug} name={ti.name} desc={ti.desc} category={category.slug} search={search} />;
+        })}
+      </div>
+    </div>
+  </div>
+</Base>

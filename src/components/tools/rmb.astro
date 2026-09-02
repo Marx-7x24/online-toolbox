@@ -1,0 +1,119 @@
+---
+---
+
+<div class="tip">按财务规范生成中文大写金额，精确到分，符合票据填写要求。</div>
+
+<div style="max-width:420px;">
+  <div class="field-label"><span>金额（元）</span></div>
+  <input type="text" id="rm-in" placeholder="例如 12345.67" value="12345.67" spellcheck="false" />
+</div>
+
+<div class="btn-row">
+  <button class="primary" id="rm-go">转换</button>
+  <button id="rm-copy">复制大写</button>
+  <button id="rm-clear">清空</button>
+</div>
+
+<div id="rm-out"></div>
+<p class="msg" id="rm-msg"></p>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  const DIGIT = ['零', '壹', '贰', '叁', '肆', '伍', '陆', '柒', '捌', '玖'];
+  const SEC = ['', '拾', '佰', '仟'];
+  const BIG = ['', '万', '亿', '万亿'];
+
+  function intPart(n) {
+    if (n === 0) return '零';
+    let out = '';
+    let group = 0;
+    while (n > 0) {
+      const g = n % 10000;
+      if (g === 0) {
+        if (out && !out.startsWith('零')) out = '零' + out;
+      } else {
+        let s = '';
+        let x = g;
+        for (let i = 0; i < 4 && x > 0; i++) {
+          const d = x % 10;
+          s = (d === 0 ? '零' : DIGIT[d] + SEC[i]) + s;
+          x = Math.floor(x / 10);
+        }
+        s = s.replace(/零+/g, '零').replace(/零$/, '');
+        out = s + BIG[group] + out;
+      }
+      n = Math.floor(n / 10000);
+      group++;
+    }
+    return out.replace(/零+/g, '零').replace(/零$/, '');
+  }
+
+  function convert(input) {
+    const raw = input.trim().replace(/[,，\s￥¥]/g, '');
+    if (!raw) throw new Error('请输入金额');
+    if (!/^-?\d+(\.\d{1,2})?$/.test(raw)) throw new Error('金额格式不对，最多两位小数');
+
+    const neg = raw.startsWith('-');
+    const abs = raw.replace('-', '');
+    const [i, d = ''] = abs.split('.');
+    const yuan = BigInt(i);
+    const pad = (d + '00').slice(0, 2);
+    const jiao = Number(pad[0]);
+    const fen = Number(pad[1]);
+
+    let s = '';
+    if (yuan > 0n) s += intPart(Number(yuan)) + '元';
+    if (jiao === 0 && fen === 0) {
+      s += '整';
+    } else {
+      if (jiao > 0) s += DIGIT[jiao] + '角';
+      else if (yuan > 0n) s += '零';
+      if (fen > 0) s += DIGIT[fen] + '分';
+    }
+    if (yuan === 0n && jiao === 0 && fen === 0) s = '零元整';
+    return (neg ? '负' : '') + s;
+  }
+
+  function render() {
+    const msg = $('rm-msg');
+    try {
+      const upper = convert($('rm-in').value);
+      const num = $('rm-in').value.trim().replace(/[,，\s￥¥]/g, '');
+      const lower = '￥' + Number(num).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      const esc = (s) => s.replace(/</g, '&lt;');
+
+      $('rm-out').innerHTML = `
+        <div style="margin-top:14px;">
+          <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:16px;">
+            <div style="font-size:12px;color:var(--text-sub);margin-bottom:6px;">中文大写金额</div>
+            <div style="font-size:20px;font-weight:500;letter-spacing:1px;" id="rm-text">${esc(upper)}</div>
+          </div>
+        </div>
+        <table class="result-table" style="margin-top:14px;max-width:460px;">
+          <tr><th>小写金额</th><td>${esc(lower)}</td></tr>
+          <tr><th>大写金额</th><td>${esc(upper)}</td></tr>
+          <tr><th>票据填写</th><td style="font-family:ui-monospace,monospace;">人民币${esc(upper)}</td></tr>
+        </table>`;
+      msg.textContent = '转换完成';
+      msg.className = 'msg ok';
+    } catch (e) {
+      $('rm-out').innerHTML = '';
+      msg.textContent = e.message;
+      msg.className = 'msg err';
+    }
+  }
+
+  $('rm-go').onclick = render;
+  $('rm-in').oninput = render;
+  $('rm-copy').onclick = async () => {
+    const t = $('rm-text');
+    if (!t) return;
+    await navigator.clipboard.writeText(t.textContent);
+    $('rm-msg').textContent = '已复制大写金额';
+    $('rm-msg').className = 'msg ok';
+  };
+  $('rm-clear').onclick = () => {
+    $('rm-in').value = ''; $('rm-out').innerHTML = ''; $('rm-msg').textContent = '';
+  };
+  render();
+</script>

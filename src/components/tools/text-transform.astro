@@ -1,0 +1,53 @@
+---
+// 文本大小写/全角半角合一：本地转换
+---
+<div class="pane">
+  <div>
+    <div class="field-label"><span>输入文本</span></div>
+    <textarea id="tt-in" placeholder="粘贴需要转换的文本"></textarea>
+  </div>
+  <div>
+    <div class="field-label"><span>转换结果</span></div>
+    <textarea id="tt-out" readonly></textarea>
+  </div>
+</div>
+<div class="btn-row">
+  <button data-f="lower">小写</button>
+  <button data-f="upper">大写</button>
+  <button data-f="title">首字母大写</button>
+  <button data-f="camel">驼峰</button>
+  <button data-f="snake">下划线</button>
+  <button data-f="kebab">中划线</button>
+  <button data-f="full">转全角</button>
+  <button data-f="half">转半角</button>
+  <button id="tt-copy">复制</button>
+  <span id="tt-msg" class="msg"></span>
+</div>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  function toHalf(s) { let r = ''; for (const ch of s) { const c = ch.codePointAt(0); if (c >= 0xFF01 && c <= 0xFF5E) r += String.fromCodePoint(c - 0xFEE0); else if (c === 0x3000) r += ' '; else r += ch; } return r; }
+  function toFull(s) { let r = ''; for (const ch of s) { const c = ch.codePointAt(0); if (c >= 0x21 && c <= 0x7E) r += String.fromCodePoint(c + 0xFEE0); else if (c === 0x20) r += '　'; else r += ch; } return r; }
+  function words(s) { return s.match(/[A-Za-z0-9]+|[^A-Za-z0-9]+/g) || []; }
+  const F = {
+    lower: (s) => s.toLowerCase(),
+    upper: (s) => s.toUpperCase(),
+    title: (s) => s.toLowerCase().replace(/(^|[\s(（])([a-z])/g, (m, p, c) => p + c.toUpperCase()),
+    camel: (s) => { const w = words(s).filter((x) => /[A-Za-z0-9]/.test(x)); return w.map((x, i) => i ? x.charAt(0).toUpperCase() + x.slice(1).toLowerCase() : x.toLowerCase()).join(''); },
+    snake: (s) => { const w = words(s).filter((x) => /[A-Za-z0-9]/.test(x)); return w.map((x) => x.toLowerCase()).join('_'); },
+    kebab: (s) => { const w = words(s).filter((x) => /[A-Za-z0-9]/.test(x)); return w.map((x) => x.toLowerCase()).join('-'); },
+    full: toFull,
+    half: toHalf,
+  };
+  document.querySelectorAll('.btn-row button[data-f]').forEach((b) => b.addEventListener('click', () => {
+    const v = $('tt-in').value;
+    if (!v) { $('tt-out').value = ''; return; }
+    $('tt-out').value = F[b.dataset.f](v);
+    $('tt-msg').textContent = '已转换'; $('tt-msg').className = 'msg ok';
+  }));
+  $('tt-copy').addEventListener('click', async () => {
+    if (!$('tt-out').value) return;
+    try { await navigator.clipboard.writeText($('tt-out').value); $('tt-msg').textContent = '已复制'; $('tt-msg').className = 'msg ok'; }
+    catch { $('tt-msg').textContent = '复制失败'; $('tt-msg').className = 'msg err'; }
+  });
+</script>

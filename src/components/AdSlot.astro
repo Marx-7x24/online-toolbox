@@ -1,0 +1,11 @@
+---
+// 广告位占位组件（当前隐藏）。
+// 上线接入：取消下方注释，把广告平台提供的 <script> / <ins> 代码放到注释位置即可。
+// 通过 slot 属性区分不同位置（top / home / category / tool-top），方便后续分价位售卖。
+interface Props {
+  slot?: string;
+  lang?: string;
+}
+const { slot = '' } = Astro.props;
+---
+{/* 广告位已隐藏（slot={slot}） */}

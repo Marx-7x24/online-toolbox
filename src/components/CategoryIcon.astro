@@ -1,0 +1,12 @@
+---
+// 分类图标：左侧边栏与工具卡片共用
+// 图标数据源抽到 src/data/categoryIcons.js，与客户端脚本共用同一份，避免两处维护。
+import { getCategoryIcon } from '../data/categoryIcons.js';
+
+interface Props {
+  category: string;
+}
+const { category } = Astro.props;
+const cfg = getCategoryIcon(category);
+---
+<span class="category-icon" style={`background:${cfg.color}15;color:${cfg.color}`} set:html={cfg.svg} />

@@ -1,0 +1,61 @@
+---
+// 二维码解析：本地识别，图片不上传
+---
+<div class="pane">
+  <div>
+    <div class="field-label"><span>上传含二维码的图片</span></div>
+    <input type="file" id="qr-file" accept="image/*">
+    <div id="qr-preview" class="qr-preview"></div>
+  </div>
+  <div>
+    <div class="field-label"><span>识别结果</span></div>
+    <textarea id="qr-out" readonly placeholder="识别后的内容将显示在这里"></textarea>
+  </div>
+</div>
+<div class="btn-row">
+  <span id="qr-msg" class="msg"></span>
+</div>
+
+<style>
+  .qr-preview {
+    margin-top: 10px;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    padding: 10px;
+    min-height: 120px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .qr-preview img { max-width: 100%; }
+</style>
+
+<script>
+  import jsQR from 'jsqr';
+  const $ = (id) => document.getElementById(id);
+  const fileInput = $('qr-file'), preview = $('qr-preview'), out = $('qr-out'), msg = $('qr-msg');
+  const canvas = document.createElement('canvas');
+
+  fileInput.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      preview.innerHTML = '';
+      preview.appendChild(img);
+      canvas.width = img.naturalWidth;
+      canvas.height = img.naturalHeight;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0);
+      let data;
+      try { data = ctx.getImageData(0, 0, canvas.width, canvas.height); }
+      catch (err) { msg.textContent = '读取像素失败：' + err.message; msg.className = 'msg err'; return; }
+      const code = jsQR(data.data, data.width, data.height);
+      if (code) { out.value = code.data; msg.textContent = '识别成功'; msg.className = 'msg ok'; }
+      else { out.value = ''; msg.textContent = '未识别到二维码，请换更清晰的图片'; msg.className = 'msg err'; }
+    };
+    img.onerror = () => { msg.textContent = '图片加载失败'; msg.className = 'msg err'; };
+    img.src = url;
+  });
+</script>

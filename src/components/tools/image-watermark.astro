@@ -1,0 +1,183 @@
+---
+---
+
+<div class="tip">图片在你本地处理，不上传服务器，也不会被保存。</div>
+
+<div class="btn-row" style="align-items:center;">
+  <input type="file" id="wm-file" accept="image/*" multiple style="width:auto;font-family:inherit;padding:6px;border:none;" />
+  <label for="wm-mark" style="font-size:13px;color:var(--text-sub);">或选择水印图片：</label>
+  <input type="file" id="wm-mark" accept="image/*" style="width:auto;font-family:inherit;padding:6px;border:none;" />
+</div>
+
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-top:12px;">
+  <div>
+    <div class="field-label"><span>水印文字</span></div>
+    <input type="text" id="wm-text" value="仅供演示" />
+  </div>
+  <div>
+    <div class="field-label"><span>字号</span><span id="wm-fs-val">36 px</span></div>
+    <input type="range" id="wm-fs" min="12" max="120" value="36" style="padding:0;" />
+  </div>
+  <div>
+    <div class="field-label"><span>不透明度</span><span id="wm-op-val">40%</span></div>
+    <input type="range" id="wm-op" min="5" max="100" value="40" style="padding:0;" />
+  </div>
+  <div>
+    <div class="field-label"><span>旋转角度</span><span id="wm-rot-val">0°</span></div>
+    <input type="range" id="wm-rot" min="-90" max="90" value="0" style="padding:0;" />
+  </div>
+  <div>
+    <div class="field-label"><span>颜色</span></div>
+    <input type="color" id="wm-color" value="#ffffff" style="width:60px;height:34px;padding:2px;" />
+  </div>
+  <div>
+    <div class="field-label"><span>位置</span></div>
+    <select id="wm-pos">
+      <option value="center">居中</option>
+      <option value="tile">平铺</option>
+      <option value="tl">左上</option>
+      <option value="tr">右上</option>
+      <option value="bl">左下</option>
+      <option value="br" selected>右下</option>
+    </select>
+  </div>
+</div>
+
+<div class="btn-row">
+  <button class="primary" id="wm-go">开始添加</button>
+  <button id="wm-dl">下载全部</button>
+  <button id="wm-clear">清空</button>
+</div>
+
+<p class="msg" id="wm-msg"></p>
+<div id="wm-list"></div>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  let jobs = [];
+
+  ['wm-fs', 'wm-op', 'wm-rot'].forEach((id) => {
+    $(id).oninput = () => {
+      $('wm-fs-val').textContent = $('wm-fs').value + ' px';
+      $('wm-op-val').textContent = $('wm-op').value + '%';
+      $('wm-rot-val').textContent = $('wm-rot').value + '°';
+    };
+  });
+
+  function loadImage(src) {
+    return new Promise((res, rej) => {
+      const img = new Image();
+      img.onload = () => res(img);
+      img.onerror = rej;
+      img.src = src;
+    });
+  }
+
+  async function watermark(file) {
+    const img = await loadImage(URL.createObjectURL(file));
+    const canvas = document.createElement('canvas');
+    canvas.width = img.width;
+    canvas.height = img.height;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(img, 0, 0);
+
+    const alpha = +$('wm-op').value / 100;
+    const rad = (+$('wm-rot').value * Math.PI) / 180;
+    const fs = +$('wm-fs').value;
+    ctx.globalAlpha = alpha;
+
+    const markImg = $('wm-mark').files[0];
+    let stamp = null, sw = 0, sh = 0;
+    if (markImg) {
+      stamp = await loadImage(URL.createObjectURL(markImg));
+      sw = Math.max(40, Math.min(img.width * 0.3, stamp.width));
+      sh = (sw / stamp.width) * stamp.height;
+    } else {
+      ctx.font = `${fs}px sans-serif`;
+      sw = ctx.measureText($('wm-text').value).width;
+      sh = fs;
+    }
+
+    const gap = 24;
+    const draw = (x, y) => {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(rad);
+      if (stamp) ctx.drawImage(stamp, -sw / 2, -sh / 2, sw, sh);
+      else {
+        ctx.fillStyle = $('wm-color').value;
+        ctx.textBaseline = 'middle';
+        ctx.font = `${fs}px sans-serif`;
+        ctx.fillText($('wm-text').value, -sw / 2, 0);
+        ctx.strokeStyle = 'rgba(0,0,0,.35)';
+        ctx.lineWidth = fs / 18;
+        ctx.strokeText($('wm-text').value, -sw / 2, 0);
+      }
+      ctx.restore();
+    };
+
+    const pos = $('wm-pos').value;
+    if (pos === 'tile') {
+      const stepX = sw + 80, stepY = sh + 80;
+      for (let y = -img.height; y < img.height * 2; y += stepY) {
+        for (let x = -img.width; x < img.width * 2; x += stepX) draw(x, y);
+      }
+    } else {
+      const m = {
+        center: [img.width / 2, img.height / 2],
+        tl: [gap + sw / 2, gap + sh / 2],
+        tr: [img.width - gap - sw / 2, gap + sh / 2],
+        bl: [gap + sw / 2, img.height - gap - sh / 2],
+        br: [img.width - gap - sw / 2, img.height - gap - sh / 2],
+      }[pos];
+      draw(m[0], m[1]);
+    }
+
+    return new Promise((res) => canvas.toBlob((b) => res(b), 'image/png'));
+  }
+
+  function render() {
+    $('wm-list').innerHTML = jobs.map((j, i) =>
+      `<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-top:1px solid var(--border);">
+        <img src="${j.out}" alt="" style="width:64px;height:64px;object-fit:cover;border-radius:8px;border:1px solid var(--border);" />
+        <div style="flex:1;min-width:0;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${j.name}</div>
+        <a href="${j.out}" download="${j.name.replace(/\.[^.]+$/, '')}_wm.png" style="padding:6px 14px;border:1px solid var(--brand);color:var(--brand);border-radius:8px;font-size:13px;">下载</a>
+      </div>`
+    ).join('');
+  }
+
+  $('wm-go').onclick = async () => {
+    const files = Array.from($('wm-file').files || []);
+    if (!files.length) { $('wm-msg').textContent = '请先选择图片'; $('wm-msg').className = 'msg err'; return; }
+    jobs = [];
+    $('wm-msg').textContent = `处理中… 0 / ${files.length}`;
+    $('wm-msg').className = 'msg';
+    for (let i = 0; i < files.length; i++) {
+      const blob = await watermark(files[i]);
+      jobs.push({ name: files[i].name, out: URL.createObjectURL(blob), blob });
+      $('wm-msg').textContent = `处理中… ${i + 1} / ${files.length}`;
+      render();
+    }
+    $('wm-msg').textContent = `完成 ${jobs.length} 张`;
+    $('wm-msg').className = 'msg ok';
+  };
+
+  $('wm-dl').onclick = () => {
+    jobs.forEach((j, i) => {
+      setTimeout(() => {
+        const a = document.createElement('a');
+        a.href = j.out;
+        a.download = j.name.replace(/\.[^.]+$/, '') + '_wm.png';
+        a.click();
+      }, i * 300);
+    });
+  };
+
+  $('wm-clear').onclick = () => {
+    jobs.forEach((j) => URL.revokeObjectURL(j.out));
+    jobs = [];
+    $('wm-file').value = ''; $('wm-mark').value = '';
+    render();
+    $('wm-msg').textContent = '';
+  };
+</script>

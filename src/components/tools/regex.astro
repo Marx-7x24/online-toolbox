@@ -1,0 +1,113 @@
+---
+---
+
+<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:12px;max-width:640px;">
+  <span style="font-size:20px;color:var(--text-hint);font-family:ui-monospace,monospace;">/</span>
+  <input type="text" id="rx-pat" placeholder="正则表达式，如 (\d{4})-(\d{2})" style="flex:1;min-width:240px;" spellcheck="false" />
+  <span style="font-size:20px;color:var(--text-hint);font-family:ui-monospace,monospace;">/</span>
+  <input type="text" id="rx-flag" value="g" style="width:80px;" spellcheck="false" />
+</div>
+
+<div class="field-label"><span>测试文本</span></div>
+<textarea id="rx-text" placeholder="在这里粘贴要匹配的文本" style="min-height:150px;">订单号 ORD-2026-0135 金额 1280.00 元
+联系人 张三 手机 13800138000
+邮箱 zhangsan@example.com
+日期 2026-09-01，编号 A-99</textarea>
+
+<div class="btn-row">
+  <button class="primary" id="rx-go">测试匹配</button>
+  <button id="rx-replace-mode">切换到替换模式</button>
+  <button id="rx-clear">清空结果</button>
+</div>
+
+<div id="rx-replace-box" style="display:none;max-width:640px;">
+  <div class="field-label"><span>替换为（可用 $1 $2 引用分组）</span></div>
+  <input type="text" id="rx-rep" placeholder="例如 [$1]" spellcheck="false" />
+</div>
+
+<p class="msg" id="rx-msg"></p>
+
+<div style="margin-top:12px;">
+  <div class="field-label"><span>匹配结果</span></div>
+  <div id="rx-out" style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px;min-height:60px;white-space:pre-wrap;word-break:break-all;font-family:ui-monospace,monospace;font-size:13px;line-height:1.7;"></div>
+</div>
+
+<div id="rx-groups" style="margin-top:12px;"></div>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  let replaceMode = false;
+
+  const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+  function run() {
+    const out = $('rx-out'), msg = $('rx-msg'), gbox = $('rx-groups');
+    gbox.innerHTML = '';
+    let re;
+    try {
+      re = new RegExp($('rx-pat').value, $('rx-flag').value);
+    } catch (e) {
+      msg.textContent = '正则语法错误：' + e.message;
+      msg.className = 'msg err';
+      out.innerHTML = '';
+      return;
+    }
+
+    const text = $('rx-text').value;
+
+    if (replaceMode) {
+      const rep = $('rx-rep').value.replace(/\$(\d)/g, '$$$1');
+      out.innerHTML = esc(text.replace(re, rep));
+      msg.textContent = '替换完成';
+      msg.className = 'msg ok';
+      return;
+    }
+
+    if (!re.global && !re.sticky) {
+      msg.textContent = '提示：未加 g 标志，只匹配第一处';
+      msg.className = 'msg';
+    }
+
+    let html = '', last = 0, count = 0, rows = [];
+    const re2 = new RegExp(re.source, re.flags.includes('g') ? re.flags : re.flags + 'g');
+    let m;
+    while ((m = re2.exec(text)) !== null) {
+      count++;
+      html += esc(text.slice(last, m.index));
+      html += `<mark style="background:#fff1a8;padding:1px 2px;border-radius:3px;">${esc(m[0])}</mark>`;
+      last = m.index + m[0].length;
+      if (m.length > 1) {
+        rows.push(`<tr><th>第 ${count} 组</th><td style="font-family:ui-monospace,monospace;">${m.slice(1).map((x, i) => `$${i + 1} = ${esc(String(x))}`).join('　')}</td></tr>`);
+      }
+      if (m.index === re2.lastIndex) re2.lastIndex++;
+      if (count > 5000) break;
+    }
+    html += esc(text.slice(last));
+
+    out.innerHTML = html || esc(text);
+    msg.textContent = count ? `共匹配 ${count} 处` : '没有匹配结果';
+    msg.className = count ? 'msg ok' : 'msg err';
+
+    if (rows.length) {
+      gbox.innerHTML = '<div class="field-label" style="margin-top:12px;"><span>捕获分组</span></div>' +
+        '<table class="result-table">' + rows.slice(0, 50).join('') + '</table>' +
+        (rows.length > 50 ? '<p style="font-size:12px;color:var(--text-hint);">仅显示前 50 组</p>' : '');
+    }
+  }
+
+  $('rx-go').onclick = run;
+  $('rx-text').oninput = run;
+  $('rx-rep').oninput = () => { if (replaceMode) run(); };
+
+  $('rx-replace-mode').onclick = () => {
+    replaceMode = !replaceMode;
+    $('rx-replace-box').style.display = replaceMode ? 'block' : 'none';
+    $('rx-replace-mode').textContent = replaceMode ? '切换回匹配模式' : '切换到替换模式';
+    run();
+  };
+
+  $('rx-clear').onclick = () => {
+    $('rx-out').innerHTML = ''; $('rx-groups').innerHTML = ''; $('rx-msg').textContent = '';
+  };
+  run();
+</script>

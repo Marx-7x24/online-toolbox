@@ -1,0 +1,136 @@
+---
+---
+
+<div class="tip">图片在你的浏览器里用 Canvas 重新编码，全程不上传服务器。可多选批量处理。</div>
+
+<div class="field-label" style="max-width:520px;"><span>输出格式</span></div>
+<div style="display:flex;gap:10px;flex-wrap:wrap;max-width:520px;">
+  <select id="ic-format">
+    <option value="image/jpeg">JPEG（体积小，不支持透明）</option>
+    <option value="image/webp">WebP（体积最小）</option>
+    <option value="image/png">PNG（无损，支持透明）</option>
+  </select>
+</div>
+
+<div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:14px;">
+  <div style="min-width:200px;">
+    <div class="field-label"><span>压缩质量</span><span id="ic-q-val">80%</span></div>
+    <input type="range" id="ic-quality" min="10" max="100" value="80" style="padding:0;" />
+  </div>
+  <div style="min-width:200px;">
+    <div class="field-label"><span>最大边长</span><span id="ic-s-val">不限</span></div>
+    <input type="range" id="ic-scale" min="0" max="100" value="0" style="padding:0;" />
+    <div style="font-size:12px;color:var(--text-hint);">0 表示保持原始尺寸</div>
+  </div>
+</div>
+
+<div class="btn-row">
+  <input type="file" id="ic-file" accept="image/*" multiple style="width:auto;font-family:inherit;padding:6px;border:none;" />
+  <button id="ic-clear">清空列表</button>
+</div>
+
+<p class="msg" id="ic-msg"></p>
+<div id="ic-list"></div>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  let items = [];
+
+  $('ic-quality').oninput = () => { $('ic-q-val').textContent = $('ic-quality').value + '%'; };
+  $('ic-scale').oninput = () => {
+    const v = +$('ic-scale').value;
+    $('ic-s-val').textContent = v === 0 ? '不限' : [800, 1200, 1600, 1920, 2560][Math.min(4, Math.floor((v - 1) / 20))] + ' px';
+  };
+
+  function maxSide() {
+    const v = +$('ic-scale').value;
+    return v === 0 ? 0 : [800, 1200, 1600, 1920, 2560][Math.min(4, Math.floor((v - 1) / 20))];
+  }
+
+  function compress(file) {
+    return new Promise((resolve) => {
+      const img = new Image();
+      const url = URL.createObjectURL(file);
+      img.onload = () => {
+        let { width, height } = img;
+        const limit = maxSide();
+        if (limit && Math.max(width, height) > limit) {
+          const r = limit / Math.max(width, height);
+          width = Math.round(width * r);
+          height = Math.round(height * r);
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(0, 0, width, height);
+        ctx.drawImage(img, 0, 0, width, height);
+        canvas.toBlob(
+          (blob) => {
+            URL.revokeObjectURL(url);
+            resolve(blob ? { blob, width, height } : null);
+          },
+          $('ic-format').value,
+          +$('ic-quality').value / 100
+        );
+      };
+      img.onerror = () => { URL.revokeObjectURL(url); resolve(null); };
+      img.src = url;
+    });
+  }
+
+  const kb = (n) => (n / 1024).toFixed(1) + ' KB';
+
+  function draw() {
+    const box = $('ic-list');
+    if (!items.length) { box.innerHTML = ''; return; }
+    box.innerHTML = items.map((it, i) => {
+      const saved = it.done ? Math.round((1 - it.outSize / it.inSize) * 100) : 0;
+      return `<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-top:1px solid var(--border);">
+        <img src="${it.url}" alt="" style="width:56px;height:56px;object-fit:cover;border-radius:8px;border:1px solid var(--border);" />
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${it.name}</div>
+          <div style="font-size:12px;color:var(--text-sub);">
+            ${kb(it.inSize)} → ${it.done ? kb(it.outSize) + (saved > 0 ? ` <span style="color:var(--success);">省 ${saved}%</span>` : '') : '压缩中…'}
+            ${it.done ? ` · ${it.width}×${it.height}` : ''}
+          </div>
+        </div>
+        ${it.done ? `<a href="${it.outUrl}" download="${it.outName}" style="padding:6px 14px;border:1px solid var(--brand);color:var(--brand);border-radius:8px;font-size:13px;">下载</a>` : ''}
+      </div>`;
+    }).join('');
+  }
+
+  $('ic-file').onchange = async (e) => {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+    items = files.map((f) => ({ file: f, name: f.name, inSize: f.size, url: URL.createObjectURL(f), done: false }));
+    draw();
+    $('ic-msg').textContent = `开始处理 ${files.length} 张图片…`;
+    $('ic-msg').className = 'msg';
+
+    for (let i = 0; i < items.length; i++) {
+      const it = items[i];
+      const r = await compress(it.file);
+      if (!r) { it.done = false; continue; }
+      it.outSize = r.blob.size;
+      it.width = r.width;
+      it.height = r.height;
+      it.outUrl = URL.createObjectURL(r.blob);
+      it.outName = it.name.replace(/\.[^.]+$/, '') + '_min.' + ($('ic-format').value === 'image/jpeg' ? 'jpg' : $('ic-format').value === 'image/webp' ? 'webp' : 'png');
+      it.done = true;
+      draw();
+    }
+    const okCount = items.filter((x) => x.done).length;
+    $('ic-msg').textContent = `完成 ${okCount} / ${items.length} 张`;
+    $('ic-msg').className = 'msg ok';
+  };
+
+  $('ic-clear').onclick = () => {
+    items.forEach((it) => { URL.revokeObjectURL(it.url); if (it.outUrl) URL.revokeObjectURL(it.outUrl); });
+    items = [];
+    $('ic-file').value = '';
+    draw();
+    $('ic-msg').textContent = '';
+  };
+</script>

@@ -1,0 +1,120 @@
+---
+---
+
+<div class="tip">只做本地解码查看，**不验证签名**——签名验证必须在服务端用密钥完成。请勿在此粘贴生产环境的高权限令牌。</div>
+
+<div class="field-label"><span>JWT Token</span></div>
+<textarea id="jw-in" placeholder="粘贴 eyJhbGciOi... 开头的 token" style="min-height:100px;" spellcheck="false"></textarea>
+
+<div class="btn-row">
+  <button class="primary" id="jw-go">解码</button>
+  <button id="jw-sample">填入示例</button>
+  <button id="jw-clear">清空</button>
+</div>
+
+<p class="msg" id="jw-msg"></p>
+<div id="jw-out"></div>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+
+  function b64urlDecode(s) {
+    s = s.replace(/-/g, '+').replace(/_/g, '/');
+    while (s.length % 4) s += '=';
+    const bin = atob(s);
+    const bytes = Uint8Array.from(bin, (c) => c.charCodeAt(0));
+    return new TextDecoder().decode(bytes);
+  }
+
+  function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+
+  function show(obj, title) {
+    return `<div style="margin-top:10px;">
+      <div class="field-label"><span>${title}</span></div>
+      <pre style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;overflow:auto;font-size:13px;margin:0;">${esc(JSON.stringify(obj, null, 2))}</pre>
+    </div>`;
+  }
+
+  function run() {
+    const msg = $('jw-msg');
+    const raw = $('jw-in').value.trim().replace(/^Bearer\s+/i, '');
+    if (!raw) { $('jw-out').innerHTML = ''; msg.textContent = '请输入 token'; msg.className = 'msg err'; return; }
+
+    const parts = raw.split('.');
+    if (parts.length !== 3) {
+      $('jw-out').innerHTML = '';
+      msg.textContent = `JWT 应由三段组成，当前为 ${parts.length} 段`;
+      msg.className = 'msg err';
+      return;
+    }
+
+    let header, payload;
+    try {
+      header = JSON.parse(b64urlDecode(parts[0]));
+      payload = JSON.parse(b64urlDecode(parts[1]));
+    } catch (e) {
+      $('jw-out').innerHTML = '';
+      msg.textContent = '解码失败：不是合法的 JWT（Base64URL 解析出错）';
+      msg.className = 'msg err';
+      return;
+    }
+
+    const now = Math.floor(Date.now() / 1000);
+    const rows = [];
+    const add = (k, v) => rows.push(`<tr><th>${k}</th><td>${v}</td></tr>`);
+
+    add('算法 alg', esc(header.alg || '未声明'));
+    add('类型 typ', esc(header.typ || '未声明'));
+    if (header.kid) add('密钥 ID', esc(header.kid));
+
+    const CLAIM = { iss: '签发者', sub: '主体', aud: '受众', jti: '令牌 ID', nbf: '生效时间', iat: '签发时间', exp: '过期时间' };
+    for (const [k, label] of Object.entries(CLAIM)) {
+      if (payload[k] === undefined) continue;
+      if ((k === 'exp' || k === 'iat' || k === 'nbf') && typeof payload[k] === 'number') {
+        const d = new Date(payload[k] * 1000);
+        const s = `${d.toLocaleString('zh-CN')}（${payload[k]}）`;
+        if (k === 'exp') {
+          const left = payload[k] - now;
+          add(label, left > 0
+            ? `${s}　<span style="color:var(--success);">剩余 ${Math.floor(left / 3600)} 小时 ${Math.floor((left % 3600) / 60)} 分</span>`
+            : `${s}　<span style="color:var(--danger);">已过期 ${Math.floor(-left / 3600)} 小时</span>`);
+        } else if (k === 'nbf') {
+          add(label, payload[k] > now ? `${s}　<span style="color:var(--text-sub);">尚未生效</span>` : s);
+        } else {
+          add(label, s);
+        }
+      } else {
+        add(label, esc(JSON.stringify(payload[k])));
+      }
+    }
+
+    const extra = Object.keys(payload).filter((k) => !CLAIM[k]);
+    if (extra.length) add('其他声明', esc(extra.join('、')));
+
+    $('jw-out').innerHTML =
+      '<table class="result-table" style="margin-top:14px;max-width:640px;">' + rows.join('') + '</table>' +
+      show(header, 'Header') + show(payload, 'Payload') +
+      `<div style="margin-top:10px;">
+        <div class="field-label"><span>Signature（签名，未验证）</span></div>
+        <pre style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;overflow:auto;font-size:13px;margin:0;word-break:break-all;">${esc(parts[2])}</pre>
+      </div>`;
+
+    const expired = payload.exp && payload.exp < now;
+    msg.textContent = expired ? '解码成功（令牌已过期）' : '解码成功';
+    msg.className = expired ? 'msg err' : 'msg ok';
+  }
+
+  $('jw-go').onclick = run;
+  $('jw-in').oninput = run;
+  $('jw-sample').onclick = () => {
+    const b64 = (o) => btoa(unescape(encodeURIComponent(JSON.stringify(o)))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    const now = Math.floor(Date.now() / 1000);
+    $('jw-in').value = b64({ alg: 'HS256', typ: 'JWT' }) + '.' +
+      b64({ sub: '1234567890', name: '张三', iat: now, exp: now + 3600 }) + '.' +
+      'SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c';
+    run();
+  };
+  $('jw-clear').onclick = () => {
+    $('jw-in').value = ''; $('jw-out').innerHTML = ''; $('jw-msg').textContent = '';
+  };
+</script>

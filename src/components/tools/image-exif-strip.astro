@@ -1,0 +1,43 @@
+---
+// 图片 EXIF 清除：Canvas 重编码，本地处理
+---
+<div>
+  <div class="field-label"><span>上传图片（清除拍摄信息后下载）</span></div>
+  <input type="file" id="es-file" accept="image/*" multiple>
+  <div class="field-label" style="margin-top:12px;"><span>结果</span></div>
+  <div id="es-out" class="es-out">尚未处理</div>
+</div>
+
+<style>
+  .es-out { border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; min-height: 120px; background: var(--bg-soft); font-size: 13px; line-height: 1.9; }
+  .es-out .row { display: flex; justify-content: space-between; gap: 10px; border-bottom: 1px dashed var(--border); padding: 3px 0; }
+  .es-out a { color: var(--link); }
+  .es-out .ok { color: #2f9e44; }
+</style>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  function fmt(n) { return n > 1048576 ? (n / 1048576).toFixed(2) + 'MB' : (n / 1024).toFixed(1) + 'KB'; }
+  function loadImg(file) { return new Promise((res, rej) => { const url = URL.createObjectURL(file); const img = new Image(); img.onload = () => res(img); img.onerror = rej; img.src = url; }); }
+  $('es-file').addEventListener('change', async (e) => {
+    const files = [...e.target.files]; if (!files.length) return;
+    const out = $('es-out'); out.innerHTML = '处理中…'; out.innerHTML = '';
+    for (const f of files) {
+      try {
+        const img = await loadImg(f);
+        const canvas = document.createElement('canvas');
+        canvas.width = img.naturalWidth; canvas.height = img.naturalHeight;
+        canvas.getContext('2d').drawImage(img, 0, 0);
+        const mime = f.type === 'image/png' ? 'image/png' : 'image/jpeg';
+        const blob = await new Promise((res) => canvas.toBlob(res, mime, 0.95));
+        const url = URL.createObjectURL(blob);
+        const div = document.createElement('div'); div.className = 'row';
+        const a = document.createElement('a'); a.href = url; a.download = 'clean-' + f.name; a.textContent = '下载';
+        const span = document.createElement('span'); span.innerHTML = `${f.name} <span class="ok">已清除元数据</span> (${fmt(f.size)}→${fmt(blob.size)}) `;
+        div.appendChild(span); div.appendChild(a); out.appendChild(div);
+      } catch (err) {
+        const div = document.createElement('div'); div.className = 'row'; div.innerHTML = `<span>${f.name} 处理失败</span>`; out.appendChild(div);
+      }
+    }
+  });
+</script>

@@ -1,0 +1,38 @@
+---
+// Emoji 搜索：内置数据集，本地检索
+---
+<div>
+  <div class="field-label"><span>搜索（中/英文关键词，如 笑 / heart / 火）</span></div>
+  <input type="text" id="em-q" placeholder="happy" autocomplete="off">
+  <div class="field-label" style="margin-top:12px;"><span>结果（点击复制）</span></div>
+  <div id="em-out" class="em-out"></div>
+</div>
+
+<style>
+  .em-out { display: grid; grid-template-columns: repeat(auto-fill, minmax(48px, 1fr)); gap: 8px; margin-top: 6px; }
+  .em-out .e { font-size: 26px; text-align: center; padding: 8px 0; border-radius: 8px; background: var(--bg-soft); cursor: pointer; border: 1px solid transparent; }
+  .em-out .e:hover { border-color: var(--border); }
+</style>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  // [emoji, 关键词...]
+  const DATA = [
+    ['😀', 'smile grin happy 笑 开心'], ['😂', 'laugh cry joy 笑哭 哈哈'], ['🤣', 'rofl roll floor 爆笑'], ['😊', 'blush smile 微笑'], ['😍', 'love heart eyes 爱 喜欢'], ['😎', 'cool sunglasses 酷 墨镜'], ['🤔', 'think thinking 思考'], ['😅', 'sweat nervous 尴尬'], ['😭', 'cry sad 哭'], ['😡', 'angry mad 生气'], ['🥳', 'party celebrate 庆祝'], ['😴', 'sleep tired 睡 困'], ['🤯', 'mind blown 震惊'], ['🤝', 'handshake deal 握手 合作'], ['👍', 'thumbs up yes ok 赞 好'], ['👎', 'thumbs down no 踩 差'], ['🙏', 'pray thanks 拜托 谢'], ['👏', 'clap bravo 鼓掌'], ['💪', 'muscle strong 加油 力量'], ['🫡', 'salute 敬礼'], ['❤️', 'heart love red 爱 红心'], ['🧡', 'orange heart 橙心'], ['💛', 'yellow heart 黄心'], ['💚', 'green heart 绿心'], ['💙', 'blue heart 蓝心'], ['💜', 'purple heart 紫心'], ['🔥', 'fire hot 火 热'], ['⭐', 'star 星 星'], ['✨', 'sparkle shine 闪光'], ['🌟', 'glow star 发光'], ['💡', 'idea bulb 想法 灯泡'], ['🚀', 'rocket launch 火箭 发射'], ['💻', 'laptop computer 电脑'], ['📱', 'phone mobile 手机'], ['📧', 'email mail 邮件'], ['🔧', 'wrench tool 工具'], ['⚙️', 'gear settings 设置 齿轮'], ['🐱', 'cat 猫'], ['🐶', 'dog 狗'], ['🐼', 'panda 熊猫'], ['🦄', 'unicorn 独角兽'], ['🌸', 'flower sakura 花 樱花'], ['🌈', 'rainbow 彩虹'], ['☀️', 'sun 太阳'], ['🌙', 'moon 月亮'], ['⛅', 'cloud sun 多云'], ['🌊', 'wave ocean 海 浪'], ['🍎', 'apple 苹果'], ['🍔', 'burger 汉堡'], ['🍕', 'pizza 披萨'], ['☕', 'coffee 咖啡'], ['🍺', 'beer 啤酒'], ['🎉', 'tada party 庆祝 礼花'], ['🎁', 'gift 礼物'], ['🏆', 'trophy win 奖杯'], ['⚽', 'soccer football 足球'], ['🎮', 'game controller 游戏'], ['🎵', 'music note 音乐'], ['📚', 'books read 书'], ['✅', 'check done 完成 对'], ['❌', 'cross wrong 错'], ['⚠️', 'warning 警告'], ['❓', 'question 问'], ['💰', 'money 钱'], ['💎', 'diamond 钻石'], ['🛠️', 'tools build 工具'], ['🔒', 'lock secure 锁 安全'], ['🔑', 'key 钥匙'], ['📌', 'pin 图钉'], ['📍', 'location pin 定位'], ['👀', 'eyes look 看'], ['🤖', 'robot ai 机器人'], ['🌍', 'earth globe 地球'], ['💯', 'hundred perfect 满分'], ['🥰', 'smiling hearts 喜爱'], ['😇', 'innocent angel 天使'], ['🤩', 'star struck 崇拜'], ['😉', 'wink 眨眼'], ['🙌', 'raised hands 举手'], ['👋', 'wave hand 挥手 再见'], ['🤞', 'fingers crossed 好运'], ['🍀', 'clover luck 幸运'], ['🎯', 'target 目标'], ['🧩', 'puzzle 拼图'], ['📈', 'chart up 上涨 增长'], ['📉', 'chart down 下跌'], ['💡', 'bulb idea 点子'], ['🔔', 'bell notification 铃 通知'], ['🏠', 'home house 家'], ['✈️', 'plane flight 飞机'], ['🚗', 'car 车'], ['⏰', 'alarm clock 闹钟'], ['📅', 'calendar 日历'], ['🧠', 'brain 脑 智慧'], ['💬', 'speech bubble 对话'], ['📝', 'memo note 笔记'], ['🍃', 'leaf 叶 绿叶'], ['🌹', 'rose 玫瑰'], ['🐝', 'bee 蜜蜂'], ['🦋', 'butterfly 蝴蝶'], ['🌻', 'sunflower 向日葵'], ['⚡', 'lightning 闪电'], ['❄️', 'snow 雪'], ['🌊', 'water wave 水波'],
+  ];
+  function render(list) {
+    $('em-out').innerHTML = list.length
+      ? list.map(([e, k]) => `<div class="e" data-e="${e}" title="${k.split(' ').slice(0, 3).join(' ')}">${e}</div>`).join('')
+      : '<div style="color:var(--text-sub);grid-column:1/-1">无匹配</div>';
+  }
+  render(DATA.slice(0, 60));
+  $('em-q').addEventListener('input', () => {
+    const q = $('em-q').value.trim().toLowerCase();
+    if (!q) { render(DATA.slice(0, 60)); return; }
+    render(DATA.filter(([, k]) => k.toLowerCase().includes(q)));
+  });
+  document.addEventListener('click', (e) => {
+    const t = e.target.closest('.e');
+    if (t) navigator.clipboard.writeText(t.dataset.e).catch(() => {});
+  });
+</script>

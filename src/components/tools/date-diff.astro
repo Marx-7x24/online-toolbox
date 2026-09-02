@@ -1,0 +1,140 @@
+---
+---
+
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;">
+  <div>
+    <div class="field-label"><span>开始日期</span></div>
+    <input type="date" id="dd-start" />
+    <div class="field-label" style="margin-top:10px;"><span>开始时间（可选）</span></div>
+    <input type="time" id="dd-st" />
+  </div>
+  <div>
+    <div class="field-label"><span>结束日期</span></div>
+    <input type="date" id="dd-end" />
+    <div class="field-label" style="margin-top:10px;"><span>结束时间（可选）</span></div>
+    <input type="time" id="dd-et" />
+  </div>
+</div>
+
+<div class="btn-row">
+  <button class="primary" id="dd-go">计算间隔</button>
+  <button id="dd-today">结束设为今天</button>
+</div>
+
+<div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:16px;align-items:flex-end;">
+  <div style="min-width:150px;">
+    <div class="field-label"><span>日期推算</span></div>
+    <input type="number" id="dd-days" value="100" />
+  </div>
+  <button id="dd-add">之后</button>
+  <button id="dd-sub">之前</button>
+  <label style="font-size:13px;display:flex;align-items:center;gap:6px;padding-bottom:8px;">
+    <input type="checkbox" id="dd-workday" /> 按工作日推算（跳过周末）
+  </label>
+</div>
+
+<p class="msg" id="dd-msg"></p>
+<div id="dd-out"></div>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+
+  function pad(n) { return String(n).padStart(2, '0'); }
+  function fmt(d) { return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; }
+
+  function toDate(dateStr, timeStr) {
+    if (!dateStr) return null;
+    return new Date(dateStr + (timeStr ? 'T' + timeStr : 'T00:00:00'));
+  }
+
+  function workdays(a, b) {
+    let count = 0;
+    const cur = new Date(a.getFullYear(), a.getMonth(), a.getDate());
+    const end = new Date(b.getFullYear(), b.getMonth(), b.getDate());
+    while (cur <= end) {
+      const w = cur.getDay();
+      if (w !== 0 && w !== 6) count++;
+      cur.setDate(cur.getDate() + 1);
+    }
+    return count;
+  }
+
+  function monthsBetween(a, b) {
+    let m = (b.getFullYear() - a.getFullYear()) * 12 + (b.getMonth() - a.getMonth());
+    if (b.getDate() < a.getDate()) m--;
+    return m;
+  }
+
+  function run() {
+    const a = toDate($('dd-start').value, $('dd-st').value);
+    const b = toDate($('dd-end').value, $('dd-et').value);
+    if (!a || !b) { $('dd-msg').textContent = '请选择起止日期'; $('dd-msg').className = 'msg err'; return; }
+
+    const ms = b - a;
+    const negative = ms < 0;
+    const absMs = Math.abs(ms);
+    const days = Math.floor(absMs / 86400000);
+    const hours = Math.floor((absMs % 86400000) / 3600000);
+    const minutes = Math.floor((absMs % 3600000) / 60000);
+
+    const start = negative ? b : a;
+    const end = negative ? a : b;
+    const totalMonths = monthsBetween(start, end);
+    const years = Math.floor(totalMonths / 12);
+    const months = totalMonths % 12;
+    const wd = workdays(start, end);
+    const weekend = days + 1 - wd;
+
+    $('dd-out').innerHTML =
+      '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:14px;">' +
+      [['相差天数', (negative ? '-' : '') + days], ['工作日', wd], ['周末', weekend],
+       ['折合月数', totalMonths]]
+        .map(([k, v]) => `<div style="background:var(--bg);border-radius:10px;padding:12px;">
+          <div style="font-size:12px;color:var(--text-sub);">${k}</div>
+          <div style="font-size:20px;font-weight:500;">${v}</div></div>`).join('') +
+      '</div>' +
+      `<table class="result-table" style="max-width:520px;">
+        <tr><th>起止</th><td>${fmt(start)} → ${fmt(end)}${negative ? '（已按正向计算）' : ''}</td></tr>
+        <tr><th>完整时长</th><td>${days} 天 ${hours} 小时 ${minutes} 分钟</td></tr>
+        <tr><th>折算</th><td>${years} 年 ${months} 个月（约）</td></tr>
+        <tr><th>总小时</th><td>${Math.floor(absMs / 3600000)} 小时</td></tr>
+        <tr><th>起止星期</th><td>${'日一二三四五六'[start.getDay()]} → ${'日一二三四五六'[end.getDay()]}</td></tr>
+      </table>`;
+    $('dd-msg').textContent = '计算完成';
+    $('dd-msg').className = 'msg ok';
+  }
+
+  function shift(sign) {
+    const base = toDate($('dd-start').value, '') || new Date();
+    let n = +$('dd-days').value || 0;
+    const d = new Date(base.getFullYear(), base.getMonth(), base.getDate());
+    if ($('dd-workday').checked) {
+      let left = Math.abs(n);
+      const step = sign * n >= 0 ? 1 : -1;
+      while (left > 0) {
+        d.setDate(d.getDate() + step);
+        const w = d.getDay();
+        if (w !== 0 && w !== 6) left--;
+      }
+    } else {
+      d.setDate(d.getDate() + sign * n);
+    }
+    $('dd-msg').textContent = `${fmt(base)} ${sign > 0 ? '之后' : '之前'} ${n} ${$('dd-workday').checked ? '个工作日' : '天'} = ${fmt(d)}（星期${'日一二三四五六'[d.getDay()]}）`;
+    $('dd-msg').className = 'msg ok';
+  }
+
+  $('dd-go').onclick = run;
+  $('dd-today').onclick = () => {
+    const d = new Date();
+    $('dd-end').value = fmt(d);
+    run();
+  };
+  $('dd-add').onclick = () => shift(1);
+  $('dd-sub').onclick = () => shift(-1);
+
+  const t = new Date();
+  $('dd-end').value = fmt(t);
+  const last = new Date(t.getTime() - 100 * 86400000);
+  $('dd-start').value = fmt(last);
+  run();
+</script>

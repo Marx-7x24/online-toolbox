@@ -1,0 +1,76 @@
+---
+// 时区换算：Intl API，本地计算
+---
+<div class="pane">
+  <div>
+    <div class="field-label"><span>日期时间（来源时区）</span></div>
+    <input type="datetime-local" id="tz-when">
+    <div class="field-label" style="margin-top:10px;"><span>来源时区</span></div>
+    <select id="tz-from"></select>
+  </div>
+  <div>
+    <div class="field-label"><span>目标时区结果</span></div>
+    <div id="tz-out" class="tz-out">选择后自动换算</div>
+  </div>
+</div>
+<div class="btn-row">
+  <button id="tz-now" class="primary">填入当前时间</button>
+  <span id="tz-msg" class="msg"></span>
+</div>
+
+<style>
+  .tz-out {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+    min-height: 200px;
+    background: var(--bg-soft);
+    font-size: 13px;
+    line-height: 1.9;
+  }
+  .tz-out .row { display: flex; justify-content: space-between; gap: 12px; border-bottom: 1px dashed var(--border); padding: 3px 0; }
+  .tz-out .row b { font-weight: 600; }
+</style>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  const ZONES = ['Asia/Shanghai', 'Asia/Hong_Kong', 'Asia/Tokyo', 'Asia/Singapore', 'Asia/Kolkata', 'Asia/Dubai', 'Europe/London', 'Europe/Paris', 'Europe/Moscow', 'America/New_York', 'America/Chicago', 'America/Los_Angeles', 'Australia/Sydney', 'Pacific/Auckland', 'UTC'];
+  ZONES.forEach((z) => {
+    const o = document.createElement('option'); o.value = z; o.textContent = z; $('tz-from').appendChild(o);
+  });
+  $('tz-from').value = 'Asia/Shanghai';
+  function offsetAt(tz, date) {
+    const p = new Intl.DateTimeFormat('en-US', { timeZone: tz, hour12: false, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' }).formatToParts(date).reduce((a, x) => { a[x.type] = x.value; return a; }, {});
+    const asUTC = Date.UTC(+p.year, +p.month - 1, +p.day, +p.hour, +p.minute, +p.second);
+    return asUTC - date.getTime();
+  }
+  function wallToEpoch(wall, tz) {
+    const prov = new Date(wall + ':00Z').getTime();
+    let off = offsetAt(tz, new Date(prov));
+    let epoch = prov - off;
+    off = offsetAt(tz, new Date(epoch)); // 二次修正（DST 边界）
+    epoch = prov - off;
+    return epoch;
+  }
+  function run() {
+    const wall = $('tz-when').value;
+    if (!wall) { $('tz-out').textContent = '请先选择日期时间'; return; }
+    const from = $('tz-from').value;
+    const epoch = wallToEpoch(wall, from);
+    const rows = ZONES.map((z) => {
+      const s = new Intl.DateTimeFormat('zh-CN', { timeZone: z, dateStyle: 'short', timeStyle: 'short' }).format(new Date(epoch));
+      const tag = z === from ? ' ← 来源' : '';
+      return `<div class="row"><b>${z}</b><span>${s}${tag}</span></div>`;
+    }).join('');
+    $('tz-out').innerHTML = rows;
+  }
+  $('tz-when').addEventListener('input', run);
+  $('tz-from').addEventListener('change', run);
+  $('tz-now').addEventListener('click', () => {
+    const n = new Date();
+    const pad = (x) => String(x).padStart(2, '0');
+    $('tz-when').value = `${n.getFullYear()}-${pad(n.getMonth() + 1)}-${pad(n.getDate())}T${pad(n.getHours())}:${pad(n.getMinutes())}`;
+    run();
+  });
+  run();
+</script>

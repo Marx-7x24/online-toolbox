@@ -1,0 +1,29 @@
+---
+import Base from '../../layouts/Base.astro';
+import { aboutI18n } from '../../data/about.js';
+import { t } from '../../i18n/ui.ts';
+
+export function getStaticPaths() {
+  return ['zh', 'en'].map((lang) => ({ params: { lang }, props: { lang } }));
+}
+const { lang } = Astro.props;
+const sections = aboutI18n(lang);
+---
+
+<Base
+  title={`${t(lang, 'aboutTitle')} - ${t(lang, 'siteName')}`}
+  description={t(lang, 'aboutIntro')}
+  lang={lang}
+>
+  <div class="page-head">
+    <h1>{t(lang, 'aboutTitle')}</h1>
+    <p>{t(lang, 'aboutIntro')}</p>
+  </div>
+
+  {sections.map((s) => (
+    <section class="about-section">
+      <h2>{s.h}</h2>
+      <p>{s.p}</p>
+    </section>
+  ))}
+</Base>

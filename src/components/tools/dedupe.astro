@@ -1,0 +1,86 @@
+---
+---
+
+<div class="field-label"><span>输入（每行一条）</span><span id="dd-count"></span></div>
+<textarea id="dd-in" placeholder="每行输入一条内容" style="min-height:200px;" spellcheck="false"></textarea>
+
+<div style="display:flex;flex-wrap:wrap;gap:14px;margin-top:14px;font-size:14px;">
+  <label><input type="checkbox" id="dd-trim" checked /> 去除首尾空格</label>
+  <label><input type="checkbox" id="dd-empty" checked /> 去除空行</label>
+  <label><input type="checkbox" id="dd-unique" checked /> 去重</label>
+  <label><input type="checkbox" id="dd-sort" /> 排序</label>
+  <label><input type="checkbox" id="dd-desc" /> 倒序</label>
+  <label><input type="checkbox" id="dd-num" /> 按数值排序</label>
+</div>
+
+<div class="btn-row">
+  <button class="primary" id="dd-go">处理</button>
+  <button id="dd-stat">统计重复</button>
+  <button id="dd-copy">复制结果</button>
+  <button id="dd-sample">填入示例</button>
+  <button id="dd-clear">清空</button>
+</div>
+
+<div class="field-label"><span>结果</span><span id="dd-outcount"></span></div>
+<textarea id="dd-out" readonly style="min-height:200px;" spellcheck="false"></textarea>
+
+<p class="msg" id="dd-msg"></p>
+<div id="dd-stat-box"></div>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+
+  function process() {
+    let lines = $('dd-in').value.split(/\r\n|\r|\n/);
+    const before = lines.length;
+    if ($('dd-trim').checked) lines = lines.map((l) => l.trim());
+    if ($('dd-empty').checked) lines = lines.filter((l) => l !== '');
+    if ($('dd-unique').checked) lines = [...new Set(lines)];
+    if ($('dd-sort').checked) {
+      if ($('dd-num').checked) lines.sort((a, b) => parseFloat(a) - parseFloat(b));
+      else lines.sort((a, b) => a.localeCompare(b, 'zh-CN'));
+      if ($('dd-desc').checked) lines.reverse();
+    }
+    $('dd-out').value = lines.join('\n');
+    $('dd-count').textContent = before + ' 行输入';
+    $('dd-outcount').textContent = lines.length + ' 行输出';
+    $('dd-msg').textContent = `已处理，减少 ${before - lines.length} 行`;
+    $('dd-msg').className = 'msg ok';
+  }
+
+  $('dd-go').onclick = process;
+  ['dd-trim', 'dd-empty', 'dd-unique', 'dd-sort', 'dd-desc', 'dd-num'].forEach((id) => {
+    $(id).onchange = process;
+  });
+
+  $('dd-stat').onclick = () => {
+    const lines = $('dd-in').value.split(/\r\n|\r|\n/).map((l) => l.trim()).filter(Boolean);
+    if (!lines.length) { $('dd-msg').textContent = '请先输入内容'; $('dd-msg').className = 'msg err'; return; }
+    const map = new Map();
+    lines.forEach((l) => map.set(l, (map.get(l) || 0) + 1));
+    const dup = [...map.entries()].filter(([, n]) => n > 1).sort((a, b) => b[1] - a[1]);
+    const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+    $('dd-stat-box').innerHTML =
+      '<div class="field-label" style="margin-top:14px;"><span>出现次数（仅显示重复项）</span><span>共 ' + map.size + ' 个不重复值</span></div>' +
+      (dup.length
+        ? '<table class="result-table" style="max-width:560px;">' +
+          dup.slice(0, 50).map(([k, n]) => `<tr><th>${n} 次</th><td style="word-break:break-all;">${esc(k)}</td></tr>`).join('') +
+          '</table>' + (dup.length > 50 ? '<p style="font-size:12px;color:var(--text-hint);">仅显示前 50 项</p>' : '')
+        : '<p style="font-size:13px;color:var(--text-sub);">没有重复内容</p>');
+  };
+
+  $('dd-copy').onclick = async () => {
+    if (!$('dd-out').value) return;
+    await navigator.clipboard.writeText($('dd-out').value);
+    $('dd-msg').textContent = '已复制';
+    $('dd-msg').className = 'msg ok';
+  };
+  $('dd-sample').onclick = () => {
+    $('dd-in').value = '苹果\n香蕉\n苹果\n  \n橙子\n香蕉\n 葡萄 \n橙子\n100\n20\n3';
+    process();
+  };
+  $('dd-clear').onclick = () => {
+    $('dd-in').value = ''; $('dd-out').value = ''; $('dd-stat-box').innerHTML = '';
+    $('dd-msg').textContent = ''; $('dd-count').textContent = ''; $('dd-outcount').textContent = '';
+  };
+</script>

@@ -1,0 +1,160 @@
+---
+---
+
+<div class="tip">从白纸或合同照片中提取手写签名，去掉背景输出透明 PNG，可直接贴到电子文档上。</div>
+
+<div class="btn-row" style="align-items:center;">
+  <input type="file" id="sg-file" accept="image/*" style="width:auto;font-family:inherit;padding:6px;border:none;" />
+</div>
+
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-top:12px;">
+  <div>
+    <div class="field-label"><span>墨迹阈值</span><span id="sg-th-val">200</span></div>
+    <input type="range" id="sg-th" min="80" max="245" value="200" style="padding:0;" />
+    <div style="font-size:12px;color:var(--text-hint);">调低＝只留更深的笔画</div>
+  </div>
+  <div>
+    <div class="field-label"><span>对比强度</span><span id="sg-gain-val">1.5</span></div>
+    <input type="range" id="sg-gain" min="5" max="40" value="15" style="padding:0;" />
+    <div style="font-size:12px;color:var(--text-hint);">调高＝背景更干净</div>
+  </div>
+  <div>
+    <div class="field-label"><span>签名颜色</span></div>
+    <input type="color" id="sg-color" value="#000080" style="width:60px;height:34px;padding:2px;" />
+    <label style="display:block;font-size:12px;margin-top:6px;"><input type="checkbox" id="sg-recolor" checked /> 统一为纯色</label>
+  </div>
+  <div>
+    <div class="field-label"><span>自动裁边</span></div>
+    <select id="sg-trim">
+      <option value="1">裁掉四周空白</option>
+      <option value="0">保持原尺寸</option>
+    </select>
+  </div>
+</div>
+
+<div class="btn-row">
+  <button class="primary" id="sg-go">提取</button>
+  <button id="sg-dl">下载透明 PNG</button>
+  <button id="sg-clear">清空</button>
+</div>
+
+<p class="msg" id="sg-msg"></p>
+
+<div class="pane" id="sg-preview" style="display:none;margin-top:14px;">
+  <div>
+    <div class="field-label"><span>原图</span></div>
+    <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;display:flex;justify-content:center;overflow:auto;max-height:300px;">
+      <img id="sg-src" alt="原图" style="max-width:100%;height:auto;" />
+    </div>
+  </div>
+  <div>
+    <div class="field-label"><span>提取结果（棋盘格＝透明）</span></div>
+    <div style="border:1px solid var(--border);border-radius:8px;padding:12px;display:flex;justify-content:center;overflow:auto;max-height:300px;background-color:#fff;background-image:linear-gradient(45deg,#e5e5e5 25%,transparent 25%),linear-gradient(-45deg,#e5e5e5 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#e5e5e5 75%),linear-gradient(-45deg,transparent 75%,#e5e5e5 75%);background-size:16px 16px;background-position:0 0,0 8px,8px -8px,-8px 0;">
+      <img id="sg-out" alt="签名" style="max-width:100%;height:auto;" />
+    </div>
+  </div>
+</div>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  let outUrl = '';
+
+  $('sg-th').oninput = () => { $('sg-th-val').textContent = $('sg-th').value; };
+  $('sg-gain').oninput = () => { $('sg-gain-val').textContent = ($('sg-gain').value / 10).toFixed(1); };
+
+  function hexToRgb(hex) {
+    const h = hex.slice(1);
+    return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
+  }
+
+  function process(img) {
+    const th = +$('sg-th').value;
+    const gain = +$('sg-gain').value / 10;
+    const recolor = $('sg-recolor').checked;
+    const [cr, cg, cb] = hexToRgb($('sg-color').value);
+
+    const c1 = document.createElement('canvas');
+    c1.width = img.width; c1.height = img.height;
+    const ctx = c1.getContext('2d');
+    ctx.drawImage(img, 0, 0);
+    const data = ctx.getImageData(0, 0, c1.width, c1.height);
+    const px = data.data;
+
+    for (let i = 0; i < px.length; i += 4) {
+      const lum = 0.299 * px[i] + 0.587 * px[i + 1] + 0.114 * px[i + 2];
+      // 越暗越是墨迹
+      let a = ((th - lum) / th) * gain;
+      a = Math.min(1, Math.max(0, a));
+      px[i + 3] = Math.round(a * 255);
+      if (recolor && px[i + 3] > 10) {
+        px[i] = cr; px[i + 1] = cg; px[i + 2] = cb;
+      }
+    }
+    ctx.putImageData(data, 0, 0);
+
+    if ($('sg-trim').value !== '1') return c1;
+
+    // 扫描有效像素边界
+    let minX = c1.width, minY = c1.height, maxX = -1, maxY = -1;
+    for (let y = 0; y < c1.height; y++) {
+      for (let x = 0; x < c1.width; x++) {
+        if (px[(y * c1.width + x) * 4 + 3] > 12) {
+          if (x < minX) minX = x;
+          if (x > maxX) maxX = x;
+          if (y < minY) minY = y;
+          if (y > maxY) maxY = y;
+        }
+      }
+    }
+    if (maxX < 0) return c1;
+
+    const pad = 6;
+    minX = Math.max(0, minX - pad); minY = Math.max(0, minY - pad);
+    maxX = Math.min(c1.width - 1, maxX + pad); maxY = Math.min(c1.height - 1, maxY + pad);
+
+    const c2 = document.createElement('canvas');
+    c2.width = maxX - minX + 1;
+    c2.height = maxY - minY + 1;
+    c2.getContext('2d').drawImage(c1, minX, minY, c2.width, c2.height, 0, 0, c2.width, c2.height);
+    return c2;
+  }
+
+  $('sg-go').onclick = () => {
+    const file = $('sg-file').files[0];
+    if (!file) { $('sg-msg').textContent = '请先选择图片'; $('sg-msg').className = 'msg err'; return; }
+    $('sg-msg').textContent = '处理中…';
+    $('sg-msg').className = 'msg';
+    const img = new Image();
+    img.onload = () => {
+      const canvas = process(img);
+      canvas.toBlob((blob) => {
+        if (outUrl) URL.revokeObjectURL(outUrl);
+        outUrl = URL.createObjectURL(blob);
+        $('sg-src').src = URL.createObjectURL(file);
+        $('sg-out').src = outUrl;
+        $('sg-preview').style.display = 'grid';
+        $('sg-msg').textContent = `提取完成，输出 ${canvas.width} × ${canvas.height} 透明 PNG`;
+        $('sg-msg').className = 'msg ok';
+      }, 'image/png');
+    };
+    img.onerror = () => { $('sg-msg').textContent = '无法读取该图片'; $('sg-msg').className = 'msg err'; };
+    img.src = URL.createObjectURL(file);
+  };
+
+  $('sg-dl').onclick = () => {
+    if (!outUrl) { $('sg-msg').textContent = '请先提取'; $('sg-msg').className = 'msg err'; return; }
+    const a = document.createElement('a');
+    a.href = outUrl;
+    a.download = 'signature.png';
+    a.click();
+  };
+
+  $('sg-clear').onclick = () => {
+    if (outUrl) URL.revokeObjectURL(outUrl);
+    outUrl = '';
+    $('sg-file').value = '';
+    $('sg-preview').style.display = 'none';
+    $('sg-src').src = ''; $('sg-out').src = '';
+    $('sg-msg').textContent = '';
+  };
+</script>

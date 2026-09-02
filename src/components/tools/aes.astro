@@ -1,0 +1,74 @@
+---
+// AES 加解密：Web Crypto + PBKDF2，本地完成
+---
+<div class="pane">
+  <div>
+    <div class="field-label"><span>明文 / 密文</span></div>
+    <textarea id="aes-text" placeholder="输入要加密的文本，或粘贴 Base64 密文进行解密"></textarea>
+    <div class="field-label" style="margin-top:10px;"><span>密码</span></div>
+    <input type="password" id="aes-pass" placeholder="设置加密密码">
+  </div>
+  <div>
+    <div class="field-label"><span>结果（Base64）</span></div>
+    <textarea id="aes-out" readonly placeholder="加密或解密结果"></textarea>
+  </div>
+</div>
+<div class="btn-row">
+  <button id="aes-enc" class="primary">加密</button>
+  <button id="aes-dec">解密</button>
+  <button id="aes-copy">复制结果</button>
+  <span id="aes-msg" class="msg"></span>
+</div>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  const enc = new TextEncoder(), dec = new TextDecoder();
+  const ITER = 100000;
+  const toB64 = (buf) => btoa(String.fromCharCode(...new Uint8Array(buf)));
+  const fromB64 = (b64) => {
+    const s = atob(b64), a = new Uint8Array(s.length);
+    for (let i = 0; i < s.length; i++) a[i] = s.charCodeAt(i);
+    return a;
+  };
+  async function deriveKey(password, salt) {
+    const keyMat = await crypto.subtle.importKey('raw', enc.encode(password), 'PBKDF2', false, ['deriveKey']);
+    return crypto.subtle.deriveKey(
+      { name: 'PBKDF2', salt, iterations: ITER, hash: 'SHA-256' },
+      keyMat,
+      { name: 'AES-GCM', length: 256 },
+      false,
+      ['encrypt', 'decrypt']
+    );
+  }
+  $('aes-enc').addEventListener('click', async () => {
+    const text = $('aes-text').value, pass = $('aes-pass').value;
+    if (!text || !pass) { $('aes-msg').textContent = '请填写文本和密码'; $('aes-msg').className = 'msg err'; return; }
+    try {
+      const salt = crypto.getRandomValues(new Uint8Array(16));
+      const iv = crypto.getRandomValues(new Uint8Array(12));
+      const key = await deriveKey(pass, salt);
+      const ct = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, enc.encode(text));
+      const packed = new Uint8Array(16 + 12 + ct.byteLength);
+      packed.set(salt, 0); packed.set(iv, 16); packed.set(new Uint8Array(ct), 28);
+      $('aes-out').value = toB64(packed.buffer);
+      $('aes-msg').textContent = '加密成功'; $('aes-msg').className = 'msg ok';
+    } catch (e) { $('aes-msg').textContent = '加密失败：' + e.message; $('aes-msg').className = 'msg err'; }
+  });
+  $('aes-dec').addEventListener('click', async () => {
+    const b64 = $('aes-text').value, pass = $('aes-pass').value;
+    if (!b64 || !pass) { $('aes-msg').textContent = '请粘贴密文并填密码'; $('aes-msg').className = 'msg err'; return; }
+    try {
+      const packed = fromB64(b64.trim());
+      const salt = packed.slice(0, 16), iv = packed.slice(16, 28), ct = packed.slice(28);
+      const key = await deriveKey(pass, salt);
+      const pt = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, ct);
+      $('aes-out').value = dec.decode(pt);
+      $('aes-msg').textContent = '解密成功'; $('aes-msg').className = 'msg ok';
+    } catch (e) { $('aes-msg').textContent = '解密失败：密码错误或数据损坏'; $('aes-msg').className = 'msg err'; }
+  });
+  $('aes-copy').addEventListener('click', async () => {
+    if (!$('aes-out').value) return;
+    try { await navigator.clipboard.writeText($('aes-out').value); $('aes-msg').textContent = '已复制'; $('aes-msg').className = 'msg ok'; }
+    catch { $('aes-msg').textContent = '复制失败'; $('aes-msg').className = 'msg err'; }
+  });
+</script>

@@ -1,0 +1,153 @@
+---
+---
+
+<div class="tip">适合从扫描件、合同照片里抠出红色印章，输出透明底 PNG。图片不上传服务器。</div>
+
+<div class="btn-row" style="align-items:center;">
+  <input type="file" id="se-file" accept="image/*" style="width:auto;font-family:inherit;padding:6px;border:none;" />
+</div>
+
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-top:12px;">
+  <div>
+    <div class="field-label"><span>红色敏感度</span><span id="se-th-val">40</span></div>
+    <input type="range" id="se-th" min="5" max="120" value="40" style="padding:0;" />
+    <div style="font-size:12px;color:var(--text-hint);">调高＝只保留更纯的红</div>
+  </div>
+  <div>
+    <div class="field-label"><span>边缘强度</span><span id="se-edge-val">1.4</span></div>
+    <input type="range" id="se-edge" min="5" max="40" value="14" style="padding:0;" />
+    <div style="font-size:12px;color:var(--text-hint);">调高＝印章更实，杂色更少</div>
+  </div>
+  <div>
+    <div class="field-label"><span>输出模式</span></div>
+    <select id="se-mode">
+      <option value="red">只保留红色印章</option>
+      <option value="ink">保留全部深色墨迹</option>
+    </select>
+  </div>
+  <div>
+    <div class="field-label"><span>印章颜色</span></div>
+    <input type="color" id="se-color" value="#d92c2c" style="width:60px;height:34px;padding:2px;" />
+    <label style="display:block;font-size:12px;margin-top:6px;"><input type="checkbox" id="se-recolor" checked /> 统一为纯色</label>
+  </div>
+</div>
+
+<div class="btn-row">
+  <button class="primary" id="se-go">提取</button>
+  <button id="se-dl">下载透明 PNG</button>
+  <button id="se-clear">清空</button>
+</div>
+
+<p class="msg" id="se-msg"></p>
+
+<div class="pane" id="se-preview" style="display:none;margin-top:14px;">
+  <div>
+    <div class="field-label"><span>原图</span></div>
+    <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;display:flex;justify-content:center;overflow:auto;max-height:340px;">
+      <img id="se-src" alt="原图" style="max-width:100%;height:auto;" />
+    </div>
+  </div>
+  <div>
+    <div class="field-label"><span>提取结果（棋盘格＝透明）</span></div>
+    <div style="border:1px solid var(--border);border-radius:8px;padding:12px;display:flex;justify-content:center;overflow:auto;max-height:340px;background-color:#fff;background-image:linear-gradient(45deg,#e5e5e5 25%,transparent 25%),linear-gradient(-45deg,#e5e5e5 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#e5e5e5 75%),linear-gradient(-45deg,transparent 75%,#e5e5e5 75%);background-size:16px 16px;background-position:0 0,0 8px,8px -8px,-8px 0;">
+      <img id="se-out" alt="提取结果" style="max-width:100%;height:auto;" />
+    </div>
+  </div>
+</div>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  let outUrl = '';
+
+  $('se-th').oninput = () => { $('se-th-val').textContent = $('se-th').value; };
+  $('se-edge').oninput = () => { $('se-edge-val').textContent = ($('se-edge').value / 10).toFixed(1); };
+
+  function hexToRgb(hex) {
+    const h = hex.slice(1);
+    return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
+  }
+
+  function process(img) {
+    const canvas = document.createElement('canvas');
+    canvas.width = img.width;
+    canvas.height = img.height;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(img, 0, 0);
+
+    const data = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const px = data.data;
+    const th = +$('se-th').value;
+    const gain = +$('se-edge').value / 10;
+    const mode = $('se-mode').value;
+    const recolor = $('se-recolor').checked;
+    const [cr, cg, cb] = hexToRgb($('se-color').value);
+
+    for (let i = 0; i < px.length; i += 4) {
+      const r = px[i], g = px[i + 1], b = px[i + 2];
+      const maxGB = Math.max(g, b);
+      const redness = r - maxGB;
+      const lightness = (r + g + b) / 3;
+
+      let alpha;
+      if (mode === 'red') {
+        // 红色越纯、越暗，alpha 越高
+        const score = Math.max(0, redness - th) / 255;
+        alpha = Math.min(1, score * gain * (1 - lightness / 510));
+      } else {
+        // 去白底：越暗越不透明
+        const ink = Math.max(0, 230 - lightness) / 200;
+        alpha = Math.min(1, ink * gain);
+        if (redness > th) alpha = Math.max(alpha, 0.85);
+      }
+      px[i + 3] = Math.round(Math.min(1, Math.max(0, alpha)) * 255);
+
+      if (recolor && px[i + 3] > 20) {
+        const a = px[i + 3] / 255;
+        px[i] = Math.round(r * (1 - a) + cr * a);
+        px[i + 1] = Math.round(g * (1 - a) + cg * a);
+        px[i + 2] = Math.round(b * (1 - a) + cb * a);
+      }
+    }
+    ctx.putImageData(data, 0, 0);
+    return canvas;
+  }
+
+  $('se-go').onclick = () => {
+    const f = $('se-file').files[0];
+    if (!f) { $('se-msg').textContent = '请先选择图片'; $('se-msg').className = 'msg err'; return; }
+    $('se-msg').textContent = '处理中…';
+    $('se-msg').className = 'msg';
+    const img = new Image();
+    img.onload = () => {
+      const canvas = process(img);
+      canvas.toBlob((blob) => {
+        if (outUrl) URL.revokeObjectURL(outUrl);
+        outUrl = URL.createObjectURL(blob);
+        $('se-src').src = URL.createObjectURL(f);
+        $('se-out').src = outUrl;
+        $('se-preview').style.display = 'grid';
+        $('se-msg').textContent = `提取完成，输出 ${canvas.width} × ${canvas.height} 透明 PNG`;
+        $('se-msg').className = 'msg ok';
+      }, 'image/png');
+    };
+    img.onerror = () => { $('se-msg').textContent = '无法读取该图片'; $('se-msg').className = 'msg err'; };
+    img.src = URL.createObjectURL(f);
+  };
+
+  $('se-dl').onclick = () => {
+    if (!outUrl) { $('se-msg').textContent = '请先提取'; $('se-msg').className = 'msg err'; return; }
+    const a = document.createElement('a');
+    a.href = outUrl;
+    a.download = 'seal.png';
+    a.click();
+  };
+
+  $('se-clear').onclick = () => {
+    if (outUrl) URL.revokeObjectURL(outUrl);
+    outUrl = '';
+    $('se-file').value = '';
+    $('se-preview').style.display = 'none';
+    $('se-src').src = ''; $('se-out').src = '';
+    $('se-msg').textContent = '';
+  };
+</script>

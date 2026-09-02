@@ -1,0 +1,172 @@
+---
+---
+
+<div class="tip">输入 JSON 对象数组，转成 CSV 或 Markdown 表格。全部在本地处理。</div>
+
+<div class="field-label"><span>JSON 数据（对象数组）</span></div>
+<textarea id="jc-in" placeholder='[{"name":"张三","age":28,"city":"北京"},{"name":"李四","age":32,"city":"上海"}]' style="min-height:160px;" spellcheck="false"></textarea>
+
+<div style="display:flex;gap:14px;flex-wrap:wrap;margin-top:12px;font-size:14px;">
+  <label><input type="checkbox" id="jc-header" checked /> 包含表头</label>
+  <label><input type="checkbox" id="jc-bom" checked /> CSV 带 BOM（Excel 不乱码）</label>
+  <label style="display:flex;align-items:center;gap:6px;">分隔符
+    <select id="jc-sep" style="width:auto;padding:4px 8px;">
+      <option value="," selected>逗号</option>
+      <option value="\t">制表符</option>
+      <option value=";">分号</option>
+    </select>
+  </label>
+</div>
+
+<div class="btn-row">
+  <button class="primary" id="jc-csv">转 CSV</button>
+  <button id="jc-md">转 Markdown 表格</button>
+  <button id="jc-sql">转 SQL INSERT</button>
+  <button id="jc-sample">填入示例</button>
+  <button id="jc-copy">复制结果</button>
+  <button id="jc-dl">下载 CSV</button>
+  <button id="jc-clear">清空</button>
+</div>
+
+<p class="msg" id="jc-msg"></p>
+<div id="jc-preview"></div>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+
+  function parse() {
+    const raw = $('jc-in').value.trim();
+    if (!raw) throw new Error('请先输入 JSON 数据');
+    const data = JSON.parse(raw);
+    const arr = Array.isArray(data) ? data : [data];
+    if (!arr.length) throw new Error('数据为空');
+    if (typeof arr[0] !== 'object' || arr[0] === null) throw new Error('数组元素必须是对象');
+    const cols = [];
+    for (const row of arr) {
+      for (const k of Object.keys(row)) if (!cols.includes(k)) cols.push(k);
+    }
+    return { arr, cols };
+  }
+
+  function flat(v) {
+    if (v === null || v === undefined) return '';
+    if (typeof v === 'object') return JSON.stringify(v);
+    return String(v);
+  }
+
+  const sepChar = () => ($('jc-sep').value === '\\t' ? '\t' : $('jc-sep').value);
+
+  function csvCell(v) {
+    const s = flat(v);
+    return /[",\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+  }
+
+  let lastCsv = '';
+
+  function toCsv() {
+    const { arr, cols } = parse();
+    const sep = sepChar();
+    const lines = [];
+    if ($('jc-header').checked) lines.push(cols.map(csvCell).join(sep));
+    for (const row of arr) lines.push(cols.map((c) => csvCell(row[c])).join(sep));
+    lastCsv = lines.join('\r\n');
+    return lastCsv;
+  }
+
+  function toMd() {
+    const { arr, cols } = parse();
+    const esc = (v) => flat(v).replace(/\|/g, '\\|');
+    const head = '| ' + cols.map(esc).join(' | ') + ' |';
+    const div = '| ' + cols.map(() => '---').join(' | ') + ' |';
+    const body = arr.map((r) => '| ' + cols.map((c) => esc(r[c])).join(' | ') + ' |');
+    return [head, div, ...body].join('\n');
+  }
+
+  function toSql() {
+    const { arr, cols } = parse();
+    const table = 'my_table';
+    const rows = arr.map((r) =>
+      `INSERT INTO ${table} (${cols.join(', ')}) VALUES (${cols.map((c) => {
+        const v = r[c];
+        if (v === null || v === undefined) return 'NULL';
+        if (typeof v === 'number') return v;
+        return "'" + flat(v).replace(/'/g, "''") + "'";
+      }).join(', ')});`
+    );
+    return rows.join('\n');
+  }
+
+  function preview(text, title) {
+    const { arr, cols } = parse();
+    let table = '';
+    if (arr.length) {
+      table = '<div class="field-label" style="margin-top:16px;"><span>表格预览</span><span>' + arr.length + ' 行 × ' + cols.length + ' 列</span></div>' +
+        '<div style="max-height:300px;overflow:auto;"><table class="result-table"><tr>' +
+        cols.map((c) => `<th>${c.replace(/</g, '&lt;')}</th>`).join('') +
+        '</tr>' +
+        arr.slice(0, 100).map((r) => '<tr>' + cols.map((c) => `<td>${flat(r[c]).replace(/</g, '&lt;')}</td>`).join('') + '</tr>').join('') +
+        '</table></div>' +
+        (arr.length > 100 ? '<p style="font-size:12px;color:var(--text-hint);">仅预览前 100 行</p>' : '');
+    }
+    $('jc-preview').innerHTML =
+      `<div style="margin-top:12px;"><div class="field-label"><span>${title}</span><span>${text.length} 字符</span></div>
+       <textarea readonly style="min-height:150px;" spellcheck="false">${text.replace(/</g, '&lt;')}</textarea></div>` + table;
+  }
+
+  function run(fn, label) {
+    try {
+      const text = fn();
+      preview(text, label);
+      $('jc-msg').textContent = label + '完成';
+      $('jc-msg').className = 'msg ok';
+    } catch (e) {
+      $('jc-preview').innerHTML = '';
+      $('jc-msg').textContent = '转换失败：' + e.message;
+      $('jc-msg').className = 'msg err';
+    }
+  }
+
+  $('jc-csv').onclick = () => run(toCsv, 'CSV');
+  $('jc-md').onclick = () => run(toMd, 'Markdown 表格');
+  $('jc-sql').onclick = () => run(toSql, 'SQL 语句');
+
+  $('jc-copy').onclick = async () => {
+    const ta = $('jc-preview').querySelector('textarea');
+    if (!ta) return;
+    await navigator.clipboard.writeText(ta.value);
+    $('jc-msg').textContent = '已复制';
+    $('jc-msg').className = 'msg ok';
+  };
+
+  $('jc-dl').onclick = () => {
+    try {
+      const csv = toCsv();
+      const blob = new Blob([$('jc-bom').checked ? '\uFEFF' + csv : csv], { type: 'text/csv;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'data.csv';
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 3000);
+      $('jc-msg').textContent = '已下载 CSV';
+      $('jc-msg').className = 'msg ok';
+    } catch (e) {
+      $('jc-msg').textContent = '下载失败：' + e.message;
+      $('jc-msg').className = 'msg err';
+    }
+  };
+
+  $('jc-sample').onclick = () => {
+    $('jc-in').value = JSON.stringify([
+      { name: '张三', age: 28, city: '北京', dept: '技术部' },
+      { name: '李四', age: 32, city: '上海', dept: '市场部' },
+      { name: '王五', age: 25, city: '广州', dept: '技术部' },
+      { name: '赵六', age: 41, city: '深圳', dept: '财务部' },
+    ], null, 2);
+    run(toCsv, 'CSV');
+  };
+
+  $('jc-clear').onclick = () => {
+    $('jc-in').value = ''; $('jc-preview').innerHTML = ''; $('jc-msg').textContent = '';
+  };
+</script>

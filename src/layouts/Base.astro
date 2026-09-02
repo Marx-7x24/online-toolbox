@@ -1,0 +1,275 @@
+---
+import '../styles/global.css';
+import { t } from '../i18n/ui.ts';
+import { tools, categories, categoryI18n } from '../data/tools.js';
+import { getToolIcon } from '../data/toolIcons.js';
+
+interface Props {
+  title: string;
+  description: string;
+  keywords?: string;
+  lang?: string;
+}
+const { title, description, keywords, lang = 'zh' } = Astro.props;
+// 客户端可用的工具索引：侧边栏「最近使用」与 /recent/ 独立页都靠它在浏览器端渲染。
+// 带上 desc 与懒人图标文件名，保证独立页卡片外观与首页完全一致。
+const toolMap = Object.fromEntries(
+  tools.map((tool) => [
+    tool.slug,
+    {
+      name: tool.name,
+      name_en: tool.name_en || tool.name,
+      desc: tool.desc || '',
+      desc_en: tool.desc_en || tool.desc || '',
+      category: tool.category,
+      icon: getToolIcon(tool.slug),
+    },
+  ])
+);
+
+// 客户端渲染「最近使用」需要的文案（随语言切换，避免脚本里硬编码中英三元判断）
+const recentI18n = {
+  emptySidebar: t(lang, 'recentEmpty'),
+  emptyPage: t(lang, 'recentEmptyPage'),
+  emptyCta: t(lang, 'recentEmptyCta'),
+  clear: t(lang, 'recentClear'),
+  confirm: t(lang, 'recentConfirm'),
+  viewAll: t(lang, 'recentViewAll'),
+  countUnit: t(lang, 'toolsCount'),
+};
+const canonical = new URL(Astro.url.pathname, Astro.site).href;
+const otherLang = lang === 'zh' ? 'en' : 'zh';
+// 语言切换：把路径里的 /zh/ 换成 /en/（或反之）
+const switchUrl = Astro.url.pathname.replace(`/${lang}/`, `/${otherLang}/`) || `/${otherLang}/`;
+---
+
+<!doctype html>
+<html lang={lang}>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{title}</title>
+  <meta name="description" content={description} />
+  {keywords && <meta name="keywords" content={keywords} />}
+  <link rel="canonical" href={canonical} />
+  <meta property="og:title" content={title} />
+  <meta property="og:description" content={description} />
+  <meta property="og:type" content="website" />
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap">
+      <a href={`/${lang}/`} class="logo">{t(lang, 'siteName')}</a>
+      <nav class="site-nav">
+        <a href={`/${lang}/about/`}>{t(lang, 'about')}</a>
+      </nav>
+
+      <div class="header-search">
+        <svg class="header-search__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+        <input type="search" id="global-search" placeholder={t(lang, 'searchPlaceholder')} autocomplete="off" />
+      </div>
+
+      <div class="lang-switch">
+        <a href={switchUrl} class="lang-switch__btn" hreflang={otherLang}>
+          {otherLang === 'en' ? 'EN' : '中'}
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <slot />
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      {/* 全站内链：每个页面底部都带首页/最近使用/各分类/关于，利于收录与站内跳转 */}
+      <nav class="footer-links">
+        <a href={`/${lang}/`}>{t(lang, 'home')}</a>
+        <a href={`/${lang}/recent/`}>{t(lang, 'recentTools')}</a>
+        {categories.map((c) => (
+          <a href={`/${lang}/category/${c.slug}/`}>{categoryI18n(c, lang).name}</a>
+        ))}
+        <a href={`/${lang}/about/`}>{t(lang, 'about')}</a>
+      </nav>
+      <p>{t(lang, 'footerPrivacy')}</p>
+      <p>{t(lang, 'footerCopy')}</p>
+    </div>
+  </footer>
+
+  <script is:inline set:html={`window.__TOOLS__ = ${JSON.stringify(toolMap)};`}></script>
+  <script is:inline set:html={`window.__RECENT_I18N__ = ${JSON.stringify(recentI18n)};`}></script>
+
+  <script>
+    (function () {
+      const input = document.getElementById('global-search');
+      if (!input) return;
+      let debounce;
+
+      function applyFilter(q) {
+        const cards = document.querySelectorAll('.tool-card');
+        if (!cards.length) return;
+        cards.forEach(function (card) {
+          const text = (card.dataset.search || '').toLowerCase();
+          card.classList.toggle('tool-card--hidden', !!(q && !text.includes(q)));
+        });
+        document.querySelectorAll('.home-section').forEach(function (sec) {
+          const visible = sec.querySelectorAll('.tool-card:not(.tool-card--hidden)').length;
+          sec.classList.toggle('home-section--hidden', !!(q && visible === 0));
+        });
+      }
+
+      input.addEventListener('input', function () {
+        clearTimeout(debounce);
+        debounce = setTimeout(function () {
+          applyFilter(input.value.trim().toLowerCase());
+        }, 150);
+      });
+
+      // 支持通过 URL ?q=关键词 直接进入搜索结果（配合首页 WebSite 的 SearchAction 结构化数据，
+      // 也让搜索结果可以分享；过滤仍在本地完成，不上传任何数据）
+      try {
+        const q = new URLSearchParams(location.search).get('q');
+        if (q) {
+          input.value = q;
+          applyFilter(q.trim().toLowerCase());
+        }
+      } catch (e) {}
+    })();
+  </script>
+
+  <script>
+    import { CATEGORY_ICONS } from '../data/categoryIcons.js';
+
+    (function () {
+      const RECENT_KEY = 'recentTools';
+      const MAX_RECENT = 12; // 本地最多保留 12 条（全部在 /recent/ 独立页展示）
+      const SIDEBAR_RECENT = 6; // 左侧边栏只显示前 6 条，其余去独立页看
+      const I18N = window.__RECENT_I18N__ || {};
+      const CLOCK_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>';
+      const EMPTY_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>';
+
+      function escapeHtml(s) {
+        return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+      }
+
+      function readRecent() {
+        let arr = [];
+        try { arr = JSON.parse(localStorage.getItem(RECENT_KEY) || '[]'); } catch (e) {}
+        return Array.isArray(arr) ? arr : [];
+      }
+
+      // 把 slug 列表解析成可直接渲染的工具对象（按当前语言取名/描述）
+      function resolveItems(slugs, lang) {
+        if (!window.__TOOLS__) return [];
+        return slugs.map(function (slug) {
+          const tool = window.__TOOLS__[slug];
+          if (!tool) return null;
+          return {
+            slug: slug,
+            name: lang === 'en' && tool.name_en ? tool.name_en : tool.name,
+            desc: lang === 'en' && tool.desc_en ? tool.desc_en : tool.desc,
+            category: tool.category,
+            icon: tool.icon || null,
+          };
+        }).filter(Boolean);
+      }
+
+      // 单张工具卡片：懒人真实图标优先，无映射则回退分类图标（与首页 ToolCard 外观一致）
+      function cardHtml(item, lang) {
+        let iconHtml;
+        if (item.icon) {
+          iconHtml = '<img src="/icons/lanren/' + escapeHtml(item.icon) + '" alt="' + escapeHtml(item.name) + '" loading="lazy" class="tool-card__img" />';
+        } else {
+          const c = CATEGORY_ICONS[item.category] || CATEGORY_ICONS.dev;
+          iconHtml = '<span class="category-icon" style="background:' + c.color + '15;color:' + c.color + '">' + c.svg + '</span>';
+        }
+        return '<a href="/' + lang + '/tools/' + escapeHtml(item.slug) + '/" class="tool-card">' +
+          '<div class="tool-card__icon">' + iconHtml + '</div>' +
+          '<div class="tool-card__body"><h3>' + escapeHtml(item.name) + '</h3><p>' + escapeHtml(item.desc) + '</p></div>' +
+          '</a>';
+      }
+
+      function recordVisit() {
+        const match = location.pathname.match(/^\/(zh|en)\/tools\/([^\/]+)\//);
+        if (!match) return;
+        const slug = match[2];
+        if (!window.__TOOLS__ || !window.__TOOLS__[slug]) return;
+        let recent = readRecent();
+        recent = recent.filter((s) => s !== slug);
+        recent.unshift(slug);
+        if (recent.length > MAX_RECENT) recent = recent.slice(0, MAX_RECENT);
+        try { localStorage.setItem(RECENT_KEY, JSON.stringify(recent)); } catch (e) {}
+      }
+
+      // 左侧边栏：显示前 6 条，超出时给「查看全部」进独立页
+      function renderRecent() {
+        const container = document.querySelector('.sidebar-recent');
+        if (!container) return;
+        const lang = container.dataset.lang || 'zh';
+        const items = resolveItems(readRecent(), lang);
+        if (!items.length) {
+          container.innerHTML = '<div class="sidebar-recent-empty">' + escapeHtml(I18N.emptySidebar) + '</div>';
+          return;
+        }
+        let html = items.slice(0, SIDEBAR_RECENT).map(function (item) {
+          return '<a href="/' + lang + '/tools/' + escapeHtml(item.slug) + '/" class="sidebar-item sidebar-item--recent">' +
+            '<span class="sidebar-icon sidebar-icon--recent">' + CLOCK_SVG + '</span>' +
+            '<span class="sidebar-label">' + escapeHtml(item.name) + '</span>' +
+            '</a>';
+        }).join('');
+        if (items.length > SIDEBAR_RECENT) {
+          html += '<a href="/' + lang + '/recent/" class="sidebar-item sidebar-item--recent sidebar-item--viewall">' +
+            '<span class="sidebar-label">' + escapeHtml(I18N.viewAll) + '</span></a>';
+        }
+        container.innerHTML = html;
+      }
+
+      // /recent/ 独立页：工具栏（条数 + 清空）+ 卡片网格，空则显示空状态
+      function renderRecentPage() {
+        const page = document.querySelector('.recent-page');
+        if (!page) return;
+        const lang = page.dataset.lang || 'zh';
+        const items = resolveItems(readRecent(), lang);
+        if (!items.length) {
+          page.innerHTML = '<div class="recent-empty">' +
+            '<div class="recent-empty__icon">' + EMPTY_SVG + '</div>' +
+            '<p>' + escapeHtml(I18N.emptyPage) + '</p>' +
+            '<a class="recent-empty__cta" href="/' + lang + '/">' + escapeHtml(I18N.emptyCta) + '</a>' +
+            '</div>';
+          return;
+        }
+        page.innerHTML =
+          '<div class="recent-toolbar">' +
+            '<span class="recent-toolbar__count">' + items.length + ' ' + escapeHtml(I18N.countUnit) + '</span>' +
+            '<button type="button" class="recent-toolbar__clear" data-clear-recent>' + escapeHtml(I18N.clear) + '</button>' +
+          '</div>' +
+          '<div class="tool-grid">' + items.map(function (item) { return cardHtml(item, lang); }).join('') + '</div>';
+
+        const btn = page.querySelector('[data-clear-recent]');
+        if (btn) {
+          btn.addEventListener('click', function () {
+            if (!window.confirm(I18N.confirm)) return;
+            try { localStorage.removeItem(RECENT_KEY); } catch (e) {}
+            renderRecentPage();
+            renderRecent();
+          });
+        }
+      }
+
+      function renderAll() {
+        renderRecent();
+        renderRecentPage();
+      }
+
+      recordVisit();
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', renderAll);
+      } else {
+        renderAll();
+      }
+    })();
+  </script>
+</body>
+</html>

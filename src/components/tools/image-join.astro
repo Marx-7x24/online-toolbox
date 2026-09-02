@@ -1,0 +1,138 @@
+---
+---
+
+<div class="tip">多张图片拼成一张长图，全部在本地浏览器完成。</div>
+
+<div class="btn-row" style="align-items:center;">
+  <input type="file" id="ij-file" accept="image/*" multiple style="width:auto;font-family:inherit;padding:6px;border:none;" />
+  <span style="font-size:13px;color:var(--text-hint);">按选择顺序拼接</span>
+</div>
+
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;margin-top:12px;">
+  <div>
+    <div class="field-label"><span>拼接方向</span></div>
+    <select id="ij-dir">
+      <option value="v">纵向（长图）</option>
+      <option value="h">横向</option>
+    </select>
+  </div>
+  <div>
+    <div class="field-label"><span>图片间距</span><span id="ij-gap-val">0 px</span></div>
+    <input type="range" id="ij-gap" min="0" max="60" value="0" style="padding:0;" />
+  </div>
+  <div>
+    <div class="field-label"><span>对齐方式</span></div>
+    <select id="ij-align">
+      <option value="start">顶/左对齐</option>
+      <option value="center" selected>居中</option>
+      <option value="end">底/右对齐</option>
+    </select>
+  </div>
+  <div>
+    <div class="field-label"><span>背景色</span></div>
+    <input type="color" id="ij-bg" value="#ffffff" style="width:60px;height:34px;padding:2px;" />
+  </div>
+  <div>
+    <div class="field-label"><span>统一宽度</span><span id="ij-w-val">按原图</span></div>
+    <input type="range" id="ij-w" min="0" max="100" value="0" style="padding:0;" />
+  </div>
+</div>
+
+<div class="btn-row">
+  <button class="primary" id="ij-go">开始拼接</button>
+  <button id="ij-dl">下载长图</button>
+  <button id="ij-clear">清空</button>
+</div>
+
+<p class="msg" id="ij-msg"></p>
+<div id="ij-box"></div>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  let outUrl = '';
+
+  $('ij-gap').oninput = () => { $('ij-gap-val').textContent = $('ij-gap').value + ' px'; };
+  $('ij-w').oninput = () => {
+    const v = +$('ij-w').value;
+    $('ij-w-val').textContent = v === 0 ? '按原图' : [480, 640, 750, 900, 1080, 1440][Math.min(5, Math.floor((v - 1) / 17))] + ' px';
+  };
+
+  function targetWidth() {
+    const v = +$('ij-w').value;
+    return v === 0 ? 0 : [480, 640, 750, 900, 1080, 1440][Math.min(5, Math.floor((v - 1) / 17))];
+  }
+
+  function loadImage(src) {
+    return new Promise((res, rej) => {
+      const img = new Image();
+      img.onload = () => res(img);
+      img.onerror = rej;
+      img.src = src;
+    });
+  }
+
+  $('ij-go').onclick = async () => {
+    const files = Array.from($('ij-file').files || []);
+    if (files.length < 2) { $('ij-msg').textContent = '请至少选择 2 张图片'; $('ij-msg').className = 'msg err'; return; }
+    $('ij-msg').textContent = '拼接中…';
+    $('ij-msg').className = 'msg';
+
+    const tw = targetWidth();
+    const imgs = await Promise.all(files.map(async (f) => {
+      const img = await loadImage(URL.createObjectURL(f));
+      let w = img.width, h = img.height;
+      if (tw && w !== tw) { h = Math.round((h * tw) / w); w = tw; }
+      return { img, w, h };
+    }));
+
+    const gap = +$('ij-gap').value;
+    const vertical = $('ij-dir').value === 'v';
+    const main = imgs.reduce((a, b) => a + (vertical ? b.h : b.w), 0) + gap * (imgs.length - 1);
+    const cross = Math.max(...imgs.map((i) => (vertical ? i.w : i.h)));
+
+    const canvas = document.createElement('canvas');
+    canvas.width = vertical ? cross : main;
+    canvas.height = vertical ? main : cross;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = $('ij-bg').value;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    let pos = 0;
+    for (const { img, w, h } of imgs) {
+      const off = { start: 0, center: (cross - (vertical ? w : h)) / 2, end: cross - (vertical ? w : h) }[$('ij-align').value];
+      if (vertical) ctx.drawImage(img, off, pos, w, h);
+      else ctx.drawImage(img, pos, off, w, h);
+      pos += (vertical ? h : w) + gap;
+    }
+
+    canvas.toBlob((blob) => {
+      if (outUrl) URL.revokeObjectURL(outUrl);
+      outUrl = URL.createObjectURL(blob);
+      $('ij-box').innerHTML =
+        `<div style="margin-top:12px;">
+          <div class="field-label"><span>拼接结果</span><span>${canvas.width} × ${canvas.height}　${(blob.size / 1024).toFixed(0)} KB</span></div>
+          <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;overflow:auto;max-height:420px;display:flex;justify-content:center;">
+            <img src="${outUrl}" alt="长图" style="max-width:100%;height:auto;" />
+          </div>
+        </div>`;
+      $('ij-msg').textContent = `已拼接 ${imgs.length} 张图片`;
+      $('ij-msg').className = 'msg ok';
+    }, 'image/png');
+  };
+
+  $('ij-dl').onclick = () => {
+    if (!outUrl) { $('ij-msg').textContent = '请先拼接'; $('ij-msg').className = 'msg err'; return; }
+    const a = document.createElement('a');
+    a.href = outUrl;
+    a.download = 'joined.png';
+    a.click();
+  };
+
+  $('ij-clear').onclick = () => {
+    if (outUrl) URL.revokeObjectURL(outUrl);
+    outUrl = '';
+    $('ij-file').value = '';
+    $('ij-box').innerHTML = '';
+    $('ij-msg').textContent = '';
+  };
+</script>

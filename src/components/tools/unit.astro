@@ -1,0 +1,193 @@
+---
+---
+
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;max-width:760px;">
+  <div>
+    <div class="field-label"><span>换算类型</span></div>
+    <select id="un-cat"></select>
+  </div>
+  <div>
+    <div class="field-label"><span>数值</span></div>
+    <input type="text" id="un-val" value="1" spellcheck="false" />
+  </div>
+  <div>
+    <div class="field-label"><span>源单位</span></div>
+    <select id="un-from"></select>
+  </div>
+  <div>
+    <div class="field-label"><span>目标单位</span></div>
+    <select id="un-to"></select>
+  </div>
+</div>
+
+<div class="btn-row">
+  <button class="primary" id="un-go">换算</button>
+  <button id="un-swap">交换单位</button>
+  <button id="un-copy">复制结果</button>
+</div>
+
+<div id="un-result" style="margin-top:14px;"></div>
+<div id="un-table"></div>
+<p class="msg" id="un-msg"></p>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+
+  // 每类给出「换算到基准单位」的方法，温度用函数，其余用因子
+  const CATS = {
+    length: {
+      name: '长度', base: 'm',
+      units: {
+        'mm 毫米': 0.001, 'cm 厘米': 0.01, 'dm 分米': 0.1, 'm 米': 1,
+        'km 千米': 1000, 'in 英寸': 0.0254, 'ft 英尺': 0.3048, 'yd 码': 0.9144,
+        'mi 英里': 1609.344, 'nm 海里': 1852, '里': 500, '尺': 1 / 3, '寸': 1 / 30,
+      },
+    },
+    weight: {
+      name: '重量', base: 'kg',
+      units: {
+        'mg 毫克': 0.000001, 'g 克': 0.001, 'kg 千克': 1, 't 吨': 1000,
+        'lb 磅': 0.45359237, 'oz 盎司': 0.028349523125, 'st 英石': 6.35029318,
+        '斤': 0.5, '两': 0.05, '钱': 0.005, '克拉': 0.0002,
+      },
+    },
+    area: {
+      name: '面积', base: 'm²',
+      units: {
+        'mm² 平方毫米': 0.000001, 'cm² 平方厘米': 0.0001, 'm² 平方米': 1,
+        'km² 平方千米': 1000000, '公顷 ha': 10000, '亩': 666.6666667,
+        'ft² 平方英尺': 0.09290304, 'yd² 平方码': 0.83612736, 'acre 英亩': 4046.8564224, 'mi² 平方英里': 2589988.11,
+      },
+    },
+    volume: {
+      name: '体积容积', base: 'L',
+      units: {
+        'mL 毫升': 0.001, 'L 升': 1, 'm³ 立方米': 1000, 'cm³ 立方厘米': 0.001,
+        'ft³ 立方英尺': 28.316846592, 'in³ 立方英寸': 0.016387064,
+        'gal(US) 加仑': 3.785411784, 'gal(UK) 英制加仑': 4.54609, 'pt(US) 品脱': 0.473176473, 'fl oz(US) 液量盎司': 0.0295735295625,
+      },
+    },
+    temp: {
+      name: '温度', base: '°C',
+      units: {
+        '°C 摄氏度': { to: (v) => v, from: (v) => v },
+        '°F 华氏度': { to: (v) => (v - 32) * 5 / 9, from: (v) => v * 9 / 5 + 32 },
+        'K 开尔文': { to: (v) => v - 273.15, from: (v) => v + 273.15 },
+        '°R 兰氏度': { to: (v) => (v - 491.67) * 5 / 9, from: (v) => (v + 273.15) * 9 / 5 },
+      },
+    },
+    time: {
+      name: '时间', base: 's',
+      units: {
+        'ms 毫秒': 0.001, 's 秒': 1, 'min 分钟': 60, 'h 小时': 3600,
+        'd 天': 86400, '周': 604800, '月(30天)': 2592000, '年(365天)': 31536000,
+        'μs 微秒': 0.000001, 'ns 纳秒': 1e-9,
+      },
+    },
+    speed: {
+      name: '速度', base: 'm/s',
+      units: {
+        'm/s 米每秒': 1, 'km/h 千米每小时': 1 / 3.6, 'mph 英里每小时': 0.44704,
+        'ft/s 英尺每秒': 0.3048, 'kn 节': 0.5144444444, '马赫(海平面)': 340.3,
+      },
+    },
+    data: {
+      name: '数据存储', base: 'B',
+      units: {
+        'bit 比特': 0.125, 'B 字节': 1, 'KB(1024)': 1024, 'MB(1024)': 1048576,
+        'GB(1024)': 1073741824, 'TB(1024)': 1099511627776, 'PB(1024)': 1125899906842624,
+        'kB(1000)': 1000, 'MB(1000)': 1e6, 'GB(1000)': 1e9, 'TB(1000)': 1e12,
+      },
+    },
+    pressure: {
+      name: '压力', base: 'Pa',
+      units: {
+        'Pa 帕斯卡': 1, 'kPa 千帕': 1000, 'MPa 兆帕': 1000000,
+        'bar 巴': 100000, 'atm 标准大气压': 101325, 'mmHg 毫米汞柱': 133.322387415,
+        'psi 磅每平方英寸': 6894.757293168, 'kgf/cm² 工程大气压': 98066.5,
+      },
+    },
+  };
+
+  function fillSelect(sel, keys, selected) {
+    sel.innerHTML = keys.map((k) => `<option value="${k}"${k === selected ? ' selected' : ''}>${k}</option>`).join('');
+  }
+
+  $('un-cat').innerHTML = Object.entries(CATS).map(([k, v]) => `<option value="${k}">${v.name}</option>`).join('');
+
+  function unitsOf(cat) { return Object.keys(CATS[cat].units); }
+
+  function resetUnits(keepIndex) {
+    const keys = unitsOf($('un-cat').value);
+    const fi = keepIndex ? Math.min($('un-from').selectedIndex, keys.length - 1) : 0;
+    const ti = keepIndex ? Math.min($('un-to').selectedIndex, keys.length - 1) : Math.min(1, keys.length - 1);
+    fillSelect($('un-from'), keys, keys[fi]);
+    fillSelect($('un-to'), keys, keys[ti]);
+  }
+
+  function convert() {
+    const cat = CATS[$('un-cat').value];
+    const raw = $('un-val').value.trim().replace(/,/g, '');
+    const v = Number(raw);
+    if (raw === '' || Number.isNaN(v)) {
+      $('un-result').innerHTML = '';
+      $('un-msg').textContent = '请输入有效数值';
+      $('un-msg').className = 'msg err';
+      return;
+    }
+    const from = cat.units[$('un-from').value];
+    const to = cat.units[$('un-to').value];
+
+    const baseVal = typeof from === 'number' ? v * from : from.to(v);
+    const out = typeof to === 'number' ? baseVal / to : to.from(baseVal);
+
+    const show = (n) => {
+      if (n === 0) return '0';
+      const a = Math.abs(n);
+      if (a >= 1e12 || a < 1e-9) return n.toExponential(6);
+      return Number(n.toPrecision(10)).toString();
+    };
+
+    $('un-result').innerHTML = `
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:16px;">
+        <div style="font-size:12px;color:var(--text-sub);margin-bottom:6px;">换算结果</div>
+        <div style="font-size:20px;font-weight:500;word-break:break-all;" id="un-out-text">${show(out)} ${$('un-to').value}</div>
+      </div>`;
+
+    // 同类别其他单位对照
+    const rows = unitsOf($('un-cat').value).map((k) => {
+      const u = cat.units[k];
+      const val = typeof u === 'number' ? baseVal / u : u.from(baseVal);
+      return `<tr><th>${k}</th><td style="font-family:ui-monospace,monospace;">${show(val)}</td></tr>`;
+    }).join('');
+    $('un-table').innerHTML =
+      '<div class="field-label" style="margin-top:16px;"><span>全部单位对照</span></div>' +
+      '<div style="max-height:320px;overflow:auto;"><table class="result-table">' + rows + '</table></div>';
+
+    $('un-msg').textContent = `${show(v)} ${$('un-from').value} = ${show(out)} ${$('un-to').value}`;
+    $('un-msg').className = 'msg ok';
+  }
+
+  $('un-cat').onchange = () => { resetUnits(false); convert(); };
+  ['un-from', 'un-to'].forEach((id) => { $(id).onchange = convert; });
+  $('un-val').oninput = convert;
+  $('un-go').onclick = convert;
+
+  $('un-swap').onclick = () => {
+    const a = $('un-from').value;
+    $('un-from').value = $('un-to').value;
+    $('un-to').value = a;
+    convert();
+  };
+
+  $('un-copy').onclick = async () => {
+    const t = $('un-out-text');
+    if (!t) return;
+    await navigator.clipboard.writeText(t.textContent);
+    $('un-msg').textContent = '已复制结果';
+    $('un-msg').className = 'msg ok';
+  };
+
+  resetUnits(false);
+  convert();
+</script>

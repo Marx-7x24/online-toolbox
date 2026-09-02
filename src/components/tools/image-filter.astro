@@ -1,0 +1,87 @@
+---
+// 图片滤镜：Canvas 本地处理
+---
+<div>
+  <div class="field-label"><span>上传图片</span></div>
+  <input type="file" id="if-file" accept="image/*">
+  <div class="field-label" style="margin-top:12px;"><span>预设</span></div>
+  <div class="if-presets">
+    <button data-p="none" class="primary">原图</button>
+    <button data-p="gray">灰度</button>
+    <button data-p="invert">反相</button>
+    <button data-p="sepia">复古</button>
+    <button data-p="warm">暖色</button>
+  </div>
+  <div class="if-sliders">
+    <label>亮度 <input type="range" id="if-bri" min="0" max="200" value="100"><span id="if-bri-v">100%</span></label>
+    <label>对比度 <input type="range" id="if-con" min="0" max="200" value="100"><span id="if-con-v">100%</span></label>
+    <label>模糊 <input type="range" id="if-blur" min="0" max="20" value="0"><span id="if-blur-v">0px</span></label>
+  </div>
+  <div class="field-label" style="margin-top:12px;"><span>预览</span></div>
+  <div class="if-wrap"><canvas id="if-canvas"></canvas></div>
+</div>
+<div class="btn-row">
+  <button id="if-dl">下载 PNG</button>
+  <span id="if-msg" class="msg"></span>
+</div>
+
+<style>
+  .if-presets { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+  .if-sliders { display: grid; gap: 8px; margin-top: 6px; }
+  .if-sliders label { display: grid; grid-template-columns: 60px 1fr 50px; align-items: center; gap: 8px; font-size: 13px; color: var(--text-sub); }
+  .if-wrap { border: 1px solid var(--border); border-radius: 8px; padding: 10px; background: #fff; display: flex; justify-content: center; }
+  .if-wrap canvas { max-width: 100%; }
+</style>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  let img = null;
+  const canvas = $('if-canvas');
+  const ctx = canvas.getContext('2d');
+  function render() {
+    if (!img) return;
+    canvas.width = img.naturalWidth; canvas.height = img.naturalHeight;
+    const bri = $('if-bri').value, con = $('if-con').value, blur = $('if-blur').value;
+    ctx.filter = `brightness(${bri}%) contrast(${con}%) blur(${blur}px)`;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(img, 0, 0);
+    ctx.filter = 'none';
+  }
+  function applyPreset(p) {
+    if (p === 'gray') { $('if-bri').value = 100; $('if-con').value = 100; $('if-blur').value = 0; ctx.filter = 'grayscale(1)'; }
+    else if (p === 'invert') { ctx.filter = 'invert(1)'; }
+    else if (p === 'sepia') { ctx.filter = 'sepia(0.8)'; }
+    else if (p === 'warm') { ctx.filter = 'sepia(0.4) saturate(1.4)'; }
+    else { ctx.filter = 'none'; }
+    if (!img) return;
+    canvas.width = img.naturalWidth; canvas.height = img.naturalHeight;
+    const bri = $('if-bri').value, con = $('if-con').value, blur = $('if-blur').value;
+    ctx.filter = `${ctx.filter === 'none' ? '' : ctx.filter + ' '}brightness(${bri}%) contrast(${con}%) blur(${blur}px)`;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(img, 0, 0);
+    ctx.filter = 'none';
+    syncLabels();
+  }
+  function syncLabels() {
+    $('if-bri-v').textContent = $('if-bri').value + '%';
+    $('if-con-v').textContent = $('if-con').value + '%';
+    $('if-blur-v').textContent = $('if-blur').value + 'px';
+  }
+  $('if-file').addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    img = new Image();
+    img.onload = () => { ctx.filter = 'none'; render(); syncLabels(); };
+    img.src = URL.createObjectURL(file);
+  });
+  document.querySelectorAll('.if-presets button').forEach((b) => b.addEventListener('click', () => applyPreset(b.dataset.p)));
+  ['if-bri', 'if-con', 'if-blur'].forEach((id) => $(id).addEventListener('input', () => { render(); syncLabels(); }));
+  $('if-dl').addEventListener('click', () => {
+    if (!img) { $('if-msg').textContent = '请先上传图片'; $('if-msg').className = 'msg err'; return; }
+    canvas.toBlob((blob) => {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url; a.download = 'filtered.png'; a.click();
+      $('if-msg').textContent = '已下载'; $('if-msg').className = 'msg ok';
+    });
+  });
+</script>

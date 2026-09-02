@@ -1,0 +1,56 @@
+---
+// 文本自动排版：整理空行、多余空格、段落间距等
+---
+
+<div class="pane">
+  <div>
+    <div class="field-label"><span>原始文本</span></div>
+    <textarea id="tf-in" placeholder="把需要整理的文本粘贴到这里…"></textarea>
+  </div>
+  <div>
+    <div class="field-label"><span>整理结果</span></div>
+    <textarea id="tf-out" readonly></textarea>
+  </div>
+</div>
+
+<div class="tf-opts">
+  <label><input type="checkbox" id="tf-trim" checked /> 去除行首尾空格</label>
+  <label><input type="checkbox" id="tf-collapse" checked /> 合并连续空格</label>
+  <label><input type="checkbox" id="tf-blank" checked /> 段间保留一个空行</label>
+  <label><input type="checkbox" id="tf-nodenum" checked /> 删除连续空行</label>
+</div>
+
+<div class="btn-row">
+  <button id="tf-run" class="primary">整理</button>
+  <button id="tf-copy">复制结果</button>
+  <span id="tf-msg" class="msg"></span>
+</div>
+
+<style>
+  .tf-opts { display: flex; flex-wrap: wrap; gap: 14px; margin: 12px 0; font-size: 13px; color: var(--text-sub); }
+  .tf-opts label { display: flex; align-items: center; gap: 6px; }
+</style>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  const input = $('tf-in'), output = $('tf-out'), msg = $('tf-msg');
+
+  $('tf-run').addEventListener('click', () => {
+    let lines = input.value.split('\n');
+    if ($('tf-trim').checked) lines = lines.map((l) => l.trim());
+    if ($('tf-collapse').checked) lines = lines.map((l) => l.replace(/[ \t]+/g, ' '));
+    if ($('tf-nodenum').checked) lines = lines.filter((l, i) => !(l === '' && lines[i - 1] === ''));
+    if ($('tf-blank').checked) {
+      // 把非空行之间的连续空行压缩成一段一空行（简单处理：仅去重连续空行已足够）
+      lines = lines.filter((l, i) => !(l === '' && lines[i - 1] === ''));
+    }
+    output.value = lines.join('\n');
+    msg.textContent = '已整理'; msg.className = 'msg ok';
+  });
+
+  $('tf-copy').addEventListener('click', async () => {
+    if (!output.value) return;
+    try { await navigator.clipboard.writeText(output.value); msg.textContent = '已复制'; msg.className = 'msg ok'; }
+    catch { msg.textContent = '复制失败'; msg.className = 'msg err'; }
+  });
+</script>

@@ -1,0 +1,117 @@
+---
+---
+
+<div class="tip">生成中文占位文本，用于设计稿与排版测试，本地生成不联网。</div>
+
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;max-width:720px;">
+  <div>
+    <div class="field-label"><span>段落数</span><span id="lm-p-val">5</span></div>
+    <input type="range" id="lm-p" min="1" max="30" value="5" style="padding:0;" />
+  </div>
+  <div>
+    <div class="field-label"><span>每段句数</span><span id="lm-s-val">6</span></div>
+    <input type="range" id="lm-s" min="1" max="20" value="6" style="padding:0;" />
+  </div>
+  <div>
+    <div class="field-label"><span>文体</span></div>
+    <select id="lm-style">
+      <option value="classic">通用说明文</option>
+      <option value="tech">技术文档风</option>
+      <option value="news">新闻资讯风</option>
+      <option value="marketing">营销文案风</option>
+    </select>
+  </div>
+  <div>
+    <div class="field-label"><span>开头</span></div>
+    <select id="lm-start">
+      <option value="1">以「测试文本」开头</option>
+      <option value="0">直接开始</option>
+    </select>
+  </div>
+</div>
+
+<div class="btn-row">
+  <button class="primary" id="lm-go">生成</button>
+  <button id="lm-copy">复制</button>
+  <button id="lm-clear">清空</button>
+</div>
+
+<p class="msg" id="lm-msg"></p>
+<textarea id="lm-out" readonly style="min-height:280px;"></textarea>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+
+  const CORPUS = {
+    classic: {
+      subj: ['这种方式', '该方法', '系统设计', '整体架构', '业务流程', '数据结构', '实施方案', '应用场景', '指标体系', '服务组件'],
+      verb: ['能够', '可以', '需要', '应当', '通常会', '在实践中会', '本质上会'],
+      obj: ['有效提升整体的运行效率', '显著降低维护成本与复杂度', '为后续扩展留出充足空间', '帮助团队更快定位问题', '让配置管理变得更加直观', '在多数场景下保持稳定表现', '减少重复劳动带来的误差', '兼顾易用性与灵活性'],
+      tail: ['这一点在长期实践中尤为重要。', '相关细节可以参考配套文档。', '实施时建议结合自身情况调整。', '这也是业界较为通行的做法。', '具体参数需按实际环境校准。', '后续版本会持续完善这部分能力。'],
+    },
+    tech: {
+      subj: ['该模块', '接口层', '缓存策略', '异步任务', '数据管道', '鉴权流程', '日志采集', '配置中心', '调度器', '连接池'],
+      verb: ['通过', '依赖', '基于', '在初始化阶段会', '按需', '以增量方式'],
+      obj: ['完成参数的校验与归一化处理', '建立与下游服务的可靠连接', '将请求分发到对应的处理单元', '对异常情况进行捕获与重试', '把中间结果写入临时存储', '按优先级顺序消费队列任务', '在超时后自动触发降级逻辑', '记录关键路径的耗时指标'],
+      tail: ['默认超时时间为 3000 毫秒。', '建议在生产环境开启监控告警。', '配置项支持热更新，无需重启。', '详细字段说明见接口文档。', '注意线程安全与并发控制。', '日志级别可通过环境变量调整。'],
+    },
+    news: {
+      subj: ['相关部门', '本次会议', '研究报告', '项目负责人', '行业观察人士', '最新数据', '试点工作', '专项小组'],
+      verb: ['表示', '指出', '强调', '透露', '预计', '已确认'],
+      obj: ['各项工作正在有序推进', '下一步将扩大试点范围', '整体进展符合此前预期', '相关配套措施将陆续出台', '已初步形成可复制的经验', '社会反响总体积极正面', '技术攻关取得阶段性成果', '多方协作机制日益成熟'],
+      tail: ['具体情况以官方通报为准。', '记者将持续关注事件进展。', '业内人士对此评价较为积极。', '后续安排将适时对外公布。', '这项举措预计惠及更多群体。', '专家建议保持理性客观看待。'],
+    },
+    marketing: {
+      subj: ['我们的产品', '这套方案', '本次升级', '全新版本', '服务体系', '核心功能', '用户体验', '整体设计'],
+      verb: ['致力于', '专注于', '能够', '持续', '全面', '从根本上'],
+      obj: ['为每一位用户创造真正的价值', '让复杂的工作变得简单高效', '帮助你把想法快速落地', '带来焕然一新的使用感受', '在细节处体现专业与用心', '真正做到开箱即用', '让团队协作更加顺畅自然', '把时间还给真正重要的事'],
+      tail: ['立即体验，开启高效之旅。', '现在咨询可享专属优惠。', '已有超过万家企业选择我们。', '欢迎预约产品演示。', '更多精彩，等你来发现。', '让我们一起做得更好。'],
+    },
+  };
+
+  function pick(a) { return a[Math.floor(Math.random() * a.length)]; }
+
+  function generate() {
+    const c = CORPUS[$('lm-style').value];
+    const P = +$('lm-p').value, S = +$('lm-s').value;
+    const out = [];
+    for (let i = 0; i < P; i++) {
+      const sentences = [];
+      if (i === 0 && $('lm-start').value === '1') {
+        sentences.push('这是一段用于排版测试的中文占位文本，内容由工具随机生成，不代表任何真实含义。');
+      }
+      for (let j = 0; j < S; j++) {
+        sentences.push(`${pick(c.subj)}${pick(c.verb)}${pick(c.obj)}，${pick(c.tail)}`);
+      }
+      out.push(sentences.join(''));
+    }
+    return out.join('\n\n');
+  }
+
+  function run() {
+    const text = generate();
+    $('lm-out').value = text;
+    const chars = text.replace(/\s/g, '').length;
+    $('lm-msg').textContent = `已生成 ${$('lm-p').value} 段，共 ${chars} 字`;
+    $('lm-msg').className = 'msg ok';
+  }
+
+  ['lm-p', 'lm-s'].forEach((id) => {
+    $(id).oninput = () => {
+      $('lm-p-val').textContent = $('lm-p').value;
+      $('lm-s-val').textContent = $('lm-s').value;
+    };
+  });
+  $('lm-style').onchange = run;
+  $('lm-start').onchange = run;
+
+  $('lm-go').onclick = run;
+  $('lm-copy').onclick = async () => {
+    if (!$('lm-out').value) return;
+    await navigator.clipboard.writeText($('lm-out').value);
+    $('lm-msg').textContent = '已复制';
+    $('lm-msg').className = 'msg ok';
+  };
+  $('lm-clear').onclick = () => { $('lm-out').value = ''; $('lm-msg').textContent = ''; };
+  run();
+</script>

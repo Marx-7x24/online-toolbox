@@ -1,0 +1,65 @@
+---
+// 图片批量压缩：Canvas，本地处理
+---
+<div>
+  <div class="field-label"><span>上传多张图片</span></div>
+  <input type="file" id="bc2-file" accept="image/*" multiple>
+  <div class="field-label" style="margin-top:10px;"><span>质量 <span id="bc2-q-v">70%</span></span></div>
+  <input type="range" id="bc2-q" min="10" max="95" value="70">
+  <div class="field-label" style="margin-top:10px;"><span>结果</span></div>
+  <div id="bc2-out" class="bc2-out">尚未处理</div>
+</div>
+
+<style>
+  .bc2-out { border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; min-height: 120px; background: var(--bg-soft); font-size: 13px; line-height: 1.9; }
+  .bc2-out .row { display: flex; justify-content: space-between; gap: 10px; border-bottom: 1px dashed var(--border); padding: 3px 0; }
+  .bc2-out a { color: var(--link); }
+  .bc2-out .save { color: #2f9e44; }
+  .bc2-out .big { color: #e03131; }
+</style>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  let files = [];
+  function fmt(n) { return n > 1048576 ? (n / 1048576).toFixed(2) + 'MB' : (n / 1024).toFixed(1) + 'KB'; }
+  function loadImg(file) {
+    return new Promise((res, rej) => {
+      const url = URL.createObjectURL(file);
+      const img = new Image();
+      img.onload = () => res(img);
+      img.onerror = rej;
+      img.src = url;
+    });
+  }
+  $('bc2-q').addEventListener('input', () => { $('bc2-q-v').textContent = $('bc2-q').value + '%'; });
+  $('bc2-file').addEventListener('change', (e) => { files = [...e.target.files]; if (files.length) compress(); });
+  async function compress() {
+    const q = $('bc2-q').value / 100;
+    const out = $('bc2-out');
+    out.innerHTML = '处理中…';
+    out.innerHTML = '';
+    for (const f of files) {
+      try {
+        const img = await loadImg(f);
+        const canvas = document.createElement('canvas');
+        canvas.width = img.naturalWidth; canvas.height = img.naturalHeight;
+        canvas.getContext('2d').drawImage(img, 0, 0);
+        const mime = f.type === 'image/png' ? 'image/png' : 'image/jpeg';
+        const blob = await new Promise((res) => canvas.toBlob(res, mime, q));
+        const before = f.size, after = blob.size;
+        const ratio = ((1 - after / before) * 100).toFixed(0);
+        const durl = URL.createObjectURL(blob);
+        const div = document.createElement('div'); div.className = 'row';
+        const span = document.createElement('span');
+        span.innerHTML = `${f.name} <span class="${after < before ? 'save' : 'big'}">${fmt(before)}→${fmt(after)} (${ratio}%)</span> `;
+        const a = document.createElement('a'); a.href = durl; a.download = 'min-' + f.name; a.textContent = '下载';
+        div.appendChild(span); div.appendChild(a);
+        out.appendChild(div);
+      } catch (err) {
+        const div = document.createElement('div'); div.className = 'row';
+        div.innerHTML = `<span>${f.name} 处理失败</span>`;
+        out.appendChild(div);
+      }
+    }
+  }
+</script>

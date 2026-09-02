@@ -1,0 +1,50 @@
+---
+// BMI 计算器：身高体重算 BMI 并给健康区间建议
+---
+
+<div class="pane">
+  <div>
+    <div class="field-label"><span>身高 (cm)</span></div>
+    <input id="bmi-h" type="number" placeholder="170" min="50" max="250" />
+  </div>
+  <div>
+    <div class="field-label"><span>体重 (kg)</span></div>
+    <input id="bmi-w" type="number" placeholder="65" min="10" max="300" />
+  </div>
+</div>
+<div class="btn-row">
+  <button id="bmi-run" class="primary">计算</button>
+  <span id="bmi-msg" class="msg"></span>
+</div>
+<table class="result-table" id="bmi-out" style="margin-top:12px; display:none;">
+  <tbody>
+    <tr><th>BMI</th><td data-k="bmi"></td></tr>
+    <tr><th>评估</th><td data-k="cat"></td></tr>
+    <tr><th>健康体重区间</th><td data-k="range"></td></tr>
+  </tbody>
+</table>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  const h = $('bmi-h'), w = $('bmi-w'), msg = $('bmi-msg'), out = $('bmi-out');
+
+  function category(b) {
+    if (b < 18.5) return '偏瘦';
+    if (b < 24) return '正常';
+    if (b < 28) return '超重';
+    return '肥胖';
+  }
+
+  $('bmi-run').addEventListener('click', () => {
+    const hv = +h.value, wv = +w.value;
+    if (!hv || !wv) { msg.textContent = '请输入有效身高体重'; msg.className = 'msg err'; return; }
+    const bmi = wv / Math.pow(hv / 100, 2);
+    const lo = (18.5 * Math.pow(hv / 100, 2)).toFixed(1);
+    const hi = (24 * Math.pow(hv / 100, 2)).toFixed(1);
+    out.querySelector('[data-k="bmi"]').textContent = bmi.toFixed(1);
+    out.querySelector('[data-k="cat"]').textContent = category(bmi);
+    out.querySelector('[data-k="range"]').textContent = `${lo} ~ ${hi} kg`;
+    out.style.display = '';
+    msg.textContent = '已计算'; msg.className = 'msg ok';
+  });
+</script>

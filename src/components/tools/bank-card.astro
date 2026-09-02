@@ -1,0 +1,144 @@
+---
+---
+
+<div class="tip">用 Luhn 算法校验卡号是否合法，并识别卡组织。不做任何联网查询。</div>
+
+<div style="max-width:460px;">
+  <div class="field-label"><span>银行卡号</span></div>
+  <input type="text" id="bc-in" placeholder="输入卡号，可含空格" maxlength="30" spellcheck="false" />
+</div>
+
+<div class="btn-row">
+  <button class="primary" id="bc-go">校验</button>
+  <button id="bc-batch">批量校验</button>
+  <button id="bc-gen">生成测试卡号</button>
+  <button id="bc-clear">清空</button>
+</div>
+
+<div id="bc-batch-box" style="display:none;max-width:560px;">
+  <div class="field-label"><span>批量卡号（每行一个）</span></div>
+  <textarea id="bc-list" placeholder="每行一个卡号" style="min-height:120px;" spellcheck="false"></textarea>
+</div>
+
+<p class="msg" id="bc-msg"></p>
+<div id="bc-out"></div>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+
+  function luhn(num) {
+    let sum = 0;
+    let alt = false;
+    for (let i = num.length - 1; i >= 0; i--) {
+      let d = +num[i];
+      if (alt) {
+        d *= 2;
+        if (d > 9) d -= 9;
+      }
+      sum += d;
+      alt = !alt;
+    }
+    return sum % 10 === 0;
+  }
+
+  function brand(num) {
+    const n = num.replace(/\D/g, '');
+    if (/^62/.test(n)) return { name: '中国银联 UnionPay', len: [16, 17, 18, 19] };
+    if (/^4/.test(n)) return { name: 'Visa', len: [13, 16, 19] };
+    if (/^(5[1-5]|2(2[2-9]|[3-6]\d|7[01]|720))/.test(n)) return { name: 'MasterCard 万事达', len: [16] };
+    if (/^3[47]/.test(n)) return { name: 'American Express 运通', len: [15] };
+    if (/^(35(2[89]|[3-8]\d))/.test(n)) return { name: 'JCB', len: [16, 17, 18, 19] };
+    if (/^(30[0-5]|36|38)/.test(n)) return { name: 'Diners Club 大来', len: [14, 16] };
+    if (/^(6011|64[4-9]|65)/.test(n)) return { name: 'Discover', len: [16, 19] };
+    if (/^9/.test(n)) return { name: '国内 prepaid 卡（部分）', len: [16, 19] };
+    return { name: '未知卡组织', len: [16, 19] };
+  }
+
+  function check(raw) {
+    const clean = raw.replace(/[\s-]/g, '');
+    const r = { raw, clean, ok: false };
+    if (!/^\d{12,19}$/.test(clean)) {
+      r.reason = '卡号应为 12–19 位数字';
+      return r;
+    }
+    r.ok = true;
+    r.luhn = luhn(clean);
+    const b = brand(clean);
+    r.brand = b.name;
+    r.lenOk = b.len.includes(clean.length);
+    r.masked = clean.slice(0, 6) + '*'.repeat(Math.max(0, clean.length - 10)) + clean.slice(-4);
+    r.bin = clean.slice(0, 6);
+    return r;
+  }
+
+  function render() {
+    const single = $('bc-batch-box').style.display === 'none';
+    const nums = single
+      ? [$('bc-in').value.trim()].filter(Boolean)
+      : $('bc-list').value.split(/\r?\n/).map((s) => s.trim()).filter(Boolean);
+
+    if (!nums.length) { $('bc-msg').textContent = '请输入卡号'; $('bc-msg').className = 'msg err'; return; }
+    const rows = nums.map(check);
+    const okCount = rows.filter((r) => r.ok && r.luhn).length;
+
+    $('bc-out').innerHTML = single
+      ? (() => {
+          const r = rows[0];
+          if (!r.ok) return `<p style="color:var(--danger);font-size:14px;">${r.reason}</p>`;
+          return `<table class="result-table" style="margin-top:14px;max-width:520px;">
+            <tr><th>校验结果</th><td>${r.luhn
+              ? '<span style="color:var(--success);">卡号通过 Luhn 校验</span>'
+              : '<span style="color:var(--danger);">未通过 Luhn 校验，卡号可能有误</span>'}</td></tr>
+            <tr><th>卡组织</th><td>${r.brand}</td></tr>
+            <tr><th>卡号长度</th><td>${r.clean.length} 位　${r.lenOk
+              ? '<span style="color:var(--success);">符合该卡组织常见长度</span>'
+              : '<span style="color:var(--text-sub);">与常见长度不符</span>'}</td></tr>
+            <tr><th>发卡行识别码 BIN</th><td style="font-family:ui-monospace,monospace;">${r.bin}</td></tr>
+            <tr><th>脱敏显示</th><td style="font-family:ui-monospace,monospace;">${r.masked}</td></tr>
+          </table>`;
+        })()
+      : '<table class="result-table" style="margin-top:14px;max-width:560px;">' +
+        rows.map((r) => {
+          if (!r.ok) return `<tr><th>${r.raw}</th><td style="color:var(--danger);">${r.reason}</td></tr>`;
+          return `<tr><th>${r.masked}</th><td>${r.luhn
+            ? `<span style="color:var(--success);">通过</span>` : `<span style="color:var(--danger);">未通过</span>`}　${r.brand}</td></tr>`;
+        }).join('') + '</table>';
+
+    $('bc-msg').textContent = single
+      ? (rows[0].ok ? (rows[0].luhn ? '校验通过' : '校验未通过') : rows[0].reason)
+      : `共 ${rows.length} 个，通过 ${okCount} 个`;
+    $('bc-msg').className = (single ? rows[0].ok && rows[0].luhn : okCount > 0) ? 'msg ok' : 'msg err';
+  }
+
+  function gen() {
+    // 生成通过 Luhn 的 16 位测试卡号（银联 62 开头）
+    let base = '62' + String(Math.floor(Math.random() * 900000) + 100000) + String(Math.floor(Math.random() * 900000) + 100000);
+    base = base.slice(0, 15);
+    let sum = 0, alt = false;
+    for (let i = base.length - 1; i >= 0; i--) {
+      let d = +base[i];
+      if (alt) { d *= 2; if (d > 9) d -= 9; }
+      sum += d;
+      alt = !alt;
+    }
+    const checkDigit = (10 - (sum % 10)) % 10;
+    $('bc-in').value = base + checkDigit;
+    render();
+  }
+
+  $('bc-go').onclick = render;
+  $('bc-in').oninput = render;
+  $('bc-gen').onclick = gen;
+  $('bc-batch').onclick = () => {
+    const box = $('bc-batch-box');
+    const show = box.style.display === 'none';
+    box.style.display = show ? 'block' : 'none';
+    $('bc-batch').textContent = show ? '单个校验' : '批量校验';
+    $('bc-out').innerHTML = '';
+    $('bc-msg').textContent = '';
+  };
+  $('bc-clear').onclick = () => {
+    $('bc-in').value = ''; $('bc-list').value = '';
+    $('bc-out').innerHTML = ''; $('bc-msg').textContent = '';
+  };
+</script>

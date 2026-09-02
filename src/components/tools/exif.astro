@@ -1,0 +1,53 @@
+---
+// 图片 EXIF 查看：exifr，本地解析
+---
+<div>
+  <div class="field-label"><span>上传图片（JPEG/HEIC/TIFF 等）</span></div>
+  <input type="file" id="exif-file" accept="image/*">
+  <div class="field-label" style="margin-top:12px;"><span>EXIF 信息</span></div>
+  <div id="exif-out" class="exif-out">尚未选择文件</div>
+</div>
+
+<style>
+  .exif-out {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 14px;
+    min-height: 200px;
+    line-height: 1.8;
+    background: var(--bg-soft);
+    font-size: 13px;
+  }
+  .exif-out table { border-collapse: collapse; width: 100%; }
+  .exif-out td { padding: 4px 8px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  .exif-out td:first-child { color: var(--text-sub); width: 38%; word-break: break-all; }
+  .exif-out td:last-child { word-break: break-all; }
+</style>
+
+<script>
+  import exifr from 'exifr';
+  const $ = (id) => document.getElementById(id);
+  $('exif-file').addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const out = $('exif-out');
+    out.innerHTML = '解析中…';
+    try {
+      const data = await exifr.parse(file, { reviveValues: true });
+      if (!data || !Object.keys(data).length) {
+        out.textContent = '该图片未包含 EXIF 信息（可能已在保存时被清除）。';
+        return;
+      }
+      const rows = Object.entries(data).map(([k, v]) => {
+        let val = v;
+        if (v instanceof Date) val = v.toLocaleString();
+        else if (typeof v === 'object') val = JSON.stringify(v);
+        else if (typeof v === 'string' && v.length > 200) val = v.slice(0, 200) + '…';
+        return `<tr><td>${k}</td><td>${String(val)}</td></tr>`;
+      }).join('');
+      out.innerHTML = `<table>${rows}</table>`;
+    } catch (err) {
+      out.textContent = '解析失败：' + err.message;
+    }
+  });
+</script>

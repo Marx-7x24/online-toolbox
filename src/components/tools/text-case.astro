@@ -1,0 +1,80 @@
+---
+---
+
+<div style="max-width:760px;">
+  <div class="field-label"><span>输入文本</span></div>
+  <textarea id="tc-in" placeholder="输入要转换的文本，如 hello world 或 user_name" style="min-height:110px;">hello world example</textarea>
+</div>
+
+<div class="btn-row">
+  <button data-mode="lower">全小写</button>
+  <button data-mode="upper">全大写</button>
+  <button data-mode="capital">首字母大写</button>
+  <button data-mode="title">标题式大写</button>
+  <button data-mode="camel">小驼峰</button>
+  <button data-mode="pascal">大驼峰</button>
+  <button data-mode="snake">下划线 snake_case</button>
+  <button data-mode="kebab">中划线 kebab-case</button>
+  <button data-mode="constant">常量 CONSTANT_CASE</button>
+  <button data-mode="invert">反转大小写</button>
+</div>
+
+<div style="max-width:760px;">
+  <div class="field-label"><span>结果</span></div>
+  <textarea id="tc-out" readonly style="min-height:110px;"></textarea>
+</div>
+
+<div class="btn-row">
+  <button class="primary" id="tc-copy">复制结果</button>
+  <button id="tc-clear">清空</button>
+</div>
+
+<p class="msg" id="tc-msg"></p>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+
+  // 把任意写法拆成单词数组
+  function words(s) {
+    return s
+      .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+      .replace(/([A-Z]+)([A-Z][a-z])/g, '$1 $2')
+      .replace(/[_\-\.\s]+/g, ' ')
+      .trim()
+      .split(' ')
+      .filter(Boolean);
+  }
+
+  const MODE = {
+    lower: (s) => s.toLowerCase(),
+    upper: (s) => s.toUpperCase(),
+    capital: (s) => s.replace(/(^|\s)(\S)/g, (_, a, b) => a + b.toUpperCase()),
+    title: (s) => words(s).map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' '),
+    camel: (s) => words(s).map((w, i) => (i === 0 ? w.toLowerCase() : w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())).join(''),
+    pascal: (s) => words(s).map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(''),
+    snake: (s) => words(s).map((w) => w.toLowerCase()).join('_'),
+    kebab: (s) => words(s).map((w) => w.toLowerCase()).join('-'),
+    constant: (s) => words(s).map((w) => w.toUpperCase()).join('_'),
+    invert: (s) => s.replace(/[a-zA-Z]/g, (c) => (c === c.toUpperCase() ? c.toLowerCase() : c.toUpperCase())),
+  };
+
+  document.querySelectorAll('button[data-mode]').forEach((btn) => {
+    btn.onclick = () => {
+      const raw = $('tc-in').value;
+      if (!raw) { $('tc-msg').textContent = '请先输入内容'; $('tc-msg').className = 'msg err'; return; }
+      $('tc-out').value = MODE[btn.dataset.mode](raw);
+      $('tc-msg').textContent = '已转换为 ' + btn.textContent;
+      $('tc-msg').className = 'msg ok';
+    };
+  });
+
+  $('tc-copy').onclick = async () => {
+    if (!$('tc-out').value) return;
+    await navigator.clipboard.writeText($('tc-out').value);
+    $('tc-msg').textContent = '已复制';
+    $('tc-msg').className = 'msg ok';
+  };
+  $('tc-clear').onclick = () => {
+    $('tc-in').value = ''; $('tc-out').value = ''; $('tc-msg').textContent = '';
+  };
+</script>

@@ -1,0 +1,40 @@
+---
+// 随机端口生成：本地生成
+---
+<div>
+  <div class="field-label"><span>生成数量</span></div>
+  <input type="number" id="pg-n" min="1" max="20" value="5">
+  <div class="field-label" style="margin-top:12px;"><span>结果</span></div>
+  <div id="pg-out" class="pg-out">点击生成</div>
+</div>
+<div class="btn-row">
+  <button id="pg-gen" class="primary">生成</button>
+  <button id="pg-copy">复制</button>
+  <span id="pg-msg" class="msg"></span>
+</div>
+
+<style>
+  .pg-out { border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; min-height: 80px; line-height: 1.9; background: var(--bg-soft); font-family: ui-monospace, Menlo, Consolas, monospace; }
+  .pg-out .p { display: inline-block; margin: 2px 8px 2px 0; }
+  .pg-out .tag { font-size: 11px; color: var(--text-sub); margin-left: 4px; }
+</style>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  function cls(p) { return p < 1024 ? '系统/熟知' : p < 49152 ? '注册端口' : '动态/私有'; }
+  function gen() {
+    const n = Math.max(1, Math.min(20, parseInt($('pg-n').value, 10) || 5));
+    const set = new Set();
+    while (set.size < n) set.add(1024 + Math.floor(Math.random() * (65535 - 1024)));
+    $('pg-out').innerHTML = [...set].sort((a, b) => a - b).map((p) => `<span class="p">${p}<span class="tag">${cls(p)}</span></span>`).join('');
+    $('pg-msg').textContent = `已生成 ${set.size} 个（1024-65535）`; $('pg-msg').className = 'msg ok';
+  }
+  $('pg-gen').addEventListener('click', gen);
+  $('pg-copy').addEventListener('click', async () => {
+    const txt = [...$('pg-out').querySelectorAll('.p')].map((e) => e.childNodes[0].textContent).join(',');
+    if (!txt) return;
+    try { await navigator.clipboard.writeText(txt); $('pg-msg').textContent = '已复制'; $('pg-msg').className = 'msg ok'; }
+    catch { $('pg-msg').textContent = '复制失败'; $('pg-msg').className = 'msg err'; }
+  });
+  gen();
+</script>

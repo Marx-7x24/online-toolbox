@@ -1,0 +1,88 @@
+---
+---
+
+<div class="tip">中文采用 UTF-8 编码处理，不会出现乱码。图片转换在本地完成，不上传。</div>
+
+<div class="pane">
+  <div>
+    <div class="field-label"><span>原文</span></div>
+    <textarea id="b64-in" placeholder="输入要编码的文本" spellcheck="false"></textarea>
+  </div>
+  <div>
+    <div class="field-label"><span>Base64</span></div>
+    <textarea id="b64-out" placeholder="Base64 结果" spellcheck="false"></textarea>
+  </div>
+</div>
+
+<div class="btn-row">
+  <button class="primary" id="b64-enc">编码 →</button>
+  <button id="b64-dec">← 解码</button>
+  <button id="b64-copy">复制右侧</button>
+  <button id="b64-swap">交换两侧</button>
+  <button id="b64-clear">清空</button>
+</div>
+
+<div class="btn-row" style="align-items:center;">
+  <label for="b64-file" style="font-size:13px;color:var(--text-sub);">图片转 Base64：</label>
+  <input type="file" id="b64-file" accept="image/*" style="width:auto;font-family:inherit;padding:6px;border:none;" />
+</div>
+<div id="b64-preview" style="margin-top:8px;"></div>
+
+<p class="msg" id="b64-msg"></p>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  const msg = $('b64-msg');
+  const setMsg = (t, type) => { msg.textContent = t; msg.className = 'msg ' + (type || 'ok'); };
+
+  function encode(str) {
+    return btoa(String.fromCharCode(...new TextEncoder().encode(str)));
+  }
+  function decode(b64) {
+    const bin = atob(b64.replace(/\s/g, ''));
+    const bytes = Uint8Array.from(bin, (c) => c.charCodeAt(0));
+    return new TextDecoder().decode(bytes);
+  }
+
+  $('b64-enc').onclick = () => {
+    if (!$('b64-in').value) return setMsg('请先输入内容', 'err');
+    try { $('b64-out').value = encode($('b64-in').value); setMsg('编码完成，共 ' + $('b64-out').value.length + ' 字符'); }
+    catch (e) { setMsg('编码失败：' + e.message, 'err'); }
+  };
+
+  $('b64-dec').onclick = () => {
+    const raw = $('b64-out').value.trim();
+    if (!raw) return setMsg('请先在右侧输入 Base64', 'err');
+    try { $('b64-in').value = decode(raw); setMsg('解码完成'); }
+    catch (e) { setMsg('解码失败：不是合法的 Base64 字符串', 'err'); }
+  };
+
+  $('b64-copy').onclick = async () => {
+    if (!$('b64-out').value) return setMsg('右侧为空', 'err');
+    await navigator.clipboard.writeText($('b64-out').value);
+    setMsg('已复制');
+  };
+
+  $('b64-swap').onclick = () => {
+    const a = $('b64-in').value;
+    $('b64-in').value = $('b64-out').value;
+    $('b64-out').value = a;
+  };
+
+  $('b64-clear').onclick = () => {
+    $('b64-in').value = ''; $('b64-out').value = ''; $('b64-preview').innerHTML = ''; msg.textContent = '';
+  };
+
+  $('b64-file').onchange = (e) => {
+    const f = e.target.files[0];
+    if (!f) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result;
+      $('b64-out').value = dataUrl;
+      $('b64-preview').innerHTML = `<img src="${dataUrl}" alt="预览" style="max-width:220px;max-height:160px;border:1px solid var(--border);border-radius:8px;" />`;
+      setMsg(`已转换 ${f.name}（${(f.size / 1024).toFixed(1)} KB → ${dataUrl.length} 字符）`);
+    };
+    reader.readAsDataURL(f);
+  };
+</script>

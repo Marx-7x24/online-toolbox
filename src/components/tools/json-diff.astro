@@ -1,0 +1,55 @@
+---
+// JSON 结构对比：本地递归比对
+---
+<div class="pane">
+  <div>
+    <div class="field-label"><span>JSON A</span></div>
+    <textarea id="jd-a" placeholder='{"a":1,"b":{"c":2}}'></textarea>
+  </div>
+  <div>
+    <div class="field-label"><span>JSON B</span></div>
+    <textarea id="jd-b" placeholder='{"a":1,"b":{"c":3},"d":4}'></textarea>
+  </div>
+</div>
+<div class="field-label" style="margin-top:10px;"><span>差异（路径: A → B）</span></div>
+<textarea id="jd-out" readonly></textarea>
+<div class="btn-row">
+  <button id="jd-run" class="primary">对比</button>
+  <button id="jd-copy">复制</button>
+  <span id="jd-msg" class="msg"></span>
+</div>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  function diff(a, b, path, out) {
+    if (typeof a !== typeof b || (a && b && typeof a === 'object' && (Array.isArray(a) !== Array.isArray(b)))) {
+      out.push(`${path || '根'}: ${JSON.stringify(a)} → ${JSON.stringify(b)}`);
+      return;
+    }
+    if (a && typeof a === 'object') {
+      const keys = new Set([...Object.keys(a), ...Object.keys(b)]);
+      for (const k of keys) {
+        const np = path ? `${path}.${k}` : k;
+        if (!(k in a)) out.push(`${np}: 新增 ${JSON.stringify(b[k])}`);
+        else if (!(k in b)) out.push(`${np}: 删除 ${JSON.stringify(a[k])}`);
+        else diff(a[k], b[k], np, out);
+      }
+      return;
+    }
+    if (a !== b) out.push(`${path || '根'}: ${JSON.stringify(a)} → ${JSON.stringify(b)}`);
+  }
+  $('jd-run').addEventListener('click', () => {
+    let A, B;
+    try { A = JSON.parse($('jd-a').value); } catch (e) { $('jd-msg').textContent = 'A 不是合法 JSON'; $('jd-msg').className = 'msg err'; return; }
+    try { B = JSON.parse($('jd-b').value); } catch (e) { $('jd-msg').textContent = 'B 不是合法 JSON'; $('jd-msg').className = 'msg err'; return; }
+    const out = [];
+    diff(A, B, '', out);
+    $('jd-out').value = out.length ? out.join('\n') : '两个 JSON 结构完全一致 ✓';
+    $('jd-msg').textContent = out.length ? `发现 ${out.length} 处差异` : '无差异'; $('jd-msg').className = out.length ? 'msg err' : 'msg ok';
+  });
+  $('jd-copy').addEventListener('click', async () => {
+    if (!$('jd-out').value) return;
+    try { await navigator.clipboard.writeText($('jd-out').value); $('jd-msg').textContent = '已复制'; $('jd-msg').className = 'msg ok'; }
+    catch { $('jd-msg').textContent = '复制失败'; $('jd-msg').className = 'msg err'; }
+  });
+</script>

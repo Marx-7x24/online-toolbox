@@ -1,0 +1,85 @@
+---
+---
+
+<div class="tip">多个 PDF 在你本地合并，文件不上传服务器，顺序可用上下按钮调整。</div>
+
+<div class="btn-row" style="align-items:center;">
+  <input type="file" id="pm-file" accept="application/pdf" multiple style="width:auto;font-family:inherit;padding:6px;border:none;" />
+</div>
+
+<div class="btn-row">
+  <button class="primary" id="pm-go">合并并下载</button>
+  <button id="pm-clear">清空</button>
+</div>
+
+<p class="msg" id="pm-msg"></p>
+<div id="pm-list"></div>
+
+<script>
+  import { PDFDocument } from 'pdf-lib';
+
+  const $ = (id) => document.getElementById(id);
+  let files = [];
+
+  function render() {
+    $('pm-list').innerHTML = files.length
+      ? '<div class="field-label" style="margin-top:14px;"><span>合并顺序</span><span>' + files.length + ' 个文件</span></div>' +
+        files.map((f, i) =>
+          `<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid var(--border);">
+            <span style="width:26px;height:26px;border-radius:50%;background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--text-sub);">${i + 1}</span>
+            <span style="flex:1;min-width:0;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${f.name}</span>
+            <span style="font-size:12px;color:var(--text-hint);">${(f.size / 1024).toFixed(0)} KB</span>
+            <button data-up="${i}" style="padding:3px 10px;font-size:12px;" ${i === 0 ? 'disabled' : ''}>↑</button>
+            <button data-dn="${i}" style="padding:3px 10px;font-size:12px;" ${i === files.length - 1 ? 'disabled' : ''}>↓</button>
+            <button data-del="${i}" style="padding:3px 10px;font-size:12px;">删除</button>
+          </div>`
+        ).join('')
+      : '';
+
+    $('pm-list').querySelectorAll('button[data-up]').forEach((b) => {
+      b.onclick = () => { const i = +b.dataset.up; [files[i - 1], files[i]] = [files[i], files[i - 1]]; render(); };
+    });
+    $('pm-list').querySelectorAll('button[data-dn]').forEach((b) => {
+      b.onclick = () => { const i = +b.dataset.dn; [files[i + 1], files[i]] = [files[i], files[i + 1]]; render(); };
+    });
+    $('pm-list').querySelectorAll('button[data-del]').forEach((b) => {
+      b.onclick = () => { files.splice(+b.dataset.del, 1); render(); };
+    });
+  }
+
+  $('pm-file').onchange = (e) => {
+    files = files.concat(Array.from(e.target.files || []));
+    e.target.value = '';
+    render();
+  };
+
+  $('pm-go').onclick = async () => {
+    if (files.length < 2) { $('pm-msg').textContent = '请至少选择 2 个 PDF'; $('pm-msg').className = 'msg err'; return; }
+    $('pm-msg').textContent = '合并中…';
+    $('pm-msg').className = 'msg';
+    try {
+      const out = await PDFDocument.create();
+      for (let i = 0; i < files.length; i++) {
+        const bytes = new Uint8Array(await files[i].arrayBuffer());
+        const src = await PDFDocument.load(bytes);
+        const pages = await out.copyPages(src, src.getPageIndices());
+        pages.forEach((p) => out.addPage(p));
+        $('pm-msg').textContent = `合并中… ${i + 1} / ${files.length}`;
+      }
+      const pdfBytes = await out.save();
+      const url = URL.createObjectURL(new Blob([pdfBytes], { type: 'application/pdf' }));
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'merged.pdf';
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 5000);
+      $('pm-msg').textContent = `已合并 ${files.length} 个文件，共 ${out.getPageCount()} 页`;
+      $('pm-msg').className = 'msg ok';
+    } catch (e) {
+      $('pm-msg').textContent = '合并失败：' + (e.message || '文件可能已加密或损坏');
+      $('pm-msg').className = 'msg err';
+    }
+  };
+
+  $('pm-clear').onclick = () => { files = []; render(); $('pm-msg').textContent = ''; };
+</script>

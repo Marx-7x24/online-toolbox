@@ -1,0 +1,77 @@
+---
+---
+
+<div class="field-label"><span>输入文本</span><span id="wc-live"></span></div>
+<textarea id="wc-in" placeholder="粘贴或输入要统计的文本" style="min-height:220px;"></textarea>
+
+<div class="btn-row">
+  <button class="primary" id="wc-go">统计</button>
+  <button id="wc-sample">填入示例</button>
+  <button id="wc-clear">清空</button>
+</div>
+
+<div id="wc-out"></div>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+
+  function stat(text) {
+    const chars = [...text].length;
+    const noSpace = [...text].filter((c) => !/\s/.test(c)).length;
+    const cn = (text.match(/[\u4e00-\u9fa5]/g) || []).length;
+    const en = (text.match(/[a-zA-Z]/g) || []).length;
+    const digit = (text.match(/[0-9]/g) || []).length;
+    const punctCn = (text.match(/[\u3000-\u303f\uff00-\uffef]/g) || []).length;
+    const punctEn = (text.match(/[!-\/:-@\[-`{-~]/g) || []).length;
+    const space = (text.match(/\s/g) || []).length;
+    const lines = text.length ? text.split(/\r\n|\r|\n/).length : 0;
+    const paragraphs = text.split(/\n\s*\n/).filter((p) => p.trim()).length;
+    const wordsEn = (text.match(/[a-zA-Z]+(?:['’-][a-zA-Z]+)*/g) || []).length;
+    return { chars, noSpace, cn, en, digit, punctCn, punctEn, space, lines, paragraphs, wordsEn };
+  }
+
+  function render() {
+    const s = stat($('wc-in').value);
+    const rows = [
+      ['总字符数', s.chars + ' （含空格与换行）'],
+      ['不含空白字符', s.noSpace],
+      ['中文字符', s.cn],
+      ['英文字母', s.en],
+      ['数字', s.digit],
+      ['中文标点', s.punctCn],
+      ['英文标点', s.punctEn],
+      ['空白字符', s.space],
+      ['英文单词', s.wordsEn],
+      ['行数', s.lines],
+      ['段落数', s.paragraphs],
+      ['汉字+英文单词', s.cn + s.wordsEn + ' （常见投稿口径）'],
+    ];
+    $('wc-out').innerHTML =
+      '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:14px;">' +
+      ['总字符数', '不含空白字符', '中文字符', '英文单词', '行数', '段落数']
+        .map((k, i) => {
+          const vals = [s.chars, s.noSpace, s.cn, s.wordsEn, s.lines, s.paragraphs];
+          return `<div style="background:var(--background-secondary,var(--bg));border-radius:10px;padding:12px;">
+            <div style="font-size:12px;color:var(--text-sub);">${k}</div>
+            <div style="font-size:22px;font-weight:500;">${vals[i]}</div></div>`;
+        }).join('') +
+      '</div>' +
+      '<table class="result-table" style="max-width:560px;">' +
+      rows.map(([k, v]) => `<tr><th>${k}</th><td>${v}</td></tr>`).join('') +
+      '</table>';
+  }
+
+  $('wc-go').onclick = render;
+  $('wc-in').oninput = () => {
+    const s = stat($('wc-in').value);
+    $('wc-live').textContent = `${s.chars} 字符 / ${s.cn} 汉字`;
+  };
+  $('wc-sample').onclick = () => {
+    $('wc-in').value = '这是一段示例文本，用于演示字数统计功能。\n\nHello world! 混合了 English words 和中文标点：，。！？\n第二段落，包含数字 123 与符号 @#$%。';
+    $('wc-in').dispatchEvent(new Event('input'));
+    render();
+  };
+  $('wc-clear').onclick = () => {
+    $('wc-in').value = ''; $('wc-out').innerHTML = ''; $('wc-live').textContent = '';
+  };
+</script>

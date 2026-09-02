@@ -1,0 +1,85 @@
+---
+---
+
+<div class="pane">
+  <div>
+    <div class="field-label"><span>中文 / 原文</span></div>
+    <textarea id="uc-in" placeholder="输入中文文本" style="min-height:160px;"></textarea>
+  </div>
+  <div>
+    <div class="field-label"><span>Unicode 转义</span></div>
+    <textarea id="uc-out" placeholder="\\u4e2d\\u6587" style="min-height:160px;" spellcheck="false"></textarea>
+  </div>
+</div>
+
+<div class="btn-row">
+  <button class="primary" id="uc-enc">中文 → Unicode</button>
+  <button id="uc-dec">Unicode → 中文</button>
+  <button id="uc-brace">切换为花括号写法</button>
+  <button id="uc-copy">复制右侧</button>
+  <button id="uc-clear">清空</button>
+</div>
+
+<p class="msg" id="uc-msg"></p>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  let brace = false;
+
+  function escapeChar(ch) {
+    const cp = ch.codePointAt(0).toString(16);
+    if (brace) return '\\u{' + cp + '}';
+    if (ch.codePointAt(0) > 0xffff) {
+      const v = ch.codePointAt(0) - 0x10000;
+      return '\\u' + (0xd800 + (v >> 10)).toString(16) + '\\u' + (0xdc00 + (v & 0x3ff)).toString(16);
+    }
+    return '\\u' + cp.padStart(4, '0');
+  }
+
+  function encode() {
+    const s = $('uc-in').value;
+    if (!s) { $('uc-msg').textContent = '请先输入内容'; $('uc-msg').className = 'msg err'; return; }
+    let out = '';
+    for (const ch of s) {
+      const cp = ch.codePointAt(0);
+      if (cp > 0x7f) out += escapeChar(ch);
+      else out += ch;
+    }
+    $('uc-out').value = out;
+    $('uc-msg').textContent = '已转换，共 ' + ([...s].filter((c) => c.codePointAt(0) > 0x7f).length) + ' 个非 ASCII 字符';
+    $('uc-msg').className = 'msg ok';
+  }
+
+  function decode() {
+    const s = $('uc-out').value.trim();
+    if (!s) { $('uc-msg').textContent = '请先在右侧输入 Unicode 转义串'; $('uc-msg').className = 'msg err'; return; }
+    try {
+      let out = s;
+      out = out.replace(/\\u\{([0-9a-fA-F]+)\}/g, (_, h) => String.fromCodePoint(parseInt(h, 16)));
+      out = out.replace(/\\u([0-9a-fA-F]{4})/g, (_, h) => String.fromCharCode(parseInt(h, 16)));
+      $('uc-in').value = out;
+      $('uc-msg').textContent = '解码完成';
+      $('uc-msg').className = 'msg ok';
+    } catch (e) {
+      $('uc-msg').textContent = '解码失败：' + e.message;
+      $('uc-msg').className = 'msg err';
+    }
+  }
+
+  $('uc-enc').onclick = encode;
+  $('uc-dec').onclick = decode;
+  $('uc-brace').onclick = () => {
+    brace = !brace;
+    $('uc-brace').textContent = brace ? '切换 \\uXXXX 写法' : '切换 \\u{XXXX} 写法';
+    if ($('uc-in').value) encode();
+  };
+  $('uc-copy').onclick = async () => {
+    if (!$('uc-out').value) return;
+    await navigator.clipboard.writeText($('uc-out').value);
+    $('uc-msg').textContent = '已复制';
+    $('uc-msg').className = 'msg ok';
+  };
+  $('uc-clear').onclick = () => {
+    $('uc-in').value = ''; $('uc-out').value = ''; $('uc-msg').textContent = '';
+  };
+</script>

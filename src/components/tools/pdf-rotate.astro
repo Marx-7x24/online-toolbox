@@ -1,0 +1,72 @@
+---
+// PDF 页面旋转：pdf-lib，本地处理
+---
+<div class="pane">
+  <div>
+    <div class="field-label"><span>上传 PDF</span></div>
+    <input type="file" id="rot-file" accept="application/pdf">
+    <div class="field-label" style="margin-top:10px;"><span>旋转角度</span></div>
+    <select id="rot-angle">
+      <option value="90">顺时针 90°</option>
+      <option value="180">180°</option>
+      <option value="270">顺时针 270°</option>
+    </select>
+    <div class="field-label" style="margin-top:10px;"><span>应用到</span></div>
+    <select id="rot-scope">
+      <option value="all">全部页面</option>
+      <option value="even">偶数页</option>
+      <option value="odd">奇数页</option>
+    </select>
+  </div>
+  <div>
+    <div class="field-label"><span>状态</span></div>
+    <div id="rot-status" class="rot-status">尚未选择文件</div>
+  </div>
+</div>
+<div class="btn-row">
+  <button id="rot-run" class="primary">旋转并下载</button>
+  <span id="rot-msg" class="msg"></span>
+</div>
+
+<style>
+  .rot-status {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 14px;
+    min-height: 120px;
+    color: var(--text-sub);
+    background: var(--bg-soft);
+  }
+</style>
+
+<script>
+  import { PDFDocument } from 'pdf-lib';
+  const $ = (id) => document.getElementById(id);
+  let bytes = null;
+  $('rot-file').addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    bytes = new Uint8Array(await file.arrayBuffer());
+    const doc = await PDFDocument.load(bytes);
+    $('rot-status').textContent = `已载入，共 ${doc.getPageCount()} 页`;
+  });
+  $('rot-run').addEventListener('click', async () => {
+    if (!bytes) { $('rot-msg').textContent = '请先选择 PDF 文件'; $('rot-msg').className = 'msg err'; return; }
+    try {
+      const doc = await PDFDocument.load(bytes);
+      const angle = Number($('rot-angle').value);
+      const scope = $('rot-scope').value;
+      doc.getPages().forEach((page, i) => {
+        const n = i + 1;
+        if (scope === 'all' || (scope === 'even' && n % 2 === 0) || (scope === 'odd' && n % 2 === 1)) {
+          page.setRotation((page.getRotation().angle + angle) % 360);
+        }
+      });
+      const out = await doc.save();
+      const blob = new Blob([out], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url; a.download = 'rotated.pdf'; a.click();
+      $('rot-msg').textContent = '已生成下载'; $('rot-msg').className = 'msg ok';
+    } catch (err) { $('rot-msg').textContent = '处理失败：' + err.message; $('rot-msg').className = 'msg err'; }
+  });
+</script>

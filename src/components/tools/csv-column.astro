@@ -1,0 +1,52 @@
+---
+// CSV 列提取：本地解析
+---
+<div class="pane">
+  <div>
+    <div class="field-label"><span>CSV 输入</span></div>
+    <textarea id="cs-in" placeholder="name,age,city&#10;Tom,20,Beijing&#10;Lucy,25,Shanghai"></textarea>
+  </div>
+  <div>
+    <div class="field-label"><span>保留列（逗号分隔，或留空保留全部）</span></div>
+    <input type="text" id="cs-keep" placeholder="name,city">
+    <div class="field-label" style="margin-top:10px;"><span>结果 CSV</span></div>
+    <textarea id="cs-out" readonly></textarea>
+  </div>
+</div>
+<div class="btn-row">
+  <button id="cs-run" class="primary">提取</button>
+  <button id="cs-copy">复制</button>
+  <span id="cs-msg" class="msg"></span>
+</div>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  function parseRow(line) {
+    const out = []; let cur = ''; let q = false;
+    for (let i = 0; i < line.length; i++) {
+      const c = line[i];
+      if (c === '"') { if (q && line[i + 1] === '"') { cur += '"'; i++; } else q = !q; }
+      else if (c === ',' && !q) { out.push(cur); cur = ''; }
+      else cur += c;
+    }
+    out.push(cur);
+    return out;
+  }
+  $('cs-run').addEventListener('click', () => {
+    const text = $('cs-in').value;
+    if (!text.trim()) { $('cs-out').value = ''; return; }
+    const lines = text.split('\n').filter((l) => l.length);
+    const rows = lines.map(parseRow);
+    const keep = $('cs-keep').value.split(',').map((x) => x.trim()).filter(Boolean);
+    let out;
+    if (!keep.length) out = rows;
+    else out = rows.map((r) => keep.map((k) => { const i = rows[0].indexOf(k); return i >= 0 ? (r[i] ?? '') : ''; }));
+    $('cs-out').value = out.map((r) => r.map((c) => (/[",\n]/.test(c) ? '"' + c.replace(/"/g, '""') + '"' : c)).join(',')).join('\n');
+    $('cs-msg').textContent = `已处理 ${out.length} 行`; $('cs-msg').className = 'msg ok';
+  });
+  $('cs-copy').addEventListener('click', async () => {
+    if (!$('cs-out').value) return;
+    try { await navigator.clipboard.writeText($('cs-out').value); $('cs-msg').textContent = '已复制'; $('cs-msg').className = 'msg ok'; }
+    catch { $('cs-msg').textContent = '复制失败'; $('cs-msg').className = 'msg err'; }
+  });
+</script>

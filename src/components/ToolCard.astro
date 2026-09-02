@@ -1,0 +1,29 @@
+---
+import CategoryIcon from './CategoryIcon.astro';
+import { getToolIcon } from '../data/toolIcons.js';
+
+interface Props {
+  slug: string;
+  name: string;
+  desc: string;
+  category: string;
+  search?: string;
+  lang?: string;
+}
+const { slug, name, desc, category, search = '', lang = 'zh' } = Astro.props;
+const iconFile = getToolIcon(slug);
+---
+
+<a href={`/${lang}/tools/${slug}/`} class="tool-card" data-search={search}>
+  <div class="tool-card__icon">
+    {iconFile ? (
+      <img src={`/icons/lanren/${iconFile}`} alt={name} loading="lazy" class="tool-card__img" />
+    ) : (
+      <CategoryIcon category={category} />
+    )}
+  </div>
+  <div class="tool-card__body">
+    <h3>{name}</h3>
+    <p>{desc}</p>
+  </div>
+</a>

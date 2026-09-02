@@ -1,0 +1,168 @@
+---
+---
+
+<div class="tip">按国内常用平台的尺寸预设裁剪，图片在本地处理，不上传服务器。</div>
+
+<div class="btn-row" style="align-items:center;">
+  <input type="file" id="sc-file" accept="image/*" multiple style="width:auto;font-family:inherit;padding:6px;border:none;" />
+</div>
+
+<div class="field-label" style="margin-top:12px;"><span>尺寸预设</span></div>
+<div id="sc-presets" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;"></div>
+
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;max-width:720px;">
+  <div>
+    <div class="field-label"><span>宽</span></div>
+    <input type="number" id="sc-w" value="1080" min="1" />
+  </div>
+  <div>
+    <div class="field-label"><span>高</span></div>
+    <input type="number" id="sc-h" value="1080" min="1" />
+  </div>
+  <div>
+    <div class="field-label"><span>裁剪方式</span></div>
+    <select id="sc-mode">
+      <option value="cover">裁剪填满（可能裁掉边缘）</option>
+      <option value="contain">完整保留（补背景）</option>
+    </select>
+  </div>
+  <div>
+    <div class="field-label"><span>背景色（补边用）</span></div>
+    <input type="color" id="sc-bg" value="#ffffff" style="width:60px;height:34px;padding:2px;" />
+  </div>
+  <div>
+    <div class="field-label"><span>输出格式</span></div>
+    <select id="sc-fmt">
+      <option value="image/jpeg">JPEG</option>
+      <option value="image/png">PNG</option>
+      <option value="image/webp">WebP</option>
+    </select>
+  </div>
+  <div>
+    <div class="field-label"><span>锁定比例</span></div>
+    <select id="sc-lock">
+      <option value="0">不锁定</option>
+      <option value="1">锁定当前比例</option>
+    </select>
+  </div>
+</div>
+
+<div class="btn-row">
+  <button class="primary" id="sc-go">开始裁剪</button>
+  <button id="sc-dl">下载全部</button>
+  <button id="sc-clear">清空</button>
+</div>
+
+<p class="msg" id="sc-msg"></p>
+<div id="sc-list"></div>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  let jobs = [];
+
+  // 国内主流平台的常用尺寸（像素）
+  const PRESETS = [
+    ['微信朋友圈', 1080, 1080], ['微信头像', 640, 640], ['微信公众号封面', 900, 383],
+    ['小红书竖图', 1080, 1440], ['小红书方图', 1080, 1080], ['抖音封面', 1080, 1440],
+    ['抖音头像', 400, 400], ['微博配图', 1080, 720], ['B站封面', 1146, 717],
+    ['淘宝主图', 800, 800], ['京东主图', 800, 800], ['公众号次图', 200, 200],
+    ['视频号封面', 1080, 1230], ['知乎封面', 1200, 675], ['一寸照', 295, 413], ['二寸照', 413, 579],
+  ];
+
+  $('sc-presets').innerHTML = PRESETS.map(([n, w, h]) =>
+    `<button data-w="${w}" data-h="${h}" style="padding:6px 12px;font-size:13px;">${n} ${w}×${h}</button>`
+  ).join('');
+
+  $('sc-presets').querySelectorAll('button').forEach((b) => {
+    b.onclick = () => {
+      $('sc-w').value = b.dataset.w;
+      $('sc-h').value = b.dataset.h;
+      $('sc-presets').querySelectorAll('button').forEach((x) => (x.className = ''));
+      b.className = 'primary';
+    };
+  });
+
+  let lockRatio = 0;
+  $('sc-w').oninput = () => { if ($('sc-lock').value === '1' && lockRatio) $('sc-h').value = Math.round($('sc-w').value / lockRatio); };
+  $('sc-h').oninput = () => { if ($('sc-lock').value === '1' && lockRatio) $('sc-w').value = Math.round($('sc-h').value * lockRatio); };
+  $('sc-lock').onchange = () => { lockRatio = $('sc-lock').value === '1' ? +$('sc-w').value / +$('sc-h').value : 0; };
+
+  function loadImage(src) {
+    return new Promise((res, rej) => {
+      const img = new Image();
+      img.onload = () => res(img);
+      img.onerror = rej;
+      img.src = src;
+    });
+  }
+
+  function render() {
+    $('sc-list').innerHTML = jobs.map((j) =>
+      `<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-top:1px solid var(--border);">
+        <img src="${j.out}" alt="" style="width:56px;height:56px;object-fit:cover;border-radius:8px;border:1px solid var(--border);" />
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${j.name}</div>
+          <div style="font-size:12px;color:var(--text-sub);">${j.w} × ${j.h}</div>
+        </div>
+        <a href="${j.out}" download="${j.outName}" style="padding:6px 14px;border:1px solid var(--brand);color:var(--brand);border-radius:8px;font-size:13px;">下载</a>
+      </div>`
+    ).join('');
+  }
+
+  $('sc-go').onclick = async () => {
+    const files = Array.from($('sc-file').files || []);
+    if (!files.length) { $('sc-msg').textContent = '请先选择图片'; $('sc-msg').className = 'msg err'; return; }
+    const W = +$('sc-w').value, H = +$('sc-h').value;
+    if (!W || !H) { $('sc-msg').textContent = '请填写有效的宽高'; $('sc-msg').className = 'msg err'; return; }
+    jobs = [];
+    const fmt = $('sc-fmt').value;
+
+    for (let i = 0; i < files.length; i++) {
+      $('sc-msg').textContent = `裁剪中… ${i + 1} / ${files.length}`;
+      $('sc-msg').className = 'msg';
+      const img = await loadImage(URL.createObjectURL(files[i]));
+
+      const canvas = document.createElement('canvas');
+      canvas.width = W; canvas.height = H;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = $('sc-bg').value;
+      ctx.fillRect(0, 0, W, H);
+
+      if ($('sc-mode').value === 'cover') {
+        const scale = Math.max(W / img.width, H / img.height);
+        const dw = img.width * scale, dh = img.height * scale;
+        ctx.drawImage(img, (W - dw) / 2, (H - dh) / 2, dw, dh);
+      } else {
+        const scale = Math.min(W / img.width, H / img.height);
+        const dw = img.width * scale, dh = img.height * scale;
+        ctx.drawImage(img, (W - dw) / 2, (H - dh) / 2, dw, dh);
+      }
+
+      const blob = await new Promise((res) => canvas.toBlob(res, fmt, fmt === 'image/png' ? undefined : 0.92));
+      const ext = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' }[fmt];
+      jobs.push({
+        name: files[i].name, w: W, h: H,
+        out: URL.createObjectURL(blob),
+        outName: files[i].name.replace(/\.[^.]+$/, '') + `_${W}x${H}.` + ext,
+      });
+      render();
+    }
+    $('sc-msg').textContent = `完成 ${jobs.length} 张`;
+    $('sc-msg').className = 'msg ok';
+  };
+
+  $('sc-dl').onclick = () => {
+    jobs.forEach((j, i) => setTimeout(() => {
+      const a = document.createElement('a');
+      a.href = j.out; a.download = j.outName; a.click();
+    }, i * 300));
+  };
+
+  $('sc-clear').onclick = () => {
+    jobs.forEach((j) => URL.revokeObjectURL(j.out));
+    jobs = [];
+    $('sc-file').value = '';
+    render();
+    $('sc-msg').textContent = '';
+  };
+</script>

@@ -1,0 +1,98 @@
+---
+import Base from '../../../layouts/Base.astro';
+import Sidebar from '../../../components/Sidebar.astro';
+import ToolCard from '../../../components/ToolCard.astro';
+import Support from '../../../components/Support.astro';
+import JsonLd from '../../../components/JsonLd.astro';
+
+// 结构化数据用的绝对地址：域名取自 astro.config 的 site（由 SITE_URL 环境变量注入）
+const siteUrl = (p) => new URL(p, Astro.site).href;
+import { tools, getCategory, getToolsByCategory, categoryI18n, toolI18n } from '../../../data/tools.js';
+import { t } from '../../../i18n/ui.ts';
+
+export function getStaticPaths() {
+  return ['zh', 'en'].flatMap((lang) =>
+    tools.map((tool) => ({ params: { lang, slug: tool.slug }, props: { lang, tool } }))
+  );
+}
+const { lang, tool } = Astro.props;
+const category = getCategory(tool.category);
+const ti = toolI18n(tool, lang);
+const cName = category ? categoryI18n(category, lang).name : '';
+const related = category
+  ? getToolsByCategory(category.slug)
+      .filter((t) => t.slug !== tool.slug)
+      .slice(0, 6)
+  : [];
+
+// 每个工具一个组件文件，文件名与 slug 一致。加新工具时只需新增组件 + 在 data/tools.js 注册。
+const modules = import.meta.glob('../../../components/tools/*.astro', { eager: true });
+const ToolComponent = modules[`../../../components/tools/${tool.slug}.astro`].default;
+---
+
+<Base
+  title={`${ti.name} - ${t(lang, 'siteName')}`}
+  description={ti.desc}
+  keywords={ti.keywords.join(',')}
+  lang={lang}
+>
+  {/* 结构化数据：面包屑（搜索结果可直接展示层级）+ 工具本体（免费 Web 应用） */}
+  <JsonLd data={[
+    {
+      '@context': 'https://schema.org',
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        { '@type': 'ListItem', position: 1, name: t(lang, 'home'), item: siteUrl(`/${lang}/`) },
+        { '@type': 'ListItem', position: 2, name: cName, item: siteUrl(`/${lang}/category/${category.slug}/`) },
+        { '@type': 'ListItem', position: 3, name: ti.name, item: siteUrl(`/${lang}/tools/${tool.slug}/`) },
+      ],
+    },
+    {
+      '@context': 'https://schema.org',
+      '@type': 'WebApplication',
+      name: ti.name,
+      description: ti.desc,
+      url: siteUrl(`/${lang}/tools/${tool.slug}/`),
+      applicationCategory: 'UtilitiesApplication',
+      operatingSystem: 'Any',
+      browserRequirements: 'Requires a modern web browser with JavaScript enabled',
+      inLanguage: lang === 'en' ? 'en-US' : 'zh-CN',
+      offers: { '@type': 'Offer', price: '0', priceCurrency: lang === 'en' ? 'USD' : 'CNY' },
+    },
+  ]} />
+
+  <div class="home-layout">
+    <Sidebar lang={lang} active={category?.slug || 'home'} />
+
+    <div class="home-main">
+      <div class="page-head">
+        <p style="font-size:13px;margin:0 0 6px;">
+          <a href={`/${lang}/`} style="color:var(--text-hint);">{t(lang, 'breadHome')}</a>
+          <span style="color:var(--text-hint);"> / </span>
+          <a href={`/${lang}/category/${category.slug}/`} style="color:var(--text-hint);">{cName}</a>
+        </p>
+        <h1>{ti.name}</h1>
+        <p>{ti.desc}</p>
+      </div>
+
+      <div class="tool-body">
+        <ToolComponent />
+      </div>
+
+      <Support lang={lang} />
+
+      {related.length > 0 && (
+        <section class="related-tools">
+          <h2 class="home-section__title">{t(lang, 'relatedTools')}</h2>
+          <div class="tool-grid">
+            {related.map((rt) => {
+              const rti = toolI18n(rt, lang);
+              const search = [rti.name, rti.desc, rt.name_en || '', rt.desc_en || '', ...rti.keywords].join(' ').replace(/\s+/g, ' ').trim().toLowerCase();
+              return <ToolCard lang={lang} slug={rt.slug} name={rti.name} desc={rti.desc} category={category.slug} search={search} />;
+            })}
+          </div>
+        </section>
+      )}
+    </div>
+  </div>
+</Base>

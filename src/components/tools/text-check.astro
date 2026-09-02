@@ -1,0 +1,49 @@
+---
+// 文本合规检查：字数统计 + 敏感词高亮，本地处理
+---
+<div>
+  <div class="field-label"><span>待检测文本</span></div>
+  <textarea id="tc-text" placeholder="粘贴要检查的文本" rows="5"></textarea>
+  <div class="field-label" style="margin-top:10px;"><span>自定义敏感词（每行一个，与内置合并）</span></div>
+  <textarea id="tc-custom" placeholder="可补充业务词表" rows="2"></textarea>
+  <div class="tc-stats" id="tc-stats">统计：—</div>
+  <div class="field-label" style="margin-top:10px;"><span>高亮预览（命中词标红）</span></div>
+  <div id="tc-out" class="tc-out">等待检测</div>
+</div>
+<div class="btn-row">
+  <button id="tc-run" class="primary">检测</button>
+  <span id="tc-msg" class="msg"></span>
+</div>
+
+<style>
+  .tc-stats { margin-top: 10px; font-size: 13px; color: var(--text-sub); }
+  .tc-out { border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; min-height: 120px; line-height: 1.8; white-space: pre-wrap; word-break: break-all; background: var(--bg-soft); }
+  .tc-out mark { background: #ffdeeb; color: #c2255c; padding: 0 2px; border-radius: 3px; }
+</style>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  const BUILTIN = ['违禁', '私彩', '赌博', '色情', '暴利', '代开发票', '办证', '高仿', '假证', '刷单', '返利盘'];
+  const esc = (s) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  $('tc-run').addEventListener('click', () => {
+    const text = $('tc-text').value;
+    if (!text) { $('tc-out').textContent = '等待检测'; $('tc-stats').textContent = '统计：—'; return; }
+    const cn = (text.match(/[一-龥]/g) || []).length;
+    const en = (text.match(/[A-Za-z0-9]+/g) || []).length;
+    const lines = text.split('\n').length;
+    const chars = [...text].length;
+    $('tc-stats').textContent = `统计：字符 ${chars} · 中文 ${cn} · 英文词 ${en} · 行 ${lines}`;
+    const custom = $('tc-custom').value.split('\n').map((x) => x.trim()).filter(Boolean);
+    const words = [...new Set([...BUILTIN, ...custom])].filter(Boolean).map(esc).sort((a, b) => b.length - a.length);
+    let html = esc(text);
+    let hits = 0;
+    for (const w of words) {
+      if (!w) continue;
+      let from = 0, i;
+      while ((i = html.indexOf(w, from)) !== -1) { html = html.slice(0, i) + '<mark>' + w + '</mark>' + html.slice(i + w.length); from = i + w.length + 13; hits++; }
+    }
+    $('tc-out').innerHTML = html;
+    $('tc-msg').textContent = hits ? `命中 ${hits} 处敏感词` : '未检测到敏感词 ✓';
+    $('tc-msg').className = hits ? 'msg err' : 'msg ok';
+  });
+</script>

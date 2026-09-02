@@ -1,0 +1,66 @@
+---
+// PDF 页面删除：本地移除指定页后下载，文件不上传
+import { PDFDocument } from 'pdf-lib';
+---
+
+<div>
+  <div class="field-label"><span>选择 PDF 文件</span></div>
+  <input id="pd-file" type="file" accept="application/pdf" />
+  <p id="pd-info" class="msg">尚未选择文件</p>
+</div>
+<div>
+  <div class="field-label"><span>要删除的页码（如 1,3 或 2-5，从 1 开始）</span></div>
+  <input id="pd-pages" type="text" placeholder="1,3" />
+</div>
+<div class="btn-row">
+  <button id="pd-run" class="primary">删除并下载</button>
+  <span id="pd-msg" class="msg"></span>
+</div>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  const fileInput = $('pd-file'), info = $('pd-info'), pagesInput = $('pd-pages'), msg = $('pd-msg');
+  let pageCount = 0;
+
+  fileInput.addEventListener('change', async () => {
+    const file = fileInput.files[0];
+    if (!file) return;
+    try {
+      const doc = await PDFDocument.load(await file.arrayBuffer());
+      pageCount = doc.getPageCount();
+      info.textContent = `共 ${pageCount} 页`; info.className = 'msg ok';
+    } catch (e) { info.textContent = '无法读取该 PDF'; info.className = 'msg err'; }
+  });
+
+  function parsePages(spec, total) {
+    const set = new Set();
+    for (const part of spec.split(',')) {
+      part = part.trim();
+      if (!part) continue;
+      if (part.includes('-')) {
+        const [a, b] = part.split('-').map(Number);
+        for (let i = a; i <= b; i++) set.add(i);
+      } else set.add(Number(part));
+    }
+    const valid = [...set].filter((n) => Number.isInteger(n) && n >= 1 && n <= total);
+    return valid;
+  }
+
+  $('pd-run').addEventListener('click', async () => {
+    const file = fileInput.files[0];
+    if (!file) { msg.textContent = '请先选择 PDF'; msg.className = 'msg err'; return; }
+    const toDelete = parsePages(pagesInput.value, pageCount).sort((a, b) => b - a);
+    if (!toDelete.length) { msg.textContent = '请输入要删除的页码'; msg.className = 'msg err'; return; }
+    try {
+      const doc = await PDFDocument.load(await file.arrayBuffer());
+      for (const p of toDelete) doc.removePage(p - 1);
+      const bytes = await doc.save();
+      const blob = new Blob([bytes], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = 'deleted.pdf'; a.click();
+      URL.revokeObjectURL(url);
+      msg.textContent = `已删除 ${toDelete.length} 页，开始下载`; msg.className = 'msg ok';
+    } catch (e) { msg.textContent = '处理失败：' + e.message; msg.className = 'msg err'; }
+  });
+</script>

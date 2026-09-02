@@ -1,0 +1,83 @@
+---
+---
+
+<div class="tip">输入 JSON 后点「格式化」。数据只在你自己的浏览器里处理，不会发送到任何服务器。</div>
+
+<div class="pane">
+  <div>
+    <div class="field-label"><span>输入</span><span id="jf-count"></span></div>
+    <textarea id="jf-in" placeholder='粘贴 JSON，例如：{"name":"张三","age":18}' spellcheck="false"></textarea>
+  </div>
+  <div>
+    <div class="field-label"><span>输出</span></div>
+    <textarea id="jf-out" placeholder="格式化结果" spellcheck="false" readonly></textarea>
+  </div>
+</div>
+
+<div class="btn-row">
+  <button class="primary" id="jf-fmt">格式化</button>
+  <button id="jf-min">压缩</button>
+  <button id="jf-escape">转义为字符串</button>
+  <button id="jf-unescape">去除转义</button>
+  <button id="jf-copy">复制结果</button>
+  <button id="jf-clear">清空</button>
+</div>
+
+<p class="msg" id="jf-msg"></p>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  const inEl = $('jf-in'), outEl = $('jf-out'), msgEl = $('jf-msg'), countEl = $('jf-count');
+
+  function fail(e) {
+    msgEl.className = 'msg err';
+    msgEl.textContent = '解析失败：' + e.message;
+    outEl.value = '';
+  }
+  function ok(text) {
+    msgEl.className = 'msg ok';
+    msgEl.textContent = '处理完成';
+    countEl.textContent = inEl.value.length + ' 字符';
+  }
+  function parse() {
+    const raw = inEl.value.trim();
+    if (!raw) { msgEl.textContent = '请先输入内容'; msgEl.className = 'msg err'; return null; }
+    try { return JSON.parse(raw); } catch (e) { fail(e); return null; }
+  }
+
+  $('jf-fmt').onclick = () => {
+    const d = parse(); if (d === null && inEl.value.trim() === '') return;
+    if (d === null) return;
+    outEl.value = JSON.stringify(d, null, 2);
+    ok();
+  };
+  $('jf-min').onclick = () => {
+    const d = parse(); if (d === null) return;
+    outEl.value = JSON.stringify(d);
+    ok();
+  };
+  $('jf-escape').onclick = () => {
+    const d = parse(); if (d === null) return;
+    outEl.value = JSON.stringify(JSON.stringify(d));
+    ok();
+  };
+  $('jf-unescape').onclick = () => {
+    let raw = inEl.value.trim();
+    if ((raw.startsWith('"') && raw.endsWith('"')) || (raw.startsWith("'") && raw.endsWith("'"))) {
+      raw = raw.slice(1, -1);
+    }
+    try {
+      const d = JSON.parse(raw.replace(/\\"/g, '"').replace(/\\\\/g, '\\'));
+      outEl.value = JSON.stringify(d, null, 2);
+      ok();
+    } catch (e) { fail(e); }
+  };
+  $('jf-copy').onclick = async () => {
+    if (!outEl.value) { msgEl.textContent = '没有可复制的内容'; msgEl.className = 'msg err'; return; }
+    await navigator.clipboard.writeText(outEl.value);
+    msgEl.textContent = '已复制到剪贴板'; msgEl.className = 'msg ok';
+  };
+  $('jf-clear').onclick = () => {
+    inEl.value = ''; outEl.value = ''; msgEl.textContent = ''; countEl.textContent = '';
+  };
+</script>

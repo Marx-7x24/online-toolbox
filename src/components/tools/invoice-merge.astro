@@ -1,0 +1,176 @@
+---
+---
+
+<div class="tip">把多张电子发票排到 A4 纸上打印，报销时能省不少纸。文件不上传服务器。</div>
+
+<div class="btn-row" style="align-items:center;">
+  <input type="file" id="im-file" accept="application/pdf,image/*" multiple style="width:auto;font-family:inherit;padding:6px;border:none;" />
+  <span style="font-size:13px;color:var(--text-hint);">支持 PDF 与图片混排</span>
+</div>
+
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-top:12px;">
+  <div>
+    <div class="field-label"><span>每行列数</span></div>
+    <select id="im-cols">
+      <option value="1">1 列（发票原大）</option>
+      <option value="2" selected>2 列</option>
+      <option value="3">3 列</option>
+      <option value="4">4 列</option>
+    </select>
+  </div>
+  <div>
+    <div class="field-label"><span>纸张</span></div>
+    <select id="im-paper">
+      <option value="210,297" selected>A4 纵向</option>
+      <option value="297,210">A4 横向</option>
+      <option value="148,210">A5 纵向</option>
+    </select>
+  </div>
+  <div>
+    <div class="field-label"><span>页边距</span><span id="im-m-val">10 mm</span></div>
+    <input type="range" id="im-m" min="0" max="30" value="10" style="padding:0;" />
+  </div>
+  <div>
+    <div class="field-label"><span>每张最大高度</span><span id="im-h-val">自动</span></div>
+    <input type="range" id="im-h" min="0" max="100" value="0" style="padding:0;" />
+  </div>
+</div>
+
+<div class="btn-row">
+  <button class="primary" id="im-go">合并生成</button>
+  <button id="im-clear">清空</button>
+</div>
+
+<p class="msg" id="im-msg"></p>
+<div id="im-out"></div>
+
+<script>
+  import { PDFDocument } from 'pdf-lib';
+
+  const $ = (id) => document.getElementById(id);
+
+  $('im-m').oninput = () => { $('im-m-val').textContent = $('im-m').value + ' mm'; };
+  $('im-h').oninput = () => {
+    const v = +$('im-h').value;
+    $('im-h-val').textContent = v === 0 ? '自动' : Math.round((v / 100) * 297) + ' mm';
+  };
+
+  const mm = (v) => (v / 25.4) * 72;
+
+  function loadImage(src) {
+    return new Promise((res, rej) => {
+      const img = new Image();
+      img.onload = () => res(img);
+      img.onerror = rej;
+      img.src = src;
+    });
+  }
+
+  $('im-go').onclick = async () => {
+    const files = Array.from($('im-file').files || []);
+    if (!files.length) { $('im-msg').textContent = '请先选择发票文件'; $('im-msg').className = 'msg err'; return; }
+    $('im-msg').textContent = '处理中…';
+    $('im-msg').className = 'msg';
+
+    try {
+      const out = await PDFDocument.create();
+      const [pwMm, phMm] = $('im-paper').value.split(',').map(Number);
+      const pw = mm(pwMm), ph = mm(phMm);
+      const margin = mm(+$('im-m').value);
+      const cols = +$('im-cols').value;
+      const maxH = +$('im-h').value === 0 ? 0 : mm((+$('im-h').value / 100) * phMm);
+
+      const usableW = pw - margin * 2;
+      const usableH = ph - margin * 2;
+      const cellW = usableW / cols;
+
+      // 先把每个文件转成可绘制对象，并测出宽高
+      const items = [];
+      for (let i = 0; i < files.length; i++) {
+        const f = files[i];
+        $('im-msg').textContent = `读取中… ${i + 1} / ${files.length}`;
+        if (f.type === 'application/pdf') {
+          const src = await PDFDocument.load(new Uint8Array(await f.arrayBuffer()));
+          const embedded = await out.embedPdf(src, [0]);
+          items.push({ kind: 'pdf', obj: embedded[0], w: embedded[0].width, h: embedded[0].height, name: f.name });
+        } else {
+          const img = await loadImage(URL.createObjectURL(f));
+          const canvas = document.createElement('canvas');
+          canvas.width = img.width; canvas.height = img.height;
+          const ctx = canvas.getContext('2d');
+          ctx.fillStyle = '#fff';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          ctx.drawImage(img, 0, 0);
+          const blob = await new Promise((r) => canvas.toBlob(r, 'image/jpeg', 0.94));
+          const embed = await out.embedJpg(new Uint8Array(await blob.arrayBuffer()));
+          items.push({ kind: 'img', obj: embed, w: embed.width, h: embed.height, name: f.name });
+        }
+      }
+
+      // 按网格排版，放不下就翻页
+      let page = out.addPage([pw, ph]);
+      let cursorX = margin;
+      let cursorY = ph - margin;
+      let rowH = 0;
+      let pageNo = 1;
+
+      for (const it of items) {
+        let dw = cellW;
+        let dh = (it.h / it.w) * dw;
+        if (maxH && dh > maxH) { dh = maxH; dw = (it.w / it.h) * dh; }
+
+        if (cursorY - dh < margin - 0.5) {
+          page = out.addPage([pw, ph]);
+          pageNo++;
+          cursorX = margin;
+          cursorY = ph - margin;
+          rowH = 0;
+        }
+        if (cursorX + dw > pw - margin + 0.5) {
+          cursorX = margin;
+          cursorY -= rowH;
+          rowH = 0;
+          if (cursorY - dh < margin - 0.5) {
+            page = out.addPage([pw, ph]);
+            pageNo++;
+            cursorX = margin;
+            cursorY = ph - margin;
+          }
+        }
+
+        const y = cursorY - dh;
+        if (it.kind === 'pdf') page.drawPage(it.obj, { x: cursorX, y, width: dw, height: dh });
+        else page.drawImage(it.obj, { x: cursorX, y, width: dw, height: dh });
+
+        cursorX += dw;
+        if (dh > rowH) rowH = dh;
+      }
+
+      const bytes = await out.save();
+      const url = URL.createObjectURL(new Blob([bytes], { type: 'application/pdf' }));
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'invoices-merged.pdf';
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 5000);
+
+      $('im-out').innerHTML =
+        `<table class="result-table" style="margin-top:14px;max-width:480px;">
+          <tr><th>发票数量</th><td>${items.length} 张</td></tr>
+          <tr><th>输出页数</th><td>${out.getPageCount()} 页 A4</td></tr>
+          <tr><th>排版</th><td>每行 ${cols} 张</td></tr>
+        </table>`;
+      $('im-msg').textContent = `已合并 ${items.length} 张发票到 ${out.getPageCount()} 页，开始下载`;
+      $('im-msg').className = 'msg ok';
+    } catch (e) {
+      $('im-msg').textContent = '处理失败：' + (e.message || '文件可能已加密或损坏');
+      $('im-msg').className = 'msg err';
+    }
+  };
+
+  $('im-clear').onclick = () => {
+    $('im-file').value = '';
+    $('im-out').innerHTML = '';
+    $('im-msg').textContent = '';
+  };
+</script>

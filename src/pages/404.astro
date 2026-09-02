@@ -1,0 +1,39 @@
+---
+// 404 页面：Cloudflare Pages 会自动识别 dist/404.html 作为错误页。
+// 不套 Base 布局，原因：404 来自任意路径、语言未知，且 Base 的语言切换逻辑
+// 在非 /zh/、/en/ 路径下会算错链接。这里自包含并同时给出中英两个入口。
+import '../styles/global.css';
+---
+
+<!doctype html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>404 - 页面不存在 | 在线工具箱</title>
+  <meta name="description" content="页面不存在，可返回在线工具箱首页继续使用各类免费在线工具。" />
+  <meta name="robots" content="noindex" />
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap">
+      <a href="/zh/" class="logo">在线工具箱</a>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <div class="notfound">
+      <div class="notfound__code">404</div>
+      <h1 class="notfound__title">页面不存在</h1>
+      <p class="notfound__desc">你访问的页面可能已被移除，或链接有误。</p>
+      <p class="notfound__desc notfound__desc--en">The page you're looking for doesn't exist.</p>
+
+      <div class="notfound__actions">
+        <a class="notfound__btn notfound__btn--primary" href="/zh/">回到中文首页</a>
+        <a class="notfound__btn" href="/en/">Go to English Home</a>
+      </div>
+    </div>
+  </main>
+</body>
+</html>

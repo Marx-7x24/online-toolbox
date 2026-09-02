@@ -1,0 +1,104 @@
+---
+---
+
+<div class="tip">逐行比对两段文本，绿色为新增、红色为删除，适合对照配置与代码改动。</div>
+
+<div class="pane">
+  <div>
+    <div class="field-label"><span>原始文本</span></div>
+    <textarea id="df-a" placeholder="粘贴原始内容" spellcheck="false"></textarea>
+  </div>
+  <div>
+    <div class="field-label"><span>对比文本</span></div>
+    <textarea id="df-b" placeholder="粘贴改动后的内容" spellcheck="false"></textarea>
+  </div>
+</div>
+
+<div class="btn-row">
+  <button class="primary" id="df-go">对比</button>
+  <button id="df-ignore">忽略空白：关</button>
+  <button id="df-swap">交换两侧</button>
+  <button id="df-sample">填入示例</button>
+  <button id="df-clear">清空</button>
+</div>
+
+<p class="msg" id="df-msg"></p>
+<div id="df-out"></div>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  let ignoreWs = false;
+
+  // 最长公共子序列做行级 diff
+  function lcs(a, b) {
+    const n = a.length, m = b.length;
+    const dp = Array.from({ length: n + 1 }, () => new Uint32Array(m + 1));
+    for (let i = 1; i <= n; i++) {
+      for (let j = 1; j <= m; j++) {
+        dp[i][j] = a[i - 1] === b[j - 1] ? dp[i - 1][j - 1] + 1 : Math.max(dp[i - 1][j], dp[i][j - 1]);
+      }
+    }
+    const ops = [];
+    let i = n, j = m;
+    while (i > 0 && j > 0) {
+      if (a[i - 1] === b[j - 1]) { ops.unshift({ t: 'eq', v: a[i - 1], i: i - 1, j: j - 1 }); i--; j--; }
+      else if (dp[i - 1][j] >= dp[i][j - 1]) { ops.unshift({ t: 'del', v: a[i - 1], i: i - 1 }); i--; }
+      else { ops.unshift({ t: 'add', v: b[j - 1], j: j - 1 }); j--; }
+    }
+    while (i > 0) { ops.unshift({ t: 'del', v: a[i - 1], i: i - 1 }); i--; }
+    while (j > 0) { ops.unshift({ t: 'add', v: b[j - 1], j: j - 1 }); j--; }
+    return ops;
+  }
+
+  const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const norm = (s) => (ignoreWs ? s.replace(/\s+/g, ' ').trim() : s);
+
+  function run() {
+    const A = $('df-a').value.split('\n');
+    const B = $('df-b').value.split('\n');
+    const a = A.map(norm), b = B.map(norm);
+    const ops = lcs(a, b);
+    const add = ops.filter((o) => o.t === 'add').length;
+    const del = ops.filter((o) => o.t === 'del').length;
+
+    const style = {
+      eq: 'color:var(--text-sub);',
+      add: 'background:#e8f5e9;color:#1b5e20;',
+      del: 'background:#fdeaea;color:#a4262c;',
+    };
+    const sign = { eq: ' ', add: '+', del: '-' };
+
+    $('df-out').innerHTML =
+      '<div style="border:1px solid var(--border);border-radius:8px;overflow:auto;max-height:460px;background:var(--surface);">' +
+      '<table style="width:100%;border-collapse:collapse;font-family:ui-monospace,monospace;font-size:13px;"><tbody>' +
+      ops.map((o) =>
+        `<tr style="${style[o.t]}"><td style="width:44px;text-align:center;user-select:none;opacity:.7;border-right:1px solid var(--border);">${sign[o.t]}</td>` +
+        `<td style="padding:2px 10px;white-space:pre-wrap;word-break:break-all;">${esc(o.v) || '&nbsp;'}</td></tr>`
+      ).join('') +
+      '</tbody></table></div>';
+
+    $('df-msg').textContent = add + del === 0 ? '两段内容完全一致' : `新增 ${add} 行，删除 ${del} 行`;
+    $('df-msg').className = add + del === 0 ? 'msg ok' : 'msg';
+  }
+
+  $('df-go').onclick = run;
+  $('df-ignore').onclick = () => {
+    ignoreWs = !ignoreWs;
+    $('df-ignore').textContent = '忽略空白：' + (ignoreWs ? '开' : '关');
+    run();
+  };
+  $('df-swap').onclick = () => {
+    const x = $('df-a').value;
+    $('df-a').value = $('df-b').value;
+    $('df-b').value = x;
+    run();
+  };
+  $('df-sample').onclick = () => {
+    $('df-a').value = 'server {\n    listen 80;\n    server_name a.com;\n    root /var/www/a;\n}';
+    $('df-b').value = 'server {\n    listen 443 ssl;\n    server_name b.com;\n    root /var/www/b;\n    gzip on;\n}';
+    run();
+  };
+  $('df-clear').onclick = () => {
+    $('df-a').value = ''; $('df-b').value = ''; $('df-out').innerHTML = ''; $('df-msg').textContent = '';
+  };
+</script>

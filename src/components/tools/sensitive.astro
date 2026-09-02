@@ -1,0 +1,65 @@
+---
+// 文本敏感词检测：本地词表 + 自定义词表
+---
+<div class="pane">
+  <div>
+    <div class="field-label"><span>待检测文本</span></div>
+    <textarea id="sw-text" placeholder="粘贴要检测的文本"></textarea>
+    <div class="field-label" style="margin-top:10px;"><span>自定义敏感词（每行一个）</span></div>
+    <textarea id="sw-custom" placeholder="可补充业务自有词表，与内置词表合并"></textarea>
+  </div>
+  <div>
+    <div class="field-label"><span>检测结果</span></div>
+    <div id="sw-out" class="sw-out">尚未检测</div>
+  </div>
+</div>
+<div class="btn-row">
+  <button id="sw-run" class="primary">检测</button>
+  <span id="sw-msg" class="msg"></span>
+</div>
+
+<style>
+  .sw-out {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 14px;
+    min-height: 200px;
+    line-height: 1.8;
+    white-space: pre-wrap;
+    word-break: break-all;
+    background: var(--bg-soft);
+  }
+  .sw-hit { color: #d6336c; font-weight: 600; }
+</style>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  // 内置演示词表（少量常见合规风险词，用户应以自有业务词表替换）
+  const BUILTIN = ['违禁', '私彩', '赌博', '色情', '暴利', '代开发票', '办证', '高仿', '假证', '刷单', '返利盘'];
+  function detect(text, words) {
+    const hits = [];
+    for (const w of words) {
+      if (!w) continue;
+      let from = 0, i;
+      while ((i = text.indexOf(w, from)) !== -1) {
+        hits.push({ word: w, pos: i });
+        from = i + w.length;
+      }
+    }
+    return hits;
+  }
+  $('sw-run').addEventListener('click', () => {
+    const text = $('sw-text').value;
+    if (!text) { $('sw-out').textContent = '请先输入文本'; return; }
+    const custom = $('sw-custom').value.split('\n').map((x) => x.trim()).filter(Boolean);
+    const words = [...new Set([...BUILTIN, ...custom])];
+    const hits = detect(text, words);
+    if (!hits.length) { $('sw-out').textContent = '未检测到敏感词 ✓'; $('sw-msg').textContent = '通过'; $('sw-msg').className = 'msg ok'; return; }
+    // 统计每个词出现次数
+    const cnt = {};
+    hits.forEach((h) => { cnt[h.word] = (cnt[h.word] || 0) + 1; });
+    const summary = Object.entries(cnt).map(([w, n]) => `${w} ×${n}`).join('、');
+    $('sw-out').textContent = `共 ${hits.length} 处命中：${summary}\n\n（内置仅为演示词表，请以业务自有词表为准）`;
+    $('sw-msg').textContent = `命中 ${hits.length} 处`; $('sw-msg').className = 'msg err';
+  });
+</script>

@@ -1,0 +1,51 @@
+---
+// URL 安全扫描：本地启发式，无联网
+---
+<div>
+  <div class="field-label"><span>待检测网址</span></div>
+  <input type="text" id="us-url" placeholder="https://example.com/login" autocomplete="off">
+  <div class="field-label" style="margin-top:12px;"><span>扫描结果</span></div>
+  <div id="us-out" class="us-out">等待检测</div>
+</div>
+<div class="btn-row">
+  <button id="us-run" class="primary">扫描</button>
+  <span id="us-msg" class="msg"></span>
+</div>
+
+<style>
+  .us-out { border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; min-height: 140px; line-height: 1.8; background: var(--bg-soft); font-size: 13px; }
+  .us-out .flag { display: flex; gap: 8px; padding: 3px 0; border-bottom: 1px dashed var(--border); }
+  .us-out .sev-h { color: #e03131; font-weight: 600; }
+  .us-out .sev-m { color: #f08c00; font-weight: 600; }
+  .us-out .sev-l { color: #2f9e44; font-weight: 600; }
+</style>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  const SUS_TLD = ['xyz', 'tk', 'ml', 'ga', 'cf', 'gq', 'ru', 'top', 'click', 'link', 'country', 'stream', 'download', 'loan', 'work', 'men'];
+  $('us-run').addEventListener('click', () => {
+    const raw = $('us-url').value.trim();
+    if (!raw) { $('us-out').textContent = '等待检测'; return; }
+    const flags = [];
+    let score = 0;
+    const lower = raw.toLowerCase();
+    if (!/^https?:\/\//.test(lower)) { flags.push(['中', '缺少协议头（http/https），无法判断传输安全']); score += 1; }
+    if (/^http:\/\//.test(lower)) { flags.push(['中', '使用明文 HTTP，传输可被窃听，建议 HTTPS']); score += 2; }
+    if (lower.includes('@')) { flags.push(['高', 'URL 中含 @，可能用于钓鱼跳转（userinfo 陷阱）']); score += 3; }
+    const host = lower.replace(/^https?:\/\//, '').split('/')[0].split('?')[0];
+    if (/^\d{1,3}(\.\d{1,3}){3}$/.test(host)) { flags.push(['中', '直接使用 IP 地址而非域名，常见于恶意站点']); score += 2; }
+    if (host.includes('xn--')) { flags.push(['中', '含 punycode（xn--），可能为国际化域名/同形异义攻击']); score += 2; }
+    const tld = host.split('.').pop();
+    if (SUS_TLD.includes(tld)) { flags.push(['中', `使用了高风险后缀 .${tld}`]); score += 2; }
+    if ((lower.match(/%[0-9a-f]{2}/gi) || []).length > 1) { flags.push(['低', '含多个百分号编码，可能用于混淆']); score += 1; }
+    if ((host.match(/\./g) || []).length > 4) { flags.push(['低', '域名点号过多，可能为长域名欺骗']); score += 1; }
+    if (raw.length > 120) { flags.push(['低', 'URL 过长，可能是拼接的追踪/钓鱼链接']); score += 1; }
+    const level = score >= 5 ? ['高', 'sev-h'] : score >= 2 ? ['中', 'sev-m'] : ['低', 'sev-l'];
+    const head = `<div class="flag"><span class="sev-h">风险等级：${level[0]}</span><span>（命中 ${score} 分）</span></div>`;
+    const body = flags.length
+      ? flags.map(([s, t]) => `<div class="flag"><span class="sev-${s === '高' ? 'h' : s === '中' ? 'm' : 'l'}">[${s}]</span><span>${t}</span></div>`).join('')
+      : '<div class="flag"><span class="sev-l">未命中明显风险特征</span></div>';
+    $('us-out').innerHTML = head + body + '<div class="flag" style="border:0;color:var(--text-sub)">注：仅本地启发式，不等同于权威黑名单查询。</div>';
+    $('us-msg').textContent = '扫描完成'; $('us-msg').className = 'msg ok';
+  });
+</script>

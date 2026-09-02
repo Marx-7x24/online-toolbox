@@ -1,0 +1,252 @@
+---
+---
+
+<div class="tip">PDF 与印章都在你本机处理。骑缝章会把印章按页数等分，每页盖对应的一片。</div>
+
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;">
+  <div>
+    <div class="field-label"><span>PDF 文件</span><span id="ps-info"></span></div>
+    <input type="file" id="ps-pdf" accept="application/pdf" style="width:auto;font-family:inherit;padding:6px;border:none;" />
+  </div>
+  <div>
+    <div class="field-label"><span>印章图片</span><span id="ps-seal-info"></span></div>
+    <input type="file" id="ps-seal" accept="image/*" style="width:auto;font-family:inherit;padding:6px;border:none;" />
+  </div>
+</div>
+
+<div style="margin-top:14px;">
+  <div class="field-label"><span>盖章方式</span></div>
+  <select id="ps-type" style="max-width:320px;">
+    <option value="normal">普通章（每页同一位置）</option>
+    <option value="riding">骑缝章（跨页分割）</option>
+  </select>
+</div>
+
+<div id="ps-normal-opts" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-top:12px;">
+  <div>
+    <div class="field-label"><span>位置</span></div>
+    <select id="ps-pos">
+      <option value="br" selected>右下</option>
+      <option value="bl">左下</option>
+      <option value="center">居中</option>
+      <option value="tr">右上</option>
+      <option value="tl">左上</option>
+    </select>
+  </div>
+  <div>
+    <div class="field-label"><span>印章大小</span><span id="ps-size-val">60 mm</span></div>
+    <input type="range" id="ps-size" min="20" max="120" value="60" style="padding:0;" />
+  </div>
+  <div>
+    <div class="field-label"><span>不透明度</span><span id="ps-op-val">85%</span></div>
+    <input type="range" id="ps-op" min="10" max="100" value="85" style="padding:0;" />
+  </div>
+  <div>
+    <div class="field-label"><span>旋转角度</span><span id="ps-rot-val">0°</span></div>
+    <input type="range" id="ps-rot" min="-45" max="45" value="0" style="padding:0;" />
+  </div>
+</div>
+
+<div id="ps-riding-opts" style="display:none;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-top:12px;">
+  <div>
+    <div class="field-label"><span>骑缝边</span></div>
+    <select id="ps-side">
+      <option value="right" selected>右侧竖排</option>
+      <option value="left">左侧竖排</option>
+    </select>
+  </div>
+  <div>
+    <div class="field-label"><span>分割方式</span></div>
+    <select id="ps-split">
+      <option value="even">按页数等分</option>
+      <option value="overlap">等分并留重叠</option>
+    </select>
+  </div>
+  <div>
+    <div class="field-label"><span>印章竖向长度</span><span id="ps-rlen-val">80 mm</span></div>
+    <input type="range" id="ps-rlen" min="30" max="180" value="80" style="padding:0;" />
+  </div>
+  <div>
+    <div class="field-label"><span>不透明度</span><span id="ps-rop-val">85%</span></div>
+    <input type="range" id="ps-rop" min="10" max="100" value="85" style="padding:0;" />
+  </div>
+</div>
+
+<div style="margin-top:14px;">
+  <div class="field-label"><span>盖章页码</span></div>
+  <input type="text" id="ps-pages" placeholder="留空表示全部页，如 1-3,5" style="max-width:320px;" spellcheck="false" />
+</div>
+
+<div class="btn-row">
+  <button class="primary" id="ps-go">盖章并下载</button>
+  <button id="ps-clear">清空</button>
+</div>
+
+<p class="msg" id="ps-msg"></p>
+
+<script>
+  import { PDFDocument, degrees } from 'pdf-lib';
+
+  const $ = (id) => document.getElementById(id);
+  const mm = (v) => (v / 25.4) * 72;
+
+  function showOpts() {
+    const riding = $('ps-type').value === 'riding';
+    $('ps-normal-opts').style.display = riding ? 'none' : 'grid';
+    $('ps-riding-opts').style.display = riding ? 'grid' : 'none';
+  }
+  $('ps-type').onchange = showOpts;
+
+  ['ps-size', 'ps-op', 'ps-rot', 'ps-rlen', 'ps-rop'].forEach((id) => {
+    $(id).oninput = () => {
+      $('ps-size-val').textContent = $('ps-size').value + ' mm';
+      $('ps-op-val').textContent = $('ps-op').value + '%';
+      $('ps-rot-val').textContent = $('ps-rot').value + '°';
+      $('ps-rlen-val').textContent = $('ps-rlen').value + ' mm';
+      $('ps-rop-val').textContent = $('ps-rop').value + '%';
+    };
+  });
+
+  $('ps-pdf').onchange = async (e) => {
+    const f = e.target.files[0];
+    if (!f) return;
+    try {
+      const doc = await PDFDocument.load(new Uint8Array(await f.arrayBuffer()));
+      $('ps-info').textContent = `${doc.getPageCount()} 页`;
+    } catch (err) {
+      $('ps-info').textContent = '读取失败';
+    }
+  };
+  $('ps-seal').onchange = (e) => {
+    $('ps-seal-info').textContent = e.target.files[0] ? e.target.files[0].name : '';
+  };
+
+  function loadImage(src) {
+    return new Promise((res, rej) => {
+      const img = new Image();
+      img.onload = () => res(img);
+      img.onerror = rej;
+      img.src = src;
+    });
+  }
+
+  // 印章统一转 PNG（保留透明背景）
+  async function sealToPng(img) {
+    const c = document.createElement('canvas');
+    c.width = img.width; c.height = img.height;
+    c.getContext('2d').drawImage(img, 0, 0);
+    return await new Promise((r) => c.toBlob(r, 'image/png'));
+  }
+
+  function parsePages(str, total) {
+    const s = str.trim();
+    if (!s) return [...Array(total).keys()];
+    const out = [];
+    for (const part of s.split(',')) {
+      const t = part.trim();
+      if (!t) continue;
+      const m = t.match(/^(\d+)\s*-\s*(\d+)$/);
+      if (m) {
+        for (let i = Math.min(+m[1], +m[2]); i <= Math.max(+m[1], +m[2]); i++) if (i >= 1 && i <= total) out.push(i - 1);
+      } else if (/^\d+$/.test(t)) {
+        const n = +t;
+        if (n >= 1 && n <= total) out.push(n - 1);
+      } else throw new Error('页码格式无法识别：' + t);
+    }
+    return [...new Set(out)].sort((a, b) => a - b);
+  }
+
+  $('ps-go').onclick = async () => {
+    const pdfFile = $('ps-pdf').files[0];
+    const sealFile = $('ps-seal').files[0];
+    if (!pdfFile || !sealFile) { $('ps-msg').textContent = '请选择 PDF 与印章图片'; $('ps-msg').className = 'msg err'; return; }
+    $('ps-msg').textContent = '处理中…';
+    $('ps-msg').className = 'msg';
+
+    try {
+      const pdf = await PDFDocument.load(new Uint8Array(await pdfFile.arrayBuffer()));
+      const sealImg = await loadImage(URL.createObjectURL(sealFile));
+      const pngBlob = await sealToPng(sealImg);
+      const sealBytes = new Uint8Array(await pngBlob.arrayBuffer());
+
+      const pages = pdf.getPages();
+      const total = pages.length;
+      const targets = parsePages($('ps-pages').value, total);
+      if (!targets.length) throw new Error('没有有效页码');
+
+      if ($('ps-type').value === 'normal') {
+        const embed = await pdf.embedPng(sealBytes);
+        const size = mm(+$('ps-size').value);
+        const scale = size / Math.max(embed.width, embed.height);
+        const w = embed.width * scale, h = embed.height * scale;
+        const gap = mm(12);
+        const opacity = +$('ps-op').value / 100;
+        const rot = +$('ps-rot').value;
+
+        for (const idx of targets) {
+          const p = pages[idx];
+          const { width: pw, height: ph } = p.getSize();
+          const pos = {
+            br: [pw - w - gap, gap], bl: [gap, gap],
+            tr: [pw - w - gap, ph - h - gap], tl: [gap, ph - h - gap],
+            center: [(pw - w) / 2, (ph - h) / 2],
+          }[$('ps-pos').value];
+          p.drawImage(embed, { x: pos[0], y: pos[1], width: w, height: h, opacity, rotate: degrees(rot) });
+        }
+      } else {
+        // 骑缝章：把印章竖向等分，每页画一片
+        const n = targets.length;
+        const lenMm = +$('ps-rlen').value;
+        const opacity = +$('ps-rop').value / 100;
+        const side = $('ps-side').value;
+        const overlap = $('ps-split').value === 'overlap';
+
+        const sliceW = Math.max(1, Math.floor(sealImg.width / n));
+        for (let k = 0; k < n; k++) {
+          let sx = k * sliceW;
+          let sw = sliceW;
+          if (overlap && n > 1) {
+            const ov = Math.floor(sliceW * 0.35);
+            sw = sliceW + ov;
+            sx = Math.max(0, sx - Math.floor(ov / 2));
+            if (sx + sw > sealImg.width) sw = sealImg.width - sx;
+          }
+          const c = document.createElement('canvas');
+          c.width = sw; c.height = sealImg.height;
+          c.getContext('2d').drawImage(sealImg, sx, 0, sw, sealImg.height, 0, 0, sw, sealImg.height);
+          const blob = await new Promise((r) => c.toBlob(r, 'image/png'));
+          const embed = await pdf.embedPng(new Uint8Array(await blob.arrayBuffer()));
+
+          const hPt = mm(lenMm);
+          const wPt = (sw / sealImg.height) * hPt;
+          const p = pages[targets[k]];
+          const { width: pw, height: ph } = p.getSize();
+          const x = side === 'right' ? pw - wPt - mm(4) : mm(4);
+          const y = (ph - hPt) / 2;
+          p.drawImage(embed, { x, y, width: wPt, height: hPt, opacity });
+        }
+      }
+
+      const bytes = await pdf.save();
+      const url = URL.createObjectURL(new Blob([bytes], { type: 'application/pdf' }));
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'stamped.pdf';
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 5000);
+      $('ps-msg').textContent = `已在 ${targets.length} 页盖章，开始下载`;
+      $('ps-msg').className = 'msg ok';
+    } catch (e) {
+      $('ps-msg').textContent = '盖章失败：' + (e.message || '文件可能已加密或损坏');
+      $('ps-msg').className = 'msg err';
+    }
+  };
+
+  $('ps-clear').onclick = () => {
+    $('ps-pdf').value = ''; $('ps-seal').value = '';
+    $('ps-pages').value = '';
+    $('ps-info').textContent = ''; $('ps-seal-info').textContent = '';
+    $('ps-msg').textContent = '';
+  };
+  showOpts();
+</script>

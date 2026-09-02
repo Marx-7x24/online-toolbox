@@ -1,0 +1,44 @@
+---
+// JSON 路径提取：本地按点路径取值
+---
+<div class="pane">
+  <div>
+    <div class="field-label"><span>JSON 输入</span></div>
+    <textarea id="jp-json" placeholder='{"user":{"name":"Tom","tags":["a","b"]}}'></textarea>
+    <div class="field-label" style="margin-top:10px;"><span>路径（如 user.name 或 tags.0）</span></div>
+    <input type="text" id="jp-path" placeholder="user.name" value="user.name">
+  </div>
+  <div>
+    <div class="field-label"><span>提取结果</span></div>
+    <textarea id="jp-out" readonly></textarea>
+  </div>
+</div>
+<div class="btn-row">
+  <button id="jp-run" class="primary">提取</button>
+  <button id="jp-copy">复制</button>
+  <span id="jp-msg" class="msg"></span>
+</div>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  function getPath(obj, path) {
+    return path.split('.').reduce((o, k) => (o == null ? undefined : o[k]), obj);
+  }
+  $('jp-run').addEventListener('click', () => {
+    const raw = $('jp-json').value;
+    const path = $('jp-path').value.trim();
+    if (!raw) { $('jp-msg').textContent = '请输入 JSON'; $('jp-msg').className = 'msg err'; return; }
+    if (!path) { $('jp-msg').textContent = '请输入路径'; $('jp-msg').className = 'msg err'; return; }
+    let data;
+    try { data = JSON.parse(raw); } catch (e) { $('jp-msg').textContent = 'JSON 解析失败：' + e.message; $('jp-msg').className = 'msg err'; return; }
+    const val = getPath(data, path);
+    if (val === undefined) { $('jp-out').value = ''; $('jp-msg').textContent = '路径不存在'; $('jp-msg').className = 'msg err'; return; }
+    $('jp-out').value = typeof val === 'object' ? JSON.stringify(val, null, 2) : String(val);
+    $('jp-msg').textContent = '提取成功'; $('jp-msg').className = 'msg ok';
+  });
+  $('jp-copy').addEventListener('click', async () => {
+    if (!$('jp-out').value) return;
+    try { await navigator.clipboard.writeText($('jp-out').value); $('jp-msg').textContent = '已复制'; $('jp-msg').className = 'msg ok'; }
+    catch { $('jp-msg').textContent = '复制失败'; $('jp-msg').className = 'msg err'; }
+  });
+</script>

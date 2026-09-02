@@ -1,0 +1,102 @@
+---
+// Flex 布局生成器：可视化调整参数，实时预览并生成标准 flex CSS
+---
+
+<div class="gen">
+  <div class="gen__controls">
+    <label>主轴方向
+      <select id="fg-direction">
+        <option value="row">row</option>
+        <option value="row-reverse">row-reverse</option>
+        <option value="column">column</option>
+        <option value="column-reverse">column-reverse</option>
+      </select>
+    </label>
+    <label>主轴对齐 (justify-content)
+      <select id="fg-justify">
+        <option value="flex-start">flex-start</option>
+        <option value="flex-end">flex-end</option>
+        <option value="center">center</option>
+        <option value="space-between">space-between</option>
+        <option value="space-around">space-around</option>
+        <option value="space-evenly">space-evenly</option>
+      </select>
+    </label>
+    <label>交叉轴对齐 (align-items)
+      <select id="fg-align">
+        <option value="stretch">stretch</option>
+        <option value="flex-start">flex-start</option>
+        <option value="flex-end">flex-end</option>
+        <option value="center">center</option>
+        <option value="baseline">baseline</option>
+      </select>
+    </label>
+    <label>换行 (flex-wrap)
+      <select id="fg-wrap">
+        <option value="nowrap">nowrap</option>
+        <option value="wrap">wrap</option>
+        <option value="wrap-reverse">wrap-reverse</option>
+      </select>
+    </label>
+    <label>间距 (gap, px)
+      <input id="fg-gap" type="number" value="10" min="0" max="60" />
+    </label>
+  </div>
+
+  <div class="gen__preview">
+    <div id="fg-preview" class="fg-box">
+      <div class="fg-item">1</div>
+      <div class="fg-item">2</div>
+      <div class="fg-item">3</div>
+      <div class="fg-item">4</div>
+    </div>
+  </div>
+
+  <pre id="fg-out" class="gen__code"></pre>
+  <div class="btn-row">
+    <button id="fg-copy" class="primary">复制 CSS</button>
+    <span id="fg-msg" class="msg"></span>
+  </div>
+</div>
+
+<style>
+  .gen__controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin-bottom: 14px; }
+  .gen__controls label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--text-sub); }
+  .fg-box {
+    display: flex; flex-direction: row; gap: 10px;
+    background: #fafbfc; border: 1px solid var(--border); border-radius: 8px;
+    min-height: 160px; padding: 10px;
+  }
+  .fg-item {
+    background: var(--brand); color: #fff; border-radius: 6px;
+    width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; font-weight: 600;
+  }
+  .gen__code { background: #0f172a; color: #e2e8f0; padding: 12px 14px; border-radius: 8px; font-size: 13px; overflow:auto; }
+</style>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  const dir = $('fg-direction'), just = $('fg-justify'), align = $('fg-align'), wrap = $('fg-wrap'), gap = $('fg-gap');
+  const preview = $('fg-preview'), out = $('fg-out'), msg = $('fg-msg');
+
+  function update() {
+    const css = {
+      'display': 'flex',
+      'flex-direction': dir.value,
+      'justify-content': just.value,
+      'align-items': align.value,
+      'flex-wrap': wrap.value,
+      'gap': gap.value + 'px',
+    };
+    const cssText = Object.entries(css).map(([k, v]) => `  ${k}: ${v};`).join('\n');
+    preview.style.cssText = cssText;
+    out.textContent = `.box {\n${cssText}\n}`;
+  }
+  [dir, just, align, wrap, gap].forEach((el) => el.addEventListener('input', update));
+  update();
+
+  $('fg-copy').addEventListener('click', async () => {
+    try { await navigator.clipboard.writeText(out.textContent); msg.textContent = '已复制'; msg.className = 'msg ok'; }
+    catch { msg.textContent = '复制失败，请手动选择'; msg.className = 'msg err'; }
+  });
+</script>

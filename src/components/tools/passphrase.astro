@@ -1,0 +1,56 @@
+---
+// 密码短语生成：内置词表，本地生成
+---
+<div>
+  <div class="field-label"><span>词数</span></div>
+  <input type="number" id="pp-n" min="2" max="12" value="4">
+  <div class="field-label" style="margin-top:10px;"><span>分隔符</span></div>
+  <select id="pp-sep"><option value="-">-（连字符）</option><option value=".">.（点）</option><option value=" ">空格</option><option value="_">_（下划线）</option></select>
+  <label class="chk"><input type="checkbox" id="pp-num"> 末尾加数字</label>
+  <label class="chk"><input type="checkbox" id="pp-sym"> 末尾加符号</label>
+  <div class="field-label" style="margin-top:12px;"><span>生成结果</span></div>
+  <div id="pp-out" class="pp-out">点击生成</div>
+</div>
+<div class="btn-row">
+  <button id="pp-gen" class="primary">生成</button>
+  <button id="pp-copy">复制</button>
+  <span id="pp-msg" class="msg"></span>
+</div>
+
+<style>
+  .chk { display: inline-flex; align-items: center; gap: 6px; margin: 10px 14px 0 0; font-size: 13px; color: var(--text-sub); }
+  .pp-out {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 14px;
+    min-height: 48px;
+    background: var(--bg-soft);
+    font-family: ui-monospace, Menlo, Consolas, monospace;
+    word-break: break-all;
+    font-size: 15px;
+  }
+</style>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  const WORDS = 'apple,bread,cloud,dance,eagle,flame,green,heart,iron,jelly,kite,lemon,moon,night,ocean,paper,queen,river,sun,tiger,umbra,violet,wind,xenon,yarn,zebra,book,calm,deep,east,fast,gold,hope,ink,jump,key,leaf,mist,nova,open,pine,quiet,rain,star,tree,urban,void,wave,yes,beam,cell,dusk,echo,foil,gust,hill,iris,join,kind,loom,maze,node,orb,plum,reed,seed,spark,time,unit,veil,well,wood,yarn,arch,bay,coin,dove,ember,form,gem,holy,ivy,jade,knot,lark,moss,pearl,quill,rose,shade,stone,thorn,value,will'.split(',');
+  function pick() { return WORDS[Math.floor(Math.random() * WORDS.length)]; }
+  $('pp-gen').addEventListener('click', () => {
+    const n = Math.max(2, Math.min(12, parseInt($('pp-n').value, 10) || 4));
+    const sep = $('pp-sep').value;
+    const words = [];
+    let prev = '';
+    for (let i = 0; i < n; i++) { let w = pick(); while (w === prev) w = pick(); prev = w; words.push(w); }
+    let out = words.join(sep);
+    if ($('pp-num').checked) out += sep + Math.floor(Math.random() * 9000 + 1000);
+    if ($('pp-sym').checked) out += sep + '!@#$%^&*'.charAt(Math.floor(Math.random() * 8));
+    $('pp-out').textContent = out;
+    $('pp-msg').textContent = `约 ${Math.round(n * Math.log2(WORDS.length))} bit 熵`; $('pp-msg').className = 'msg ok';
+  });
+  $('pp-copy').addEventListener('click', async () => {
+    if (!$('pp-out').textContent || $('pp-out').textContent === '点击生成') return;
+    try { await navigator.clipboard.writeText($('pp-out').textContent); $('pp-msg').textContent = '已复制'; $('pp-msg').className = 'msg ok'; }
+    catch { $('pp-msg').textContent = '复制失败'; $('pp-msg').className = 'msg err'; }
+  });
+  $('pp-gen').click();
+</script>

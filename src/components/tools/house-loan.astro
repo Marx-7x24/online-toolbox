@@ -1,0 +1,125 @@
+---
+---
+
+<div class="tip">等额本息月供固定、总利息多；等额本金月供递减、总利息少。可切换对比。</div>
+
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;">
+  <div>
+    <div class="field-label"><span>贷款总额（万元）</span></div>
+    <input type="number" id="hl-amount" value="150" min="1" step="1" />
+  </div>
+  <div>
+    <div class="field-label"><span>贷款年限</span></div>
+    <select id="hl-years">
+      <option value="10">10 年</option>
+      <option value="15">15 年</option>
+      <option value="20">20 年</option>
+      <option value="25">25 年</option>
+      <option value="30" selected>30 年</option>
+    </select>
+  </div>
+  <div>
+    <div class="field-label"><span>年利率</span><span id="hl-rate-val">3.10%</span></div>
+    <input type="range" id="hl-rate" min="200" max="700" value="310" style="padding:0;" />
+  </div>
+  <div>
+    <div class="field-label"><span>还款方式</span></div>
+    <select id="hl-type">
+      <option value="equal">等额本息</option>
+      <option value="principal">等额本金</option>
+    </select>
+  </div>
+</div>
+
+<div class="btn-row">
+  <button class="primary" id="hl-go">计算</button>
+  <button id="hl-clear">重置</button>
+</div>
+
+<div id="hl-out"></div>
+<p class="msg" id="hl-msg"></p>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+
+  $('hl-rate').oninput = () => { $('hl-rate-val').textContent = ($('hl-rate').value / 100).toFixed(2) + '%'; };
+
+  function calc() {
+    const P = (+$('hl-amount').value || 0) * 10000;
+    const years = +$('hl-years').value;
+    const n = years * 12;
+    const annual = +$('hl-rate').value / 100 / 100;
+    const i = annual / 12;
+    const type = $('hl-type').value;
+
+    const fmt = (v) => '¥' + Math.round(v).toLocaleString('zh-CN');
+    let firstPay = 0, lastPay = 0, totalInterest = 0, schedule = [];
+
+    if (type === 'equal') {
+      const pay = (i === 0) ? P / n : (P * i * Math.pow(1 + i, n)) / (Math.pow(1 + i, n) - 1);
+      firstPay = pay; lastPay = pay;
+      totalInterest = pay * n - P;
+      let bal = P;
+      for (let m = 1; m <= n; m++) {
+        const intPart = bal * i;
+        const prinPart = pay - intPart;
+        bal -= prinPart;
+        if (m <= 12 || m % 60 === 0) {
+          schedule.push([m, pay, prinPart, intPart, Math.max(0, bal)]);
+        }
+      }
+    } else {
+      const prinPer = P / n;
+      let bal = P;
+      for (let m = 1; m <= n; m++) {
+        const intPart = bal * i;
+        const pay = prinPer + intPart;
+        bal -= prinPer;
+        if (m === 1) firstPay = pay;
+        lastPay = pay;
+        totalInterest += intPart;
+        if (m <= 12 || m % 60 === 0) schedule.push([m, pay, prinPer, intPart, Math.max(0, bal)]);
+      }
+    }
+
+    const cmp = type === 'equal'
+      ? `等额本金首月约 ${fmt(P / n + P * i)}，总利息约 ${fmt((P * i * (n + 1)) / 2)}`
+      : `等额本息月供约 ${fmt((P * i * Math.pow(1 + i, n)) / (Math.pow(1 + i, n) - 1))}，总利息约 ${fmt((P * i * Math.pow(1 + i, n) / (Math.pow(1 + i, n) - 1)) * n - P)}`;
+
+    $('hl-out').innerHTML =
+      '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:16px 0;">' +
+      [[type === 'equal' ? '每月月供' : '首月月供', firstPay],
+       [type === 'equal' ? '末月月供' : '末月月供', lastPay],
+       ['支付利息总额', totalInterest],
+       ['本息合计', P + totalInterest]]
+        .map(([k, v]) => `<div style="background:var(--bg);border-radius:10px;padding:12px;">
+          <div style="font-size:12px;color:var(--text-sub);">${k}</div>
+          <div style="font-size:19px;font-weight:500;">${fmt(v)}</div></div>`).join('') +
+      '</div>' +
+      `<table class="result-table" style="max-width:560px;">
+        <tr><th>贷款总额</th><td>${fmt(P)}</td></tr>
+        <tr><th>贷款期限</th><td>${years} 年（${n} 期）</td></tr>
+        <tr><th>年利率</th><td>${(annual * 100).toFixed(2)}%</td></tr>
+        <tr><th>另一种方式</th><td style="font-size:13px;color:var(--text-sub);">${cmp}</td></tr>
+      </table>` +
+      '<div class="field-label" style="margin-top:16px;"><span>还款计划（前 12 期及每 5 年）</span></div>' +
+      '<div style="max-height:320px;overflow:auto;"><table class="result-table">' +
+      '<tr><th>期数</th><th>月供</th><th>本金</th><th>利息</th><th>剩余本金</th></tr>' +
+      schedule.map(([m, pay, prin, int, bal]) =>
+        `<tr><td>${m}</td><td>${fmt(pay)}</td><td>${fmt(prin)}</td><td>${fmt(int)}</td><td>${fmt(bal)}</td></tr>`
+      ).join('') +
+      '</table></div>';
+
+    $('hl-msg').textContent = '计算完成';
+    $('hl-msg').className = 'msg ok';
+  }
+
+  ['hl-amount', 'hl-years', 'hl-rate', 'hl-type'].forEach((id) => { $(id).oninput = calc; $(id).onchange = calc; });
+  $('hl-go').onclick = calc;
+  $('hl-clear').onclick = () => {
+    $('hl-amount').value = 150; $('hl-years').value = 30; $('hl-rate').value = 310; $('hl-type').value = 'equal';
+    $('hl-rate-val').textContent = '3.10%';
+    calc();
+  };
+  calc();
+</script>

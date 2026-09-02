@@ -1,0 +1,62 @@
+---
+// Cron 可视化生成：本地拼接
+---
+<div>
+  <div class="field-label"><span>分钟（0-59，* 表示每分）</span></div>
+  <input type="text" id="cb-min" value="*">
+  <div class="field-label" style="margin-top:10px;"><span>小时（0-23）</span></div>
+  <input type="text" id="cb-hour" value="*">
+  <div class="field-label" style="margin-top:10px;"><span>日（1-31）</span></div>
+  <input type="text" id="cb-dom" value="*">
+  <div class="field-label" style="margin-top:10px;"><span>月（1-12）</span></div>
+  <input type="text" id="cb-mon" value="*">
+  <div class="field-label" style="margin-top:10px;"><span>星期（0-6，0=周日）</span></div>
+  <input type="text" id="cb-dow" value="*">
+  <div class="field-label" style="margin-top:12px;"><span>生成的表达式</span></div>
+  <div id="cb-out" class="cb-out">* * * * *</div>
+  <div class="cb-presets">
+    <button data-p="* * * * *">每分钟</button>
+    <button data-p="*/5 * * * *">每 5 分</button>
+    <button data-p="0 * * * *">每小时</button>
+    <button data-p="0 0 * * *">每天 0 点</button>
+    <button data-p="0 0 * * 1">每周一 0 点</button>
+    <button data-p="0 0 1 * *">每月 1 号</button>
+  </div>
+</div>
+<div class="btn-row">
+  <button id="cb-copy">复制表达式</button>
+  <span id="cb-msg" class="msg"></span>
+</div>
+
+<style>
+  .cb-out {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 14px;
+    min-height: 44px;
+    background: var(--bg-soft);
+    font-family: ui-monospace, Menlo, Consolas, monospace;
+    font-size: 16px;
+  }
+  .cb-presets { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+</style>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  const FIELDS = ['cb-min', 'cb-hour', 'cb-dom', 'cb-mon', 'cb-dow'];
+  function build() {
+    const expr = FIELDS.map((id) => $(id).value.trim() || '*').join(' ');
+    $('cb-out').textContent = expr;
+  }
+  FIELDS.forEach((id) => $(id).addEventListener('input', build));
+  document.querySelectorAll('.cb-presets button').forEach((b) => b.addEventListener('click', () => {
+    const p = b.dataset.p.split(' ');
+    FIELDS.forEach((id, i) => $(id).value = p[i]);
+    build();
+  }));
+  $('cb-copy').addEventListener('click', async () => {
+    try { await navigator.clipboard.writeText($('cb-out').textContent); $('cb-msg').textContent = '已复制'; $('cb-msg').className = 'msg ok'; }
+    catch { $('cb-msg').textContent = '复制失败'; $('cb-msg').className = 'msg err'; }
+  });
+  build();
+</script>

@@ -1,0 +1,48 @@
+---
+// Markdown 转 HTML：基于 marked，本地转换，实时预览
+import { marked } from 'marked';
+---
+
+<div class="pane">
+  <div>
+    <div class="field-label"><span>Markdown 输入</span></div>
+    <textarea id="md-in" placeholder="# 标题&#10;**加粗** 与 *斜体*&#10;- 列表项"></textarea>
+  </div>
+  <div>
+    <div class="field-label"><span>HTML 预览</span></div>
+    <div id="md-preview" class="md-preview"></div>
+  </div>
+</div>
+<div class="field-label" style="margin-top:12px;"><span>HTML 代码</span></div>
+<textarea id="md-out" readonly></textarea>
+<div class="btn-row">
+  <button id="md-copy" class="primary">复制 HTML</button>
+  <span id="md-msg" class="msg"></span>
+</div>
+
+<style>
+  .md-preview { border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; min-height: 240px; background: #fff; overflow: auto; }
+  .md-preview :first-child { margin-top: 0; }
+  .md-preview pre { background: #f6f8fa; padding: 8px; border-radius: 6px; overflow: auto; }
+  .md-preview code { background: #f6f8fa; padding: 1px 4px; border-radius: 4px; }
+  .md-preview blockquote { border-left: 3px solid var(--border); margin: 0; padding-left: 12px; color: var(--text-sub); }
+</style>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  const input = $('md-in'), preview = $('md-preview'), output = $('md-out'), msg = $('md-msg');
+
+  function render() {
+    const html = marked.parse(input.value || '');
+    preview.innerHTML = html;
+    output.value = html;
+  }
+  input.addEventListener('input', render);
+  render();
+
+  $('md-copy').addEventListener('click', async () => {
+    if (!output.value) return;
+    try { await navigator.clipboard.writeText(output.value); msg.textContent = '已复制'; msg.className = 'msg ok'; }
+    catch { msg.textContent = '复制失败'; msg.className = 'msg err'; }
+  });
+</script>

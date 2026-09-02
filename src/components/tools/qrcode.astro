@@ -1,0 +1,97 @@
+---
+---
+
+<div class="tip">二维码在你的浏览器里生成，内容不会发送到任何服务器。</div>
+
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:18px;">
+  <div>
+    <div class="field-label"><span>内容</span><span id="qr-len"></span></div>
+    <textarea id="qr-text" placeholder="输入文本、网址或任意内容" style="min-height:120px;">https://example.com</textarea>
+
+    <div style="display:flex;gap:14px;flex-wrap:wrap;margin-top:12px;">
+      <div style="min-width:130px;">
+        <div class="field-label"><span>尺寸</span><span id="qr-size-val">300 px</span></div>
+        <input type="range" id="qr-size" min="120" max="800" step="20" value="300" style="padding:0;" />
+      </div>
+      <div style="min-width:150px;">
+        <div class="field-label"><span>容错级别</span></div>
+        <select id="qr-level">
+          <option value="L">L · 7%</option>
+          <option value="M" selected>M · 15%</option>
+          <option value="Q">Q · 25%</option>
+          <option value="H">H · 30%</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button class="primary" id="qr-gen">生成</button>
+      <button id="qr-dl">下载 PNG</button>
+      <button id="qr-svg">下载 SVG</button>
+    </div>
+    <p class="msg" id="qr-msg"></p>
+  </div>
+
+  <div>
+    <div class="field-label"><span>预览</span></div>
+    <div id="qr-box" style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:16px;display:flex;align-items:center;justify-content:center;min-height:220px;"></div>
+  </div>
+</div>
+
+<script>
+  import QRCode from 'qrcode';
+
+  const $ = (id) => document.getElementById(id);
+  let lastDataUrl = '';
+
+  $('qr-size').oninput = () => { $('qr-size-val').textContent = $('qr-size').value + ' px'; };
+
+  async function gen() {
+    const text = $('qr-text').value;
+    const msg = $('qr-msg');
+    $('qr-len').textContent = text.length + ' 字符';
+    if (!text) {
+      $('qr-box').innerHTML = '<span style="color:var(--text-hint);font-size:13px;">请输入内容</span>';
+      msg.textContent = '';
+      return;
+    }
+    try {
+      const opts = {
+        width: +$('qr-size').value,
+        errorCorrectionLevel: $('qr-level').value,
+        margin: 2,
+        color: { dark: '#000000ff', light: '#ffffffff' },
+      };
+      lastDataUrl = await QRCode.toDataURL(text, opts);
+      const svg = await QRCode.toString(text, { ...opts, type: 'svg' });
+      $('qr-box').innerHTML = `<img src="${lastDataUrl}" alt="二维码" style="max-width:100%;height:auto;image-rendering:pixelated;" />`;
+      $('qr-box').dataset.svg = svg;
+      msg.textContent = '生成成功';
+      msg.className = 'msg ok';
+    } catch (e) {
+      msg.textContent = '生成失败：' + (e.message || '内容可能超出容量上限');
+      msg.className = 'msg err';
+    }
+  }
+
+  function download(url, name) {
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = name;
+    a.click();
+  }
+
+  $('qr-gen').onclick = gen;
+  $('qr-dl').onclick = () => {
+    if (!lastDataUrl) return;
+    download(lastDataUrl, 'qrcode.png');
+  };
+  $('qr-svg').onclick = () => {
+    const svg = $('qr-box').dataset.svg;
+    if (!svg) return;
+    const url = URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml' }));
+    download(url, 'qrcode.svg');
+    setTimeout(() => URL.revokeObjectURL(url), 3000);
+  };
+  gen();
+</script>
