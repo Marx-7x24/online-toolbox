@@ -10,6 +10,11 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+    # SITE_URL 从仓库 Variables 读取（Settings → Secrets and variables → Variables）
+    # 设为你的真实域名，例如 https://tool.example.com
+    # 未设置时 astro.config.mjs 回退占位符，并在构建日志告警
+    env:
+      SITE_URL: ${{ vars.SITE_URL }}
     steps:
       - uses: actions/checkout@v4
 
