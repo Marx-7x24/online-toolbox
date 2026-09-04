@@ -1,0 +1,91 @@
+---
+// SQL 转 JSON：解析 INSERT 语句提取字段名与值，输出 JSON 数组
+---
+
+<div class="pane">
+  <div>
+    <div class="field-label"><span>输入 SQL（INSERT 语句）</span></div>
+    <textarea id="sj-in" placeholder="INSERT INTO users (id, name, age) VALUES (1, '张三', 20);&#10;INSERT INTO users (id, name, age) VALUES (2, '李四', 25);"></textarea>
+  </div>
+  <div>
+    <div class="field-label"><span>JSON 输出</span></div>
+    <textarea id="sj-out" readonly></textarea>
+  </div>
+</div>
+<div class="btn-row">
+  <button id="sj-run" class="primary">转换为 JSON</button>
+  <button id="sj-copy">复制结果</button>
+  <button id="sj-download">下载 .json</button>
+  <span id="sj-msg" class="msg"></span>
+</div>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  const input = $('sj-in'), output = $('sj-out'), msg = $('sj-msg');
+
+  // 按逗号切 VALUES 内的一行，需处理引号内的逗号与转义 ''
+  function splitValues(str) {
+    const out = [];
+    let cur = '', inQuote = false;
+    for (let i = 0; i < str.length; i++) {
+      const ch = str[i];
+      if (inQuote) {
+        if (ch === "'") {
+          if (str[i + 1] === "'") { cur += "'"; i++; }
+          else inQuote = false;
+        } else cur += ch;
+      } else if (ch === "'") { inQuote = true; }
+      else if (ch === ',') { out.push(cur.trim()); cur = ''; }
+      else cur += ch;
+    }
+    if (cur.trim() !== '') out.push(cur.trim());
+    return out;
+  }
+
+  function parseVal(raw) {
+    if (raw === '' || /^NULL$/i.test(raw)) return null;
+    if (/^'(.*)'$/s.test(raw)) return raw.slice(1, -1).replace(/''/g, "'");
+    if (/^-?\d+$/.test(raw)) return Number(raw);
+    if (/^-?\d*\.\d+$/.test(raw)) return Number(raw);
+    if (/^TRUE$/i.test(raw)) return true;
+    if (/^FALSE$/i.test(raw)) return false;
+    return raw;
+  }
+
+  $('sj-run').addEventListener('click', () => {
+    try {
+      const sql = input.value;
+      if (!sql.trim()) throw new Error('请输入 SQL');
+      // 匹配 INSERT INTO t (cols) VALUES (...);  可多行
+      const re = /INSERT\s+INTO\s+[`\w.]+\s*\(([^)]*)\)\s*VALUES\s*\(([\s\S]*?)\)\s*;?/gi;
+      const rows = [];
+      let m;
+      while ((m = re.exec(sql)) !== null) {
+        const cols = m[1].split(',').map((c) => c.trim().replace(/^[`"']|[`"']$/g, ''));
+        const vals = splitValues(m[2]).map(parseVal);
+        const obj = {};
+        cols.forEach((c, i) => { obj[c] = vals[i] !== undefined ? vals[i] : null; });
+        rows.push(obj);
+      }
+      if (!rows.length) throw new Error('未识别到 INSERT 语句');
+      output.value = JSON.stringify(rows, null, 2);
+      msg.textContent = `已转换 ${rows.length} 条记录`; msg.className = 'msg ok';
+    } catch (e) {
+      msg.textContent = '转换失败：' + e.message; msg.className = 'msg err';
+    }
+  });
+
+  $('sj-copy').addEventListener('click', async () => {
+    if (!output.value) return;
+    try { await navigator.clipboard.writeText(output.value); msg.textContent = '已复制'; msg.className = 'msg ok'; }
+    catch { msg.textContent = '复制失败'; msg.className = 'msg err'; }
+  });
+
+  $('sj-download').addEventListener('click', () => {
+    if (!output.value) return;
+    const blob = new Blob([output.value], { type: 'application/json;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob); a.download = 'converted.json'; a.click();
+    URL.revokeObjectURL(a.href);
+  });
+</script>

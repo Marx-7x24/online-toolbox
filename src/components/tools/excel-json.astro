@@ -1,0 +1,101 @@
+---
+// Excel 转 JSON：上传 CSV/xlsx（含表头），输出 JSON 数组
+---
+
+<div class="pane">
+  <div>
+    <div class="field-label"><span>选择 CSV 文件（Excel 另存即可）</span></div>
+    <div class="tool-body" style="padding:16px;">
+      <input type="file" id="ej-file" accept=".csv,.txt" style="padding:8px 0;border:none;background:none;box-shadow:none;" />
+      <p style="margin:8px 0 0;font-size:13px;color:var(--text-sub);" id="ej-filename">未选择文件</p>
+    </div>
+    <div class="field-label" style="margin-top:12px;"><span>或粘贴表格内容</span></div>
+    <textarea id="ej-in" style="min-height:120px;" placeholder="姓名,年龄,城市&#10;张三,20,北京&#10;李四,25,上海"></textarea>
+  </div>
+  <div>
+    <div class="field-label"><span>JSON 输出</span></div>
+    <textarea id="ej-out" readonly></textarea>
+  </div>
+</div>
+<div class="btn-row">
+  <button id="ej-run" class="primary">转换为 JSON</button>
+  <button id="ej-copy">复制结果</button>
+  <button id="ej-download">下载 .json</button>
+  <label style="font-size:13px;color:var(--text-sub);display:flex;align-items:center;gap:6px;margin:0;">
+    分隔符 <input type="text" id="ej-sep" value="," style="width:70px;height:36px;" />
+  </label>
+  <span id="ej-msg" class="msg"></span>
+</div>
+<p class="tip" style="margin-top:12px;">
+  在 Excel / WPS 中打开表格，选择「文件 → 另存为 → CSV UTF-8」即可得到本工具支持的 CSV 文件。文件仅在本地读取，不上传服务器。
+</p>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  const input = $('ej-in'), output = $('ej-out'), msg = $('ej-msg'), fileInput = $('ej-file');
+  const nameEl = $('ej-filename'), sepInput = $('ej-sep');
+
+  fileInput.addEventListener('change', () => {
+    const f = fileInput.files && fileInput.files[0];
+    if (!f) return;
+    nameEl.textContent = `已选择：${f.name}（${(f.size / 1024).toFixed(1)} KB）`;
+    const reader = new FileReader();
+    reader.onload = () => { input.value = String(reader.result || ''); };
+    reader.readAsText(f, 'UTF-8');
+  });
+
+  function parseCsvLine(line, sep) {
+    const out = [];
+    let cur = '', inQ = false;
+    for (let i = 0; i < line.length; i++) {
+      const ch = line[i];
+      if (inQ) {
+        if (ch === '"') { if (line[i + 1] === '"') { cur += '"'; i++; } else inQ = false; }
+        else cur += ch;
+      } else if (ch === '"') inQ = true;
+      else if (ch === sep) { out.push(cur.trim()); cur = ''; }
+      else cur += ch;
+    }
+    out.push(cur.trim());
+    return out;
+  }
+
+  function toJson(text, sep) {
+    const clean = text.replace(/^\uFEFF/, '');
+    const lines = clean.split(/\r?\n/).filter((l) => l.trim() !== '');
+    if (lines.length < 2) throw new Error('至少需要表头行和一行数据');
+    const headers = parseCsvLine(lines[0], sep);
+    const rows = lines.slice(1).map((line) => {
+      const cells = parseCsvLine(line, sep);
+      const obj = {};
+      headers.forEach((h, i) => { obj[h] = cells[i] !== undefined ? cells[i] : ''; });
+      return obj;
+    });
+    return rows;
+  }
+
+  $('ej-run').addEventListener('click', () => {
+    try {
+      if (!input.value.trim()) throw new Error('请选择文件或粘贴表格内容');
+      const rows = toJson(input.value, sepInput.value || ',');
+      output.value = JSON.stringify(rows, null, 2);
+      msg.textContent = `已转换 ${rows.length} 行`; msg.className = 'msg ok';
+    } catch (e) {
+      msg.textContent = '转换失败：' + e.message; msg.className = 'msg err';
+    }
+  });
+
+  $('ej-copy').addEventListener('click', async () => {
+    if (!output.value) return;
+    try { await navigator.clipboard.writeText(output.value); msg.textContent = '已复制'; msg.className = 'msg ok'; }
+    catch { msg.textContent = '复制失败'; msg.className = 'msg err'; }
+  });
+
+  $('ej-download').addEventListener('click', () => {
+    if (!output.value) return;
+    const blob = new Blob([output.value], { type: 'application/json;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob); a.download = 'converted.json'; a.click();
+    URL.revokeObjectURL(a.href);
+  });
+</script>

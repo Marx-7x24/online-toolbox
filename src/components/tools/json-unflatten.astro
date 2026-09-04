@@ -1,0 +1,77 @@
+---
+// JSON 反扁平化：把 a.b.c=1 形式的一层对象还原成嵌套结构
+---
+
+<div class="pane">
+  <div>
+    <div class="field-label"><span>输入扁平 JSON</span></div>
+    <textarea id="ju-in" placeholder='{"user.name":"张三","user.age":20,"tags.0":"a","tags.1":"b"}'></textarea>
+  </div>
+  <div>
+    <div class="field-label"><span>嵌套输出</span></div>
+    <textarea id="ju-out" readonly></textarea>
+  </div>
+</div>
+<div class="btn-row">
+  <button id="ju-run" class="primary">反扁平化</button>
+  <button id="ju-copy">复制结果</button>
+  <label style="font-size:13px;color:var(--text-sub);display:flex;align-items:center;gap:6px;margin:0;">
+    分隔符 <input type="text" id="ju-sep" value="." style="width:70px;height:36px;" />
+  </label>
+  <span id="ju-msg" class="msg"></span>
+</div>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  const input = $('ju-in'), output = $('ju-out'), msg = $('ju-msg'), sep = $('ju-sep');
+
+  function unflatten(obj, sepChar) {
+    const result = {};
+    Object.keys(obj).forEach((key) => {
+      const parts = key.split(sepChar);
+      let cur = result;
+      parts.forEach((p, i) => {
+        const isLast = i === parts.length - 1;
+        if (isLast) { cur[p] = obj[key]; }
+        else {
+          const nextIsIndex = /^\d+$/.test(parts[i + 1]);
+          if (cur[p] === undefined || typeof cur[p] !== 'object') cur[p] = nextIsIndex ? [] : {};
+          cur = cur[p];
+        }
+      });
+    });
+    // 纯数字键的对象转数组
+    function toArrayIfIndexed(v) {
+      if (Array.isArray(v)) return v.map(toArrayIfIndexed);
+      if (v && typeof v === 'object') {
+        const keys = Object.keys(v);
+        if (keys.length && keys.every((k) => /^\d+$/.test(k))) {
+          const arr = [];
+          keys.forEach((k) => { arr[Number(k)] = toArrayIfIndexed(v[k]); });
+          return arr;
+        }
+        const out = {};
+        keys.forEach((k) => { out[k] = toArrayIfIndexed(v[k]); });
+        return out;
+      }
+      return v;
+    }
+    return toArrayIfIndexed(result);
+  }
+
+  $('ju-run').addEventListener('click', () => {
+    try {
+      const data = JSON.parse(input.value);
+      output.value = JSON.stringify(unflatten(data, sep.value || '.'), null, 2);
+      msg.textContent = '已反扁平化'; msg.className = 'msg ok';
+    } catch (e) {
+      msg.textContent = 'JSON 解析失败：' + e.message; msg.className = 'msg err';
+    }
+  });
+
+  $('ju-copy').addEventListener('click', async () => {
+    if (!output.value) return;
+    try { await navigator.clipboard.writeText(output.value); msg.textContent = '已复制'; msg.className = 'msg ok'; }
+    catch { msg.textContent = '复制失败'; msg.className = 'msg err'; }
+  });
+</script>

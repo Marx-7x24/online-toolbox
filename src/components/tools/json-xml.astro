@@ -1,0 +1,71 @@
+---
+// JSON 转 XML
+---
+
+<div class="pane">
+  <div>
+    <div class="field-label"><span>输入 JSON</span></div>
+    <textarea id="jx-in" placeholder='{"root":{"name":"张三","age":20}}'></textarea>
+  </div>
+  <div>
+    <div class="field-label"><span>XML 输出</span></div>
+    <textarea id="jx-out" readonly></textarea>
+  </div>
+</div>
+<div class="btn-row">
+  <button id="jx-run" class="primary">转换为 XML</button>
+  <button id="jx-copy">复制结果</button>
+  <button id="jx-download">下载 .xml</button>
+  <label style="font-size:13px;color:var(--text-sub);display:flex;align-items:center;gap:6px;margin:0;">
+    根节点 <input type="text" id="jx-root" value="root" style="width:110px;height:36px;" />
+  </label>
+  <span id="jx-msg" class="msg"></span>
+</div>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  const input = $('jx-in'), output = $('jx-out'), msg = $('jx-msg'), root = $('jx-root');
+
+  const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+  function toXml(name, val, indent) {
+    const pad = '  '.repeat(indent);
+    if (Array.isArray(val)) {
+      return val.map((v) => toXml(name, v, indent)).join('\n');
+    }
+    if (val && typeof val === 'object') {
+      const inner = Object.keys(val).map((k) => toXml(k, val[k], indent + 1)).join('\n');
+      return `${pad}<${name}>\n${inner}\n${pad}</${name}>`;
+    }
+    return `${pad}<${name}>${esc(val)}</${name}>`;
+  }
+
+  $('jx-run').addEventListener('click', () => {
+    try {
+      const data = JSON.parse(input.value);
+      const rootName = root.value || 'root';
+      let body;
+      if (Array.isArray(data)) body = data.map((v) => toXml('item', v, 1)).join('\n');
+      else if (data && typeof data === 'object') body = Object.keys(data).map((k) => toXml(k, data[k], 1)).join('\n');
+      else body = toXml('value', data, 1);
+      output.value = `<?xml version="1.0" encoding="UTF-8"?>\n<${rootName}>\n${body}\n</${rootName}>`;
+      msg.textContent = '转换完成'; msg.className = 'msg ok';
+    } catch (e) {
+      msg.textContent = 'JSON 解析失败：' + e.message; msg.className = 'msg err';
+    }
+  });
+
+  $('jx-copy').addEventListener('click', async () => {
+    if (!output.value) return;
+    try { await navigator.clipboard.writeText(output.value); msg.textContent = '已复制'; msg.className = 'msg ok'; }
+    catch { msg.textContent = '复制失败'; msg.className = 'msg err'; }
+  });
+
+  $('jx-download').addEventListener('click', () => {
+    if (!output.value) return;
+    const blob = new Blob([output.value], { type: 'application/xml;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob); a.download = 'converted.xml'; a.click();
+    URL.revokeObjectURL(a.href);
+  });
+</script>

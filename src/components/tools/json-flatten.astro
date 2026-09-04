@@ -1,0 +1,62 @@
+---
+// JSON 扁平化：把嵌套对象压平成 a.b.c 形式的一层对象
+---
+
+<div class="pane">
+  <div>
+    <div class="field-label"><span>输入 JSON</span></div>
+    <textarea id="jf-in" placeholder='{"user":{"name":"张三","age":20},"tags":["a","b"]}'></textarea>
+  </div>
+  <div>
+    <div class="field-label"><span>扁平化输出</span></div>
+    <textarea id="jf-out" readonly></textarea>
+  </div>
+</div>
+<div class="btn-row">
+  <button id="jf-run" class="primary">扁平化</button>
+  <button id="jf-copy">复制结果</button>
+  <label style="font-size:13px;color:var(--text-sub);display:flex;align-items:center;gap:6px;margin:0;">
+    分隔符 <input type="text" id="jf-sep" value="." style="width:70px;height:36px;" />
+  </label>
+  <span id="jf-msg" class="msg"></span>
+</div>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  const input = $('jf-in'), output = $('jf-out'), msg = $('jf-msg'), sep = $('jf-sep');
+
+  function flatten(obj, prefix, res, sepChar) {
+    if (Array.isArray(obj)) {
+      obj.forEach((v, i) => {
+        const key = prefix ? prefix + sepChar + i : String(i);
+        if (v && typeof v === 'object') flatten(v, key, res, sepChar);
+        else res[key] = v;
+      });
+      return res;
+    }
+    Object.keys(obj).forEach((k) => {
+      const key = prefix ? prefix + sepChar + k : k;
+      const v = obj[k];
+      if (v && typeof v === 'object') flatten(v, key, res, sepChar);
+      else res[key] = v;
+    });
+    return res;
+  }
+
+  $('jf-run').addEventListener('click', () => {
+    try {
+      const data = JSON.parse(input.value);
+      const s = sep.value || '.';
+      output.value = JSON.stringify(flatten(data, '', {}, s), null, 2);
+      msg.textContent = '已扁平化'; msg.className = 'msg ok';
+    } catch (e) {
+      msg.textContent = 'JSON 解析失败：' + e.message; msg.className = 'msg err';
+    }
+  });
+
+  $('jf-copy').addEventListener('click', async () => {
+    if (!output.value) return;
+    try { await navigator.clipboard.writeText(output.value); msg.textContent = '已复制'; msg.className = 'msg ok'; }
+    catch { msg.textContent = '复制失败'; msg.className = 'msg err'; }
+  });
+</script>

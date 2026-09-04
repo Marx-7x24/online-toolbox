@@ -1,0 +1,75 @@
+---
+// JSON 转 Excel：导出 CSV（Excel/WPS 可直接打开并另存为 xlsx）
+---
+
+<div class="pane">
+  <div>
+    <div class="field-label"><span>输入 JSON 数组</span></div>
+    <textarea id="je-in" placeholder='[{"姓名":"张三","年龄":20,"城市":"北京"},{"姓名":"李四","年龄":25,"城市":"上海"}]'></textarea>
+  </div>
+  <div>
+    <div class="field-label"><span>CSV 预览</span></div>
+    <textarea id="je-out" readonly></textarea>
+  </div>
+</div>
+<div class="btn-row">
+  <button id="je-run" class="primary">生成表格</button>
+  <button id="je-download">下载 .csv（Excel 可打开）</button>
+  <button id="je-copy">复制内容</button>
+  <label style="font-size:13px;color:var(--text-sub);display:flex;align-items:center;gap:6px;margin:0;">
+    <input type="checkbox" id="je-bom" checked /> 带 BOM（Excel 中文不乱码）
+  </label>
+  <span id="je-msg" class="msg"></span>
+</div>
+<p class="tip" style="margin-top:12px;">
+  导出为标准 CSV，Excel 与 WPS 可直接打开，再「另存为 .xlsx」即得到 Excel 文件。全过程在浏览器本地完成，文件不上传。
+</p>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  const input = $('je-in'), output = $('je-out'), msg = $('je-msg'), bom = $('je-bom');
+
+  function csvCell(v) {
+    if (v === null || v === undefined) return '';
+    const s = String(v);
+    return /[",\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+  }
+
+  function buildCsv(rows) {
+    const cols = [];
+    rows.forEach((r) => Object.keys(r).forEach((k) => { if (!cols.includes(k)) cols.push(k); }));
+    const lines = [cols.map(csvCell).join(',')];
+    rows.forEach((r) => lines.push(cols.map((c) => csvCell(r[c])).join(',')));
+    return lines.join('\r\n');
+  }
+
+  let lastCsv = '';
+
+  $('je-run').addEventListener('click', () => {
+    try {
+      const data = JSON.parse(input.value);
+      const arr = Array.isArray(data) ? data : [data];
+      if (!arr.length || typeof arr[0] !== 'object' || arr[0] === null) throw new Error('请输入 JSON 对象数组');
+      lastCsv = buildCsv(arr);
+      output.value = lastCsv;
+      msg.textContent = `已生成 ${arr.length} 行表格`; msg.className = 'msg ok';
+    } catch (e) {
+      msg.textContent = 'JSON 解析失败：' + e.message; msg.className = 'msg err';
+    }
+  });
+
+  $('je-download').addEventListener('click', () => {
+    if (!lastCsv) return;
+    const blob = new Blob([bom.checked ? '\uFEFF' + lastCsv : lastCsv], { type: 'text/csv;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob); a.download = 'export.csv'; a.click();
+    URL.revokeObjectURL(a.href);
+    msg.textContent = '已下载 export.csv'; msg.className = 'msg ok';
+  });
+
+  $('je-copy').addEventListener('click', async () => {
+    if (!output.value) return;
+    try { await navigator.clipboard.writeText(output.value); msg.textContent = '已复制'; msg.className = 'msg ok'; }
+    catch { msg.textContent = '复制失败'; msg.className = 'msg err'; }
+  });
+</script>

@@ -1,0 +1,81 @@
+---
+// JSON 转 SQL：把 JSON 数组生成 CREATE TABLE + INSERT 语句
+---
+
+<div class="pane">
+  <div>
+    <div class="field-label"><span>输入 JSON 数组</span></div>
+    <textarea id="jsql-in" placeholder='[{"id":1,"name":"张三","age":20},{"id":2,"name":"李四","age":25}]'></textarea>
+  </div>
+  <div>
+    <div class="field-label"><span>SQL 输出</span></div>
+    <textarea id="jsql-out" readonly></textarea>
+  </div>
+</div>
+<div class="btn-row">
+  <button id="jsql-run" class="primary">生成 SQL</button>
+  <button id="jsql-copy">复制结果</button>
+  <button id="jsql-download">下载 .sql</button>
+  <label style="font-size:13px;color:var(--text-sub);display:flex;align-items:center;gap:6px;margin:0;">
+    表名 <input type="text" id="jsql-table" value="my_table" style="width:110px;height:36px;" />
+  </label>
+  <span id="jsql-msg" class="msg"></span>
+</div>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  const input = $('jsql-in'), output = $('jsql-out'), msg = $('jsql-msg'), table = $('jsql-table');
+
+  const escSql = (v) => {
+    if (v === null || v === undefined) return 'NULL';
+    if (typeof v === 'number') return String(v);
+    if (typeof v === 'boolean') return v ? 'TRUE' : 'FALSE';
+    return "'" + String(v).replace(/'/g, "''") + "'";
+  };
+
+  $('jsql-run').addEventListener('click', () => {
+    try {
+      const data = JSON.parse(input.value);
+      const arr = Array.isArray(data) ? data : [data];
+      if (!arr.length || typeof arr[0] !== 'object' || arr[0] === null) throw new Error('请输入 JSON 对象数组');
+      const tName = (table.value || 'my_table').replace(/[^A-Za-z0-9_]/g, '_');
+      const cols = [];
+      arr.forEach((row) => Object.keys(row).forEach((k) => { if (!cols.includes(k)) cols.push(k); }));
+
+      const lines = [];
+      lines.push(`CREATE TABLE IF NOT EXISTS \`${tName}\` (`);
+      lines.push('  `id` INT NOT NULL AUTO_INCREMENT,');
+      cols.forEach((c, i) => {
+        const sample = arr.find((r) => r[c] !== undefined && r[c] !== null)?.[c];
+        const type = typeof sample === 'number' ? (Number.isInteger(sample) ? 'INT' : 'DECIMAL(18,6)') : 'TEXT';
+        lines.push(`  \`${c}\` ${type}${i === cols.length - 1 ? '' : ','}`);
+      });
+      lines.push('  PRIMARY KEY (`id`)');
+      lines.push(');');
+      lines.push('');
+      arr.forEach((row) => {
+        const vals = cols.map((c) => escSql(row[c])).join(', ');
+        lines.push(`INSERT INTO \`${tName}\` (${cols.map((c) => '`' + c + '`').join(', ')}) VALUES (${vals});`);
+      });
+
+      output.value = lines.join('\n');
+      msg.textContent = `已生成 ${arr.length} 条 INSERT`; msg.className = 'msg ok';
+    } catch (e) {
+      msg.textContent = '转换失败：' + e.message; msg.className = 'msg err';
+    }
+  });
+
+  $('jsql-copy').addEventListener('click', async () => {
+    if (!output.value) return;
+    try { await navigator.clipboard.writeText(output.value); msg.textContent = '已复制'; msg.className = 'msg ok'; }
+    catch { msg.textContent = '复制失败'; msg.className = 'msg err'; }
+  });
+
+  $('jsql-download').addEventListener('click', () => {
+    if (!output.value) return;
+    const blob = new Blob([output.value], { type: 'text/plain;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob); a.download = 'dump.sql'; a.click();
+    URL.revokeObjectURL(a.href);
+  });
+</script>

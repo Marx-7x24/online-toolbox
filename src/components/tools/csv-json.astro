@@ -1,0 +1,78 @@
+---
+// CSV 转 JSON：表头 + 数据行转 JSON 数组
+---
+
+<div class="pane">
+  <div>
+    <div class="field-label"><span>输入 CSV（首行为表头）</span></div>
+    <textarea id="cj-in" placeholder="name,age,city&#10;张三,20,北京&#10;李四,25,上海"></textarea>
+  </div>
+  <div>
+    <div class="field-label"><span>JSON 输出</span></div>
+    <textarea id="cj-out" readonly></textarea>
+  </div>
+</div>
+<div class="btn-row">
+  <button id="cj-run" class="primary">转换为 JSON</button>
+  <button id="cj-copy">复制结果</button>
+  <button id="cj-download">下载 .json</button>
+  <label style="font-size:13px;color:var(--text-sub);display:flex;align-items:center;gap:6px;margin:0;">
+    分隔符 <input type="text" id="cj-sep" value="," style="width:70px;height:36px;" />
+  </label>
+  <span id="cj-msg" class="msg"></span>
+</div>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  const input = $('cj-in'), output = $('cj-out'), msg = $('cj-msg'), sepInput = $('cj-sep');
+
+  function parseLine(line, sep) {
+    const out = [];
+    let cur = '', inQ = false;
+    for (let i = 0; i < line.length; i++) {
+      const ch = line[i];
+      if (inQ) {
+        if (ch === '"') { if (line[i + 1] === '"') { cur += '"'; i++; } else inQ = false; }
+        else cur += ch;
+      } else if (ch === '"') inQ = true;
+      else if (ch === sep) { out.push(cur.trim()); cur = ''; }
+      else cur += ch;
+    }
+    out.push(cur.trim());
+    return out;
+  }
+
+  $('cj-run').addEventListener('click', () => {
+    try {
+      const clean = input.value.replace(/^\uFEFF/, '');
+      const sep = sepInput.value || ',';
+      const lines = clean.split(/\r?\n/).filter((l) => l.trim() !== '');
+      if (lines.length < 2) throw new Error('至少需要表头行和一行数据');
+      const headers = parseLine(lines[0], sep);
+      const rows = lines.slice(1).map((l) => {
+        const cells = parseLine(l, sep);
+        const obj = {};
+        headers.forEach((h, i) => { obj[h] = cells[i] !== undefined ? cells[i] : ''; });
+        return obj;
+      });
+      output.value = JSON.stringify(rows, null, 2);
+      msg.textContent = `已转换 ${rows.length} 行`; msg.className = 'msg ok';
+    } catch (e) {
+      msg.textContent = '转换失败：' + e.message; msg.className = 'msg err';
+    }
+  });
+
+  $('cj-copy').addEventListener('click', async () => {
+    if (!output.value) return;
+    try { await navigator.clipboard.writeText(output.value); msg.textContent = '已复制'; msg.className = 'msg ok'; }
+    catch { msg.textContent = '复制失败'; msg.className = 'msg err'; }
+  });
+
+  $('cj-download').addEventListener('click', () => {
+    if (!output.value) return;
+    const blob = new Blob([output.value], { type: 'application/json;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob); a.download = 'converted.json'; a.click();
+    URL.revokeObjectURL(a.href);
+  });
+</script>

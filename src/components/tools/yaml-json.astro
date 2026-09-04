@@ -1,0 +1,120 @@
+---
+// YAML 转 JSON（支持常见缩进 YAML：键值、列表、嵌套）
+---
+
+<div class="pane">
+  <div>
+    <div class="field-label"><span>输入 YAML</span></div>
+    <textarea id="yj-in" placeholder="name: 张三&#10;age: 20&#10;tags:&#10;  - a&#10;  - b&#10;addr:&#10;  city: 北京"></textarea>
+  </div>
+  <div>
+    <div class="field-label"><span>JSON 输出</span></div>
+    <textarea id="yj-out" readonly></textarea>
+  </div>
+</div>
+<div class="btn-row">
+  <button id="yj-run" class="primary">转换为 JSON</button>
+  <button id="yj-copy">复制结果</button>
+  <button id="yj-download">下载 .json</button>
+  <span id="yj-msg" class="msg"></span>
+</div>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  const input = $('yj-in'), output = $('yj-out'), msg = $('yj-msg');
+
+  function parseScalar(s) {
+    s = s.trim();
+    if (s === '' || s === 'null' || s === '~') return null;
+    if (s === 'true' || s === 'yes' || s === 'on') return true;
+    if (s === 'false' || s === 'no' || s === 'off') return false;
+    if (/^[-+]?\d+$/.test(s)) return Number(s);
+    if (/^[-+]?\d*\.\d+([eE][-+]?\d+)?$/.test(s)) return Number(s);
+    if ((s.startsWith('"') && s.endsWith('"')) || (s.startsWith("'") && s.endsWith("'"))) {
+      return s.slice(1, -1);
+    }
+    if ((s.startsWith('[') && s.endsWith(']')) || (s.startsWith('{') && s.endsWith('}'))) {
+      try { return JSON.parse(s.replace(/'/g, '"')); } catch (e) { return s; }
+    }
+    return s;
+  }
+
+  // 把行解析成 {indent, key, value|listItem}
+  function parseLines(text) {
+    return text.split('\n')
+      .filter((l) => l.trim() !== '' && !l.trim().startsWith('#'))
+      .map((line) => {
+        const indent = line.match(/^\s*/)[0].length;
+        const trimmed = line.trim();
+        if (trimmed.startsWith('- ')) return { indent, list: trimmed.slice(2).trim() };
+        if (trimmed === '-') return { indent, list: '' };
+        const m = trimmed.match(/^(.*?):\s*(.*)$/);
+        if (m) {
+          let key = m[1].trim();
+          if ((key.startsWith('"') && key.endsWith('"')) || (key.startsWith("'") && key.endsWith("'"))) key = key.slice(1, -1);
+          return { indent, key, value: m[2].trim() };
+        }
+        return { indent, raw: trimmed };
+      });
+  }
+
+  function build(lines, start, indent) {
+    if (start >= lines.length) return { value: null, next: start };
+    const isList = lines[start].list !== undefined;
+    if (isList) {
+      const arr = [];
+      let i = start;
+      while (i < lines.length && lines[i].indent === indent && lines[i].list !== undefined) {
+        arr.push(parseScalar(lines[i].list));
+        i++;
+      }
+      return { value: arr, next: i };
+    }
+    const obj = {};
+    let i = start;
+    while (i < lines.length && lines[i].indent === indent && lines[i].key !== undefined) {
+      const line = lines[i];
+      if (line.value !== '') {
+        obj[line.key] = parseScalar(line.value);
+        i++;
+      } else {
+        const childIndent = i + 1 < lines.length ? lines[i + 1].indent : indent;
+        if (i + 1 < lines.length && childIndent > indent) {
+          const r = build(lines, i + 1, childIndent);
+          obj[line.key] = r.value;
+          i = r.next;
+        } else {
+          obj[line.key] = null;
+          i++;
+        }
+      }
+    }
+    return { value: obj, next: i };
+  }
+
+  $('yj-run').addEventListener('click', () => {
+    try {
+      if (!input.value.trim()) throw new Error('请输入 YAML');
+      const lines = parseLines(input.value);
+      const result = build(lines, 0, lines[0].indent);
+      output.value = JSON.stringify(result.value, null, 2);
+      msg.textContent = '转换完成（支持常见缩进 YAML 语法）'; msg.className = 'msg ok';
+    } catch (e) {
+      msg.textContent = '转换失败：' + e.message; msg.className = 'msg err';
+    }
+  });
+
+  $('yj-copy').addEventListener('click', async () => {
+    if (!output.value) return;
+    try { await navigator.clipboard.writeText(output.value); msg.textContent = '已复制'; msg.className = 'msg ok'; }
+    catch { msg.textContent = '复制失败'; msg.className = 'msg err'; }
+  });
+
+  $('yj-download').addEventListener('click', () => {
+    if (!output.value) return;
+    const blob = new Blob([output.value], { type: 'application/json;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob); a.download = 'converted.json'; a.click();
+    URL.revokeObjectURL(a.href);
+  });
+</script>

@@ -1,0 +1,67 @@
+---
+// JSON 转 Base64 / Base64 转 JSON（双向）
+---
+
+<div class="pane">
+  <div>
+    <div class="field-label"><span id="jb-left-label">输入 JSON</span></div>
+    <textarea id="jb-in" placeholder='{"name":"张三","age":20}'></textarea>
+  </div>
+  <div>
+    <div class="field-label"><span id="jb-right-label">Base64 输出</span></div>
+    <textarea id="jb-out" readonly></textarea>
+  </div>
+</div>
+<div class="btn-row">
+  <button id="jb-run" class="primary">JSON → Base64</button>
+  <button id="jb-rev">Base64 → JSON</button>
+  <button id="jb-copy">复制结果</button>
+  <span id="jb-msg" class="msg"></span>
+</div>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  const input = $('jb-in'), output = $('jb-out'), msg = $('jb-msg');
+  const lLabel = $('jb-left-label'), rLabel = $('jb-right-label');
+
+  function toB64(str) {
+    // 先 UTF-8 编码再 base64，避免中文报错
+    const bytes = new TextEncoder().encode(str);
+    let bin = '';
+    bytes.forEach((b) => { bin += String.fromCharCode(b); });
+    return btoa(bin);
+  }
+
+  function fromB64(b64) {
+    const bin = atob(b64.replace(/\s/g, ''));
+    const bytes = Uint8Array.from(bin, (c) => c.charCodeAt(0));
+    return new TextDecoder().decode(bytes);
+  }
+
+  $('jb-run').addEventListener('click', () => {
+    try {
+      const data = JSON.parse(input.value); // 校验是否为合法 JSON
+      output.value = toB64(JSON.stringify(data));
+      msg.textContent = '已编码为 Base64'; msg.className = 'msg ok';
+    } catch (e) {
+      msg.textContent = 'JSON 解析失败：' + e.message; msg.className = 'msg err';
+    }
+  });
+
+  $('jb-rev').addEventListener('click', () => {
+    try {
+      if (!input.value.trim()) throw new Error('请输入 Base64 字符串');
+      const decoded = fromB64(input.value);
+      output.value = JSON.stringify(JSON.parse(decoded), null, 2);
+      msg.textContent = '已解码为 JSON'; msg.className = 'msg ok';
+    } catch (e) {
+      msg.textContent = 'Base64 解码失败：' + e.message; msg.className = 'msg err';
+    }
+  });
+
+  $('jb-copy').addEventListener('click', async () => {
+    if (!output.value) return;
+    try { await navigator.clipboard.writeText(output.value); msg.textContent = '已复制'; msg.className = 'msg ok'; }
+    catch { msg.textContent = '复制失败'; msg.className = 'msg err'; }
+  });
+</script>
