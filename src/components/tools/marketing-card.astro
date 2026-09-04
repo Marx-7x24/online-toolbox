@@ -1,0 +1,164 @@
+---
+// 营销图生成：根据标题/副标题/二维码/主图合成营销海报
+---
+<div class="pane">
+  <div>
+    <div class="field-label"><span>主图（可省略）</span></div>
+    <input type="file" id="mk-img" accept="image/*">
+    <div class="field-label" style="margin-top:14px"><span>主标题</span></div>
+    <input type="text" id="mk-title" value="限时特惠" maxlength="20" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:6px;box-sizing:border-box">
+    <div class="field-label" style="margin-top:8px"><span>副标题</span></div>
+    <input type="text" id="mk-sub" value="全场 5 折起 / 错过再等一年" maxlength="40" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:6px;box-sizing:border-box">
+    <div class="field-label" style="margin-top:8px"><span>模板</span></div>
+    <select id="mk-tpl" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:6px">
+      <option value="purple">紫色主色（懒人同款）</option>
+      <option value="red">红色喜庆</option>
+      <option value="blue">科技蓝</option>
+      <option value="dark">暗黑高级</option>
+    </select>
+    <div class="field-label" style="margin-top:8px"><span>宽×高（px）</span></div>
+    <input type="text" id="mk-size" value="800×1200" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:6px;box-sizing:border-box">
+  </div>
+  <div>
+    <div class="field-label"><span>预览</span></div>
+    <div id="mk-preview" class="mk-preview"></div>
+  </div>
+</div>
+<div class="btn-row">
+  <button id="mk-run" class="primary">生成营销图</button>
+  <button id="mk-dl">下载</button>
+  <button id="mk-reset">重置</button>
+  <span id="mk-msg" class="msg"></span>
+</div>
+
+<style>
+  .mk-preview { margin-top: 10px; border: 1px dashed var(--border); border-radius: 8px; padding: 10px; min-height: 120px; display: flex; align-items: center; justify-content: center; background: #fafafa; }
+  .mk-preview img { max-height: 320px; }
+  .mk-preview:empty::before { content: '尚未生成'; color: #999; }
+</style>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  let imgFile = null;
+  let outBlob = null;
+  const TPL = {
+    purple: { bg: '#3e2eff', bg2: '#7b6fff', text: '#ffffff', accent: '#ffd700' },
+    red:    { bg: '#e53935', bg2: '#ff7961', text: '#ffffff', accent: '#ffeb3b' },
+    blue:   { bg: '#1976d2', bg2: '#42a5f5', text: '#ffffff', accent: '#00e5ff' },
+    dark:   { bg: '#1a1a2e', bg2: '#16213e', text: '#ffffff', accent: '#e94560' },
+  };
+
+  $('mk-img').addEventListener('change', (e) => imgFile = e.target.files[0]);
+
+  $('mk-run').addEventListener('click', async () => {
+    try {
+      const [w, h] = $('mk-size').value.split(/[×x]/).map(v => Number(v.trim()));
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      const t = TPL[$('mk-tpl').value];
+      // 背景渐变
+      const g = ctx.createLinearGradient(0, 0, 0, h);
+      g.addColorStop(0, t.bg); g.addColorStop(1, t.bg2);
+      ctx.fillStyle = g; ctx.fillRect(0, 0, w, h);
+      // 装饰圆
+      ctx.fillStyle = 'rgba(255,255,255,0.08)';
+      ctx.beginPath(); ctx.arc(w * 0.85, h * 0.15, h * 0.25, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,0.05)';
+      ctx.beginPath(); ctx.arc(w * 0.1, h * 0.85, h * 0.18, 0, Math.PI * 2); ctx.fill();
+
+      // 主图区域
+      const imgY = h * 0.18;
+      const imgH = h * 0.35;
+      const imgW = w * 0.7;
+      const imgX = (w - imgW) / 2;
+      if (imgFile) {
+        const img = await new Promise((res, rej) => {
+          const im = new Image();
+          im.onload = () => res(im);
+          im.onerror = rej;
+          im.src = URL.createObjectURL(imgFile);
+        });
+        // cover 裁切到 imgW × imgH
+        const ratio = img.width / img.height;
+        const target = imgW / imgH;
+        let sw, sh, sx, sy;
+        if (ratio > target) { sh = img.height; sw = img.height * target; sx = (img.width - sw)/2; sy = 0; }
+        else { sw = img.width; sh = img.width / target; sx = 0; sy = (img.height - sh)/2; }
+        ctx.save();
+        roundedRect(ctx, imgX, imgY, imgW, imgH, 16);
+        ctx.clip();
+        ctx.drawImage(img, sx, sy, sw, sh, imgX, imgY, imgW, imgH);
+        ctx.restore();
+      } else {
+        ctx.fillStyle = 'rgba(255,255,255,0.15)';
+        roundedRect(ctx, imgX, imgY, imgW, imgH, 16);
+        ctx.fill();
+        ctx.fillStyle = 'rgba(255,255,255,0.6)';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.font = `${imgH * 0.1}px sans-serif`;
+        ctx.fillText('主图位', w/2, imgY + imgH/2);
+      }
+
+      // 标题
+      const title = $('mk-title').value;
+      ctx.fillStyle = t.text;
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.font = `bold ${Math.round(w * 0.1)}px sans-serif`;
+      ctx.shadowColor = 'rgba(0,0,0,0.25)'; ctx.shadowBlur = 6; ctx.shadowOffsetY = 3;
+      ctx.fillText(title, w/2, imgY + imgH + h * 0.1);
+      ctx.shadowBlur = 0; ctx.shadowOffsetY = 0;
+
+      // 副标题
+      ctx.font = `${Math.round(w * 0.04)}px sans-serif`;
+      ctx.fillStyle = t.text;
+      ctx.globalAlpha = 0.85;
+      ctx.fillText($('mk-sub').value, w/2, imgY + imgH + h * 0.2);
+      ctx.globalAlpha = 1;
+
+      // 装饰条
+      ctx.fillStyle = t.accent;
+      ctx.fillRect(w/2 - 40, imgY + imgH + h * 0.25, 80, 4);
+
+      // 角标
+      ctx.fillStyle = t.accent;
+      ctx.font = `bold ${Math.round(w * 0.03)}px sans-serif`;
+      ctx.textAlign = 'right';
+      ctx.fillText('★ Toolbox', w - 30, h - 30);
+
+      outBlob = await new Promise(res => canvas.toBlob(res, 'image/png'));
+      $('mk-preview').innerHTML = '<img alt="预览">';
+      $('mk-preview').querySelector('img').src = URL.createObjectURL(outBlob);
+      $('mk-msg').textContent = `生成成功 · ${w}×${h}`;
+      $('mk-msg').className = 'msg ok';
+    } catch (err) {
+      $('mk-msg').textContent = '失败：' + err.message;
+      $('mk-msg').className = 'msg err';
+    }
+  });
+
+  function roundedRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
+
+  $('mk-dl').addEventListener('click', () => {
+    if (!outBlob) return;
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(outBlob);
+    a.download = 'marketing.png';
+    a.click();
+  });
+
+  $('mk-reset').addEventListener('click', () => {
+    imgFile = null; outBlob = null;
+    $('mk-img').value = '';
+    $('mk-preview').innerHTML = '';
+    $('mk-msg').textContent = '';
+  });
+</script>

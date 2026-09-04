@@ -1,0 +1,129 @@
+---
+// 图片尺寸修改：按宽/高/百分比缩放
+---
+<div class="pane">
+  <div>
+    <div class="field-label"><span>选择图片</span></div>
+    <input type="file" id="isr-file" accept="image/*">
+    <div id="isr-info" class="msg"></div>
+    <div class="field-label" style="margin-top:14px"><span>缩放方式</span></div>
+    <select id="isr-mode" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:6px">
+      <option value="ratio">按比例（%）</option>
+      <option value="w">指定宽度（高度自动）</option>
+      <option value="h">指定高度（宽度自动）</option>
+      <option value="exact">指定宽×高（强制拉伸）</option>
+      <option value="long">长边不超过（短边自动）</option>
+    </select>
+    <div class="field-label" style="margin-top:14px"><span>参数</span></div>
+    <input type="number" id="isr-val" value="50" min="1" max="10000" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:6px;box-sizing:border-box">
+    <div id="isr-second" style="display:none;margin-top:6px">
+      <input type="number" id="isr-val2" value="50" min="1" max="10000" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:6px;box-sizing:border-box">
+    </div>
+    <div class="field-label" style="margin-top:14px"><span>输出格式</span></div>
+    <select id="isr-fmt" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:6px">
+      <option value="image/png">PNG</option>
+      <option value="image/jpeg">JPG</option>
+      <option value="image/webp">WebP</option>
+    </select>
+  </div>
+  <div>
+    <div class="field-label"><span>预览</span></div>
+    <div id="isr-preview" class="isr-preview"></div>
+  </div>
+</div>
+<div class="btn-row">
+  <button id="isr-run" class="primary">开始缩放</button>
+  <button id="isr-dl">下载</button>
+  <button id="isr-reset">重置</button>
+  <span id="isr-msg" class="msg"></span>
+</div>
+
+<style>
+  .isr-preview { margin-top: 10px; border: 1px dashed var(--border); border-radius: 8px; padding: 10px; min-height: 120px; display: flex; align-items: center; justify-content: center; background: #fafafa; }
+  .isr-preview img { max-width: 100%; max-height: 320px; }
+  .isr-preview:empty::before { content: '尚未生成'; color: #999; }
+</style>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  let sourceFile = null;
+  let outBlob = null;
+
+  $('isr-mode').addEventListener('change', () => {
+    const m = $('isr-mode').value;
+    $('isr-second').style.display = (m === 'exact') ? 'block' : 'none';
+    const labels = { ratio: '缩放百分比（1-1000）', w: '目标宽度 (px)', h: '目标高度 (px)', exact: '目标宽度 (px)', long: '长边不超过 (px)' };
+    $('isr-val').previousElementSibling && ($('isr-val').parentElement.querySelector('.field-label span').textContent = labels[m]);
+  });
+
+  $('isr-file').addEventListener('change', async (e) => {
+    sourceFile = e.target.files[0];
+    if (!sourceFile) return;
+    const img = await loadImg(sourceFile);
+    $('isr-info').textContent = `原始尺寸：${img.width} × ${img.height}（${(sourceFile.size/1024).toFixed(1)} KB）`;
+    $('isr-info').className = 'msg ok';
+  });
+
+  function loadImg(f) {
+    return new Promise((res, rej) => {
+      const img = new Image();
+      img.onload = () => res(img);
+      img.onerror = rej;
+      img.src = URL.createObjectURL(f);
+    });
+  }
+
+  $('isr-run').addEventListener('click', async () => {
+    if (!sourceFile) { $('isr-msg').textContent = '请先选择图片'; $('isr-msg').className = 'msg err'; return; }
+    try {
+      const img = await loadImg(sourceFile);
+      const mode = $('isr-mode').value;
+      const v = Number($('isr-val').value);
+      let tw, th;
+      if (mode === 'ratio') { tw = Math.max(1, Math.round(img.width * v / 100)); th = Math.max(1, Math.round(img.height * v / 100)); }
+      else if (mode === 'w') { tw = v; th = Math.max(1, Math.round(img.height * v / img.width)); }
+      else if (mode === 'h') { th = v; tw = Math.max(1, Math.round(img.width * v / img.height)); }
+      else if (mode === 'exact') { tw = Number($('isr-val').value); th = Number($('isr-val2').value); }
+      else if (mode === 'long') {
+        if (img.width >= img.height) { tw = v; th = Math.round(img.height * v / img.width); }
+        else { th = v; tw = Math.round(img.width * v / img.height); }
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = tw; canvas.height = th;
+      const ctx = canvas.getContext('2d');
+      if ($('isr-fmt').value === 'image/jpeg') {
+        ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, tw, th);
+      }
+      ctx.imageSmoothingQuality = 'high';
+      ctx.drawImage(img, 0, 0, tw, th);
+      const fmt = $('isr-fmt').value;
+      const ext = fmt === 'image/jpeg' ? 'jpg' : fmt.split('/')[1];
+      outBlob = await new Promise(res => canvas.toBlob(res, fmt, 0.92));
+      $('isr-preview').innerHTML = '<img alt="预览">';
+      $('isr-preview').querySelector('img').src = URL.createObjectURL(outBlob);
+      $('isr-msg').textContent = `成功 · ${img.width}×${img.height} → ${tw}×${th} · ${(outBlob.size/1024).toFixed(1)} KB`;
+      $('isr-msg').className = 'msg ok';
+    } catch (err) {
+      $('isr-msg').textContent = '失败：' + err.message;
+      $('isr-msg').className = 'msg err';
+    }
+  });
+
+  $('isr-dl').addEventListener('click', () => {
+    if (!outBlob) return;
+    const fmt = $('isr-fmt').value;
+    const ext = fmt === 'image/jpeg' ? 'jpg' : fmt.split('/')[1];
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(outBlob);
+    a.download = (sourceFile.name.replace(/\.[^.]+$/, '') || 'image') + '_resized.' + ext;
+    a.click();
+  });
+
+  $('isr-reset').addEventListener('click', () => {
+    sourceFile = null; outBlob = null;
+    $('isr-file').value = '';
+    $('isr-info').textContent = '';
+    $('isr-preview').innerHTML = '';
+    $('isr-msg').textContent = '';
+  });
+</script>

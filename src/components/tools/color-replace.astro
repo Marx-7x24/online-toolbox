@@ -1,0 +1,151 @@
+---
+// 颜色替换：把图片中某颜色（容差范围内）替换为新颜色
+---
+<div class="pane">
+  <div>
+    <div class="field-label"><span>选择图片</span></div>
+    <input type="file" id="crp-file" accept="image/*">
+    <div class="field-label" style="margin-top:14px"><span>源颜色（点击下方图片取色）</span></div>
+    <div style="display:flex;gap:6px;align-items:center">
+      <input type="color" id="crp-from" value="#ffffff" style="width:50px;height:32px;border:1px solid var(--border);border-radius:6px">
+      <span id="crp-from-h" style="font-family:monospace">#FFFFFF</span>
+      <button id="crp-pick" type="button" style="margin-left:auto">从图片取色</button>
+    </div>
+    <div class="field-label" style="margin-top:8px"><span>目标颜色</span></div>
+    <div style="display:flex;gap:6px;align-items:center">
+      <input type="color" id="crp-to" value="#3e2eff" style="width:50px;height:32px;border:1px solid var(--border);border-radius:6px">
+      <span id="crp-to-h" style="font-family:monospace">#3E2EFF</span>
+    </div>
+    <div class="field-label" style="margin-top:14px"><span>容差 <span id="crp-tv">30</span></span></div>
+    <input type="range" id="crp-tol" min="0" max="200" value="30" style="width:100%">
+    <div id="crp-pick-stage" class="crp-pick-stage" style="display:none">
+      <p style="font-size:12px;color:#e53935;margin:8px 0">点击下方面板取色</p>
+      <canvas id="crp-pick-canvas"></canvas>
+    </div>
+  </div>
+  <div>
+    <div class="field-label"><span>预览</span></div>
+    <div id="crp-preview" class="crp-preview"></div>
+  </div>
+</div>
+<div class="btn-row">
+  <button id="crp-run" class="primary">替换颜色</button>
+  <button id="crp-dl">下载</button>
+  <button id="crp-reset">重置</button>
+  <span id="crp-msg" class="msg"></span>
+</div>
+
+<style>
+  .crp-pick-stage canvas { max-width: 100%; border: 1px solid var(--border); border-radius: 6px; cursor: crosshair; background: #fafafa; }
+  .crp-preview { margin-top: 10px; border: 1px dashed var(--border); border-radius: 8px; padding: 10px; min-height: 120px; display: flex; align-items: center; justify-content: center; background: #fafafa; }
+  .crp-preview img { max-width: 100%; max-height: 320px; }
+  .crp-preview:empty::before { content: '尚未生成'; color: #999; }
+  input[type="color"] { cursor: pointer; }
+</style>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  let sourceFile = null;
+  let outBlob = null;
+  let imgEl = null;
+  let pickCanvas = null, pickCtx = null;
+
+  function hexToRgb(h) { h = h.replace('#',''); return [parseInt(h.slice(0,2),16), parseInt(h.slice(2,4),16), parseInt(h.slice(4,6),16)]; }
+  function rgbToHex(r,g,b) { return '#' + [r,g,b].map(v => v.toString(16).padStart(2,'0')).join('').toUpperCase(); }
+  function updateHex() {
+    $('crp-from-h').textContent = $('crp-from').value.toUpperCase();
+    $('crp-to-h').textContent = $('crp-to').value.toUpperCase();
+  }
+  $('crp-from').addEventListener('input', updateHex);
+  $('crp-to').addEventListener('input', updateHex);
+  $('crp-tol').addEventListener('input', e => $('crp-tv').textContent = e.target.value);
+  updateHex();
+
+  $('crp-file').addEventListener('change', (e) => sourceFile = e.target.files[0]);
+
+  function loadImg(f) {
+    return new Promise((res, rej) => {
+      const img = new Image();
+      img.onload = () => res(img);
+      img.onerror = rej;
+      img.src = URL.createObjectURL(f);
+    });
+  }
+
+  $('crp-pick').addEventListener('click', async () => {
+    if (!sourceFile) { $('crp-msg').textContent = '请先选择图片'; $('crp-msg').className = 'msg err'; return; }
+    imgEl = await loadImg(sourceFile);
+    const maxW = 600;
+    const r = Math.min(1, maxW / imgEl.width);
+    pickCanvas = $('crp-pick-canvas');
+    pickCanvas.width = Math.round(imgEl.width * r);
+    pickCanvas.height = Math.round(imgEl.height * r);
+    pickCtx = pickCanvas.getContext('2d');
+    pickCtx.drawImage(imgEl, 0, 0, pickCanvas.width, pickCanvas.height);
+    $('crp-pick-stage').style.display = 'block';
+  });
+
+  $('crp-pick-canvas').addEventListener('click', (e) => {
+    const r = pickCanvas.getBoundingClientRect();
+    const x = Math.round((e.clientX - r.left) * pickCanvas.width / r.width);
+    const y = Math.round((e.clientY - r.top) * pickCanvas.height / r.height);
+    const px = pickCtx.getImageData(x, y, 1, 1).data;
+    const hex = rgbToHex(px[0], px[1], px[2]);
+    $('crp-from').value = hex;
+    updateHex();
+    $('crp-pick-stage').style.display = 'none';
+  });
+
+  $('crp-run').addEventListener('click', async () => {
+    if (!sourceFile) { $('crp-msg').textContent = '请先选择图片'; $('crp-msg').className = 'msg err'; return; }
+    if (!imgEl) imgEl = await loadImg(sourceFile);
+    try {
+      const canvas = document.createElement('canvas');
+      canvas.width = imgEl.width; canvas.height = imgEl.height;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(imgEl, 0, 0);
+      const data = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const [fr, fg, fb] = hexToRgb($('crp-from').value);
+      const [tr, tg, tb] = hexToRgb($('crp-to').value);
+      const tol = Number($('crp-tol').value);
+      for (let i = 0; i < data.data.length; i += 4) {
+        const dr = data.data[i] - fr;
+        const dg = data.data[i+1] - fg;
+        const db = data.data[i+2] - fb;
+        const dist = Math.sqrt(dr*dr + dg*dg + db*db);
+        if (dist <= tol) {
+          // 按距离线性混合
+          const ratio = 1 - dist / tol;
+          data.data[i] = Math.round(data.data[i] * (1-ratio) + tr * ratio);
+          data.data[i+1] = Math.round(data.data[i+1] * (1-ratio) + tg * ratio);
+          data.data[i+2] = Math.round(data.data[i+2] * (1-ratio) + tb * ratio);
+        }
+      }
+      ctx.putImageData(data, 0, 0);
+      outBlob = await new Promise(res => canvas.toBlob(res, 'image/png'));
+      $('crp-preview').innerHTML = '<img alt="预览">';
+      $('crp-preview').querySelector('img').src = URL.createObjectURL(outBlob);
+      $('crp-msg').textContent = `替换完成 · 容差 ${tol}`;
+      $('crp-msg').className = 'msg ok';
+    } catch (err) {
+      $('crp-msg').textContent = '失败：' + err.message;
+      $('crp-msg').className = 'msg err';
+    }
+  });
+
+  $('crp-dl').addEventListener('click', () => {
+    if (!outBlob) return;
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(outBlob);
+    a.download = (sourceFile.name.replace(/\.[^.]+$/, '') || 'image') + '_recolored.png';
+    a.click();
+  });
+
+  $('crp-reset').addEventListener('click', () => {
+    sourceFile = null; outBlob = null; imgEl = null;
+    $('crp-file').value = '';
+    $('crp-preview').innerHTML = '';
+    $('crp-pick-stage').style.display = 'none';
+    $('crp-msg').textContent = '';
+  });
+</script>

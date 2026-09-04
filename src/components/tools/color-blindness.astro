@@ -1,0 +1,114 @@
+---
+// 色盲模拟：用 SVG feColorMatrix 滤镜把图片转成不同色盲类型视图
+---
+<div class="pane">
+  <div>
+    <div class="field-label"><span>选择图片</span></div>
+    <input type="file" id="cb-file" accept="image/*">
+    <div class="field-label" style="margin-top:14px"><span>色盲类型</span></div>
+    <select id="cb-type" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:6px">
+      <option value="normal">正常（对照）</option>
+      <option value="protanopia">红色盲（Protanopia）</option>
+      <option value="deuteranopia">绿色盲（Deuteranopia）</option>
+      <option value="tritanopia">蓝色盲（Tritanopia）</option>
+      <option value="protanomaly">红色弱（Protanomaly）</option>
+      <option value="deuteranomaly">绿色弱（Deuteranomaly）</option>
+      <option value="tritanomaly">蓝色弱（Tritanomaly）</option>
+      <option value="achromatopsia">全色盲（Achromatopsia）</option>
+    </select>
+    <p style="font-size:12px;color:#999;margin-top:8px">基于 Brettel-Viénot-Mollon 模型近似，结果用于预览，不替代专业色觉检查。</p>
+  </div>
+  <div>
+    <div class="field-label"><span>模拟预览</span></div>
+    <div id="cb-preview" class="cb-preview"></div>
+  </div>
+</div>
+<div class="btn-row">
+  <button id="cb-run" class="primary">生成预览</button>
+  <button id="cb-dl">下载</button>
+  <button id="cb-reset">重置</button>
+  <span id="cb-msg" class="msg"></span>
+</div>
+
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <filter id="cb-protanopia"><feColorMatrix type="matrix" values="0.567 0.433 0 0 0  0.558 0.442 0 0 0  0 0.242 0.758 0 0  0 0 0 1 0"/></filter>
+    <filter id="cb-deuteranopia"><feColorMatrix type="matrix" values="0.625 0.375 0 0 0  0.7 0.3 0 0 0  0 0.3 0.7 0 0  0 0 0 1 0"/></filter>
+    <filter id="cb-tritanopia"><feColorMatrix type="matrix" values="0.95 0.05 0 0 0  0 0.433 0.567 0 0  0 0.475 0.525 0 0  0 0 0 1 0"/></filter>
+    <filter id="cb-protanomaly"><feColorMatrix type="matrix" values="0.817 0.183 0 0 0  0.333 0.667 0 0 0  0 0.125 0.875 0 0  0 0 0 1 0"/></filter>
+    <filter id="cb-deuteranomaly"><feColorMatrix type="matrix" values="0.8 0.2 0 0 0  0.258 0.742 0 0 0  0 0.142 0.858 0 0  0 0 0 1 0"/></filter>
+    <filter id="cb-tritanomaly"><feColorMatrix type="matrix" values="0.967 0.033 0 0 0  0 0.733 0.267 0 0  0 0.183 0.817 0 0  0 0 0 1 0"/></filter>
+    <filter id="cb-achromatopsia"><feColorMatrix type="matrix" values="0.299 0.587 0.114 0 0  0.299 0.587 0.114 0 0  0.299 0.587 0.114 0 0  0 0 0 1 0"/></filter>
+  </defs>
+</svg>
+
+<style>
+  .cb-preview { margin-top: 10px; border: 1px dashed var(--border); border-radius: 8px; padding: 10px; min-height: 120px; display: flex; align-items: center; justify-content: center; background: #fafafa; }
+  .cb-preview img { max-width: 100%; max-height: 320px; }
+  .cb-preview:empty::before { content: '尚未生成'; color: #999; }
+</style>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  let sourceFile = null;
+  let outBlob = null;
+  const FILTER_MAP = {
+    normal: '',
+    protanopia: 'cb-protanopia',
+    deuteranopia: 'cb-deuteranopia',
+    tritanopia: 'cb-tritanopia',
+    protanomaly: 'cb-protanomaly',
+    deuteranomaly: 'cb-deuteranomaly',
+    tritanomaly: 'cb-tritanomaly',
+    achromatopsia: 'cb-achromatopsia',
+  };
+
+  $('cb-file').addEventListener('change', (e) => sourceFile = e.target.files[0]);
+
+  $('cb-run').addEventListener('click', async () => {
+    if (!sourceFile) { $('cb-msg').textContent = '请先选择图片'; $('cb-msg').className = 'msg err'; return; }
+    try {
+      const bitmap = await createImageBitmap(sourceFile);
+      const canvas = document.createElement('canvas');
+      canvas.width = bitmap.width; canvas.height = bitmap.height;
+      canvas.getContext('2d').drawImage(bitmap, 0, 0);
+      const filterId = FILTER_MAP[$('cb-type').value];
+      // 通过 SVG foreignObject 应用滤镜到图片，再 canvas 化
+      const blob = await new Promise(res => canvas.toBlob(res, 'image/png'));
+      const url = URL.createObjectURL(blob);
+      const img = new Image();
+      img.src = url;
+      await new Promise(r => img.onload = r);
+      const result = document.createElement('canvas');
+      result.width = img.naturalWidth; result.height = img.naturalHeight;
+      const rctx = result.getContext('2d');
+      if (filterId) {
+        rctx.filter = `url(#${filterId})`;
+      }
+      rctx.drawImage(img, 0, 0);
+      outBlob = await new Promise(res => result.toBlob(res, 'image/png'));
+      $('cb-preview').innerHTML = '<img alt="预览">';
+      $('cb-preview').querySelector('img').src = URL.createObjectURL(outBlob);
+      $('cb-msg').textContent = `生成成功 · ${(outBlob.size/1024).toFixed(1)} KB`;
+      $('cb-msg').className = 'msg ok';
+    } catch (err) {
+      $('cb-msg').textContent = '失败：' + err.message;
+      $('cb-msg').className = 'msg err';
+    }
+  });
+
+  $('cb-dl').addEventListener('click', () => {
+    if (!outBlob) return;
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(outBlob);
+    a.download = (sourceFile.name.replace(/\.[^.]+$/, '') || 'image') + '_cb.png';
+    a.click();
+  });
+
+  $('cb-reset').addEventListener('click', () => {
+    sourceFile = null; outBlob = null;
+    $('cb-file').value = '';
+    $('cb-preview').innerHTML = '';
+    $('cb-msg').textContent = '';
+  });
+</script>

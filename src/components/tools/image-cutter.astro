@@ -1,0 +1,121 @@
+---
+// 九宫格切图：把图片切成 3×3 拼图便于朋友圈发布
+---
+<div class="pane">
+  <div>
+    <div class="field-label"><span>选择图片（建议正方形或宽高相近）</span></div>
+    <input type="file" id="ic9-file" accept="image/*">
+    <div class="field-label" style="margin-top:14px"><span>行数 × 列数</span></div>
+    <select id="ic9-grid" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:6px">
+      <option value="3x3">3 × 3（朋友圈九宫格）</option>
+      <option value="2x2">2 × 2</option>
+      <option value="4x4">4 × 4</option>
+      <option value="3x2">3 × 2</option>
+      <option value="2x3">2 × 3</option>
+    </select>
+    <div class="field-label" style="margin-top:14px"><span>间隔（白边 px）</span></div>
+    <input type="number" id="ic9-gap" value="6" min="0" max="50" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:6px;box-sizing:border-box">
+    <div class="field-label" style="margin-top:14px"><span>输出格式</span></div>
+    <select id="ic9-fmt" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:6px">
+      <option value="image/png">PNG（无损）</option>
+      <option value="image/jpeg">JPG（较小）</option>
+    </select>
+  </div>
+  <div>
+    <div class="field-label"><span>预览（首张）</span></div>
+    <div id="ic9-preview" class="ic9-preview"></div>
+  </div>
+</div>
+<div class="btn-row">
+  <button id="ic9-run" class="primary">生成切图</button>
+  <button id="ic9-dl">下载全部</button>
+  <button id="ic9-reset">重置</button>
+  <span id="ic9-msg" class="msg"></span>
+</div>
+
+<style>
+  .ic9-preview { margin-top: 10px; border: 1px dashed var(--border); border-radius: 8px; padding: 10px; min-height: 120px; display: flex; align-items: center; justify-content: center; background: #fafafa; }
+  .ic9-preview img { max-width: 100%; max-height: 320px; }
+  .ic9-preview:empty::before { content: '尚未生成'; color: #999; }
+</style>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  let sourceFile = null;
+  let pieces = []; // [{blob, name}, ...]
+
+  $('ic9-file').addEventListener('change', (e) => sourceFile = e.target.files[0]);
+
+  function loadImg(f) {
+    return new Promise((res, rej) => {
+      const img = new Image();
+      img.onload = () => res(img);
+      img.onerror = rej;
+      img.src = URL.createObjectURL(f);
+    });
+  }
+
+  $('ic9-run').addEventListener('click', async () => {
+    if (!sourceFile) { $('ic9-msg').textContent = '请先选择图片'; $('ic9-msg').className = 'msg err'; return; }
+    try {
+      const img = await loadImg(sourceFile);
+      const [cols, rows] = $('ic9-grid').value.split('x').map(Number);
+      const gap = Number($('ic9-gap').value);
+      // 等比切分：取原图中心正方形，按 cols × rows 切
+      const tileSize = Math.min(img.width, img.height);
+      const sx0 = Math.round((img.width - tileSize) / 2);
+      const sy0 = Math.round((img.height - tileSize) / 2);
+      const tileW = Math.floor(tileSize / cols);
+      const tileH = Math.floor(tileSize / rows);
+      const fmt = $('ic9-fmt').value;
+      pieces = [];
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          const canvas = document.createElement('canvas');
+          canvas.width = tileW; canvas.height = tileH;
+          // 间隔：把画布填白，缩小图片
+          const drawW = tileW - gap * 2;
+          const drawH = tileH - gap * 2;
+          if (fmt === 'image/jpeg' || gap > 0) {
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, tileW, tileH);
+            ctx.drawImage(img, sx0 + c*tileW, sy0 + r*tileH, tileW, tileH, gap, gap, drawW, drawH);
+          } else {
+            canvas.getContext('2d').drawImage(img, sx0 + c*tileW, sy0 + r*tileH, tileW, tileH, 0, 0, tileW, tileH);
+          }
+          const blob = await new Promise(res => canvas.toBlob(res, fmt, 0.92));
+          pieces.push({ blob, name: `${(sourceFile.name.replace(/\.[^.]+$/, '') || 'tile')}_${r+1}_${c+1}.${fmt === 'image/png' ? 'png' : 'jpg'}` });
+        }
+      }
+      $('ic9-preview').innerHTML = '<img alt="预览">';
+      $('ic9-preview').querySelector('img').src = URL.createObjectURL(pieces[0].blob);
+      $('ic9-msg').textContent = `生成成功 · ${rows}×${cols} = ${pieces.length} 张`;
+      $('ic9-msg').className = 'msg ok';
+    } catch (err) {
+      $('ic9-msg').textContent = '失败：' + err.message;
+      $('ic9-msg').className = 'msg err';
+    }
+  });
+
+  $('ic9-dl').addEventListener('click', async () => {
+    if (!pieces.length) return;
+    $('ic9-msg').textContent = `下载 ${pieces.length} 张…`; $('ic9-msg').className = 'msg';
+    for (const p of pieces) {
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(p.blob);
+      a.download = p.name;
+      a.click();
+      await new Promise(r => setTimeout(r, 150));
+    }
+    $('ic9-msg').textContent = `已下载 ${pieces.length} 张`;
+    $('ic9-msg').className = 'msg ok';
+  });
+
+  $('ic9-reset').addEventListener('click', () => {
+    sourceFile = null; pieces = [];
+    $('ic9-file').value = '';
+    $('ic9-preview').innerHTML = '';
+    $('ic9-msg').textContent = '';
+  });
+</script>

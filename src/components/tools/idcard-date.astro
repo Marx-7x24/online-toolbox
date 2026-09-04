@@ -1,0 +1,127 @@
+---
+// 证件照改日期：在证件照上叠加拍摄/到期日期文字（常用于老照片翻新）
+---
+<div class="pane">
+  <div>
+    <div class="field-label"><span>选择证件照</span></div>
+    <input type="file" id="icd-file" accept="image/*">
+    <div class="field-label" style="margin-top:14px"><span>日期文字</span></div>
+    <input type="text" id="icd-text" value="2024.06.01" maxlength="20" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:6px;box-sizing:border-box">
+    <div class="field-label" style="margin-top:8px"><span>位置</span></div>
+    <select id="icd-pos" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:6px">
+      <option value="bl">左下</option>
+      <option value="br">右下</option>
+      <option value="tl">左上</option>
+      <option value="tr">右上</option>
+      <option value="bc">底部居中</option>
+    </select>
+    <div class="field-label" style="margin-top:8px"><span>文字颜色</span></div>
+    <div style="display:flex;gap:6px">
+      <input type="color" id="icd-color" value="#d8362a" style="width:50px;height:32px;border:1px solid var(--border);border-radius:6px">
+      <input type="text" id="icd-color-h" value="#D8362A" style="flex:1;padding:6px;border:1px solid var(--border);border-radius:6px">
+    </div>
+    <div class="field-label" style="margin-top:8px"><span>字号 <span id="icd-sv">32</span> px</span></div>
+    <input type="range" id="icd-size" min="12" max="200" value="32" style="width:100%">
+    <div class="field-label" style="margin-top:8px"><span>字体</span></div>
+    <select id="icd-font" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:6px">
+      <option value="sans-serif">无衬线</option>
+      <option value="serif">衬线</option>
+      <option value="monospace">等宽</option>
+      <option value="cursive">手写</option>
+    </select>
+  </div>
+  <div>
+    <div class="field-label"><span>预览</span></div>
+    <div id="icd-preview" class="icd-preview"></div>
+  </div>
+</div>
+<div class="btn-row">
+  <button id="icd-run" class="primary">生成</button>
+  <button id="icd-dl">下载</button>
+  <button id="icd-reset">重置</button>
+  <span id="icd-msg" class="msg"></span>
+</div>
+
+<style>
+  .icd-preview { margin-top: 10px; border: 1px dashed var(--border); border-radius: 8px; padding: 10px; min-height: 120px; display: flex; align-items: center; justify-content: center; background: #fafafa; }
+  .icd-preview img { max-width: 100%; max-height: 320px; }
+  .icd-preview:empty::before { content: '尚未生成'; color: #999; }
+</style>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  let sourceFile = null;
+  let outBlob = null;
+
+  $('icd-color').addEventListener('input', e => $('icd-color-h').value = e.target.value.toUpperCase());
+  $('icd-color-h').addEventListener('input', e => {
+    if (/^#[0-9A-Fa-f]{6}$/.test(e.target.value)) $('icd-color').value = e.target.value;
+  });
+  $('icd-size').addEventListener('input', e => $('icd-sv').textContent = e.target.value);
+  $('icd-file').addEventListener('change', (e) => sourceFile = e.target.files[0]);
+
+  function loadImg(f) {
+    return new Promise((res, rej) => {
+      const img = new Image();
+      img.onload = () => res(img);
+      img.onerror = rej;
+      img.src = URL.createObjectURL(f);
+    });
+  }
+
+  $('icd-run').addEventListener('click', async () => {
+    if (!sourceFile) { $('icd-msg').textContent = '请先选择图片'; $('icd-msg').className = 'msg err'; return; }
+    try {
+      const img = await loadImg(sourceFile);
+      const canvas = document.createElement('canvas');
+      canvas.width = img.width; canvas.height = img.height;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0);
+      const text = $('icd-text').value || new Date().toISOString().slice(0,10).replace(/-/g,'.');
+      const color = $('icd-color').value;
+      const size = Number($('icd-size').value);
+      const font = $('icd-font').value;
+      ctx.font = `bold ${size}px ${font}`;
+      ctx.fillStyle = color;
+      ctx.textBaseline = 'bottom';
+      const m = 20;
+      const pos = $('icd-pos').value;
+      const tw = ctx.measureText(text).width;
+      let x, y;
+      if (pos === 'bl') { x = m; y = img.height - m; ctx.textAlign = 'left'; }
+      else if (pos === 'br') { x = img.width - m; y = img.height - m; ctx.textAlign = 'right'; }
+      else if (pos === 'tl') { x = m; y = size + m; ctx.textAlign = 'left'; }
+      else if (pos === 'tr') { x = img.width - m; y = size + m; ctx.textAlign = 'right'; }
+      else { x = img.width / 2; y = img.height - m; ctx.textAlign = 'center'; }
+      // 描边提升对比
+      ctx.strokeStyle = 'rgba(255,255,255,0.85)';
+      ctx.lineWidth = Math.max(1, Math.round(size / 12));
+      ctx.lineJoin = 'round';
+      ctx.strokeText(text, x, y);
+      ctx.fillText(text, x, y);
+      outBlob = await new Promise(res => canvas.toBlob(res, 'image/png'));
+      $('icd-preview').innerHTML = '<img alt="预览">';
+      $('icd-preview').querySelector('img').src = URL.createObjectURL(outBlob);
+      $('icd-msg').textContent = `已添加日期文字 · ${img.width}×${img.height}`;
+      $('icd-msg').className = 'msg ok';
+    } catch (err) {
+      $('icd-msg').textContent = '失败：' + err.message;
+      $('icd-msg').className = 'msg err';
+    }
+  });
+
+  $('icd-dl').addEventListener('click', () => {
+    if (!outBlob) return;
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(outBlob);
+    a.download = (sourceFile.name.replace(/\.[^.]+$/, '') || 'image') + '_dated.png';
+    a.click();
+  });
+
+  $('icd-reset').addEventListener('click', () => {
+    sourceFile = null; outBlob = null;
+    $('icd-file').value = '';
+    $('icd-preview').innerHTML = '';
+    $('icd-msg').textContent = '';
+  });
+</script>

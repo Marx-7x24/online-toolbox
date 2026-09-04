@@ -1,0 +1,141 @@
+---
+// 图片取色器：上传图片取颜色，HEX/RGB/HSL 切换，可放大镜精确取色
+---
+<div class="pane">
+  <div>
+    <div class="field-label"><span>选择图片</span></div>
+    <input type="file" id="cp-file" accept="image/*">
+    <div class="field-label" style="margin-top:14px"><span>放大倍数 <span id="cp-zv">6</span>×</span></div>
+    <input type="range" id="cp-zoom" min="2" max="20" value="6" style="width:100%">
+    <div class="field-label" style="margin-top:14px"><span>鼠标点击图片下方像素取色</span></div>
+    <div id="cp-wrap" class="cp-wrap">
+      <canvas id="cp-canvas"></canvas>
+      <div id="cp-loupe" class="cp-loupe" style="display:none"><canvas id="cp-loupe-canvas" width="120" height="120"></canvas></div>
+    </div>
+  </div>
+  <div>
+    <div class="field-label"><span>当前颜色</span></div>
+    <div id="cp-swatch" class="cp-swatch"></div>
+    <div id="cp-readout" class="cp-readout">尚未取色</div>
+    <div class="field-label" style="margin-top:14px"><span>历史色板（点击复制）</span></div>
+    <div id="cp-history" class="cp-history"></div>
+  </div>
+</div>
+
+<style>
+  .cp-wrap { position: relative; margin-top: 10px; border: 1px dashed var(--border); border-radius: 8px; display: inline-block; max-width: 100%; background: #fafafa; cursor: crosshair; }
+  .cp-wrap canvas { display: block; max-width: 100%; }
+  .cp-loupe { position: absolute; width: 120px; height: 120px; border: 2px solid var(--primary-color, #3e2eff); border-radius: 8px; overflow: hidden; pointer-events: none; background: #fff; box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+  .cp-swatch { width: 100%; height: 80px; border-radius: 8px; border: 1px solid var(--border); background: #fff; margin-top: 8px; }
+  .cp-readout { padding: 8px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; background: #f8f9fb; border-radius: 6px; margin-top: 8px; font-size: 13px; }
+  .cp-history { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
+  .cp-history span { width: 28px; height: 28px; border-radius: 4px; border: 1px solid var(--border); cursor: pointer; }
+</style>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  const canvas = $('cp-canvas'), loupe = $('cp-loupe'), lctx = $('cp-loupe-canvas').getContext('2d');
+  const ctx = canvas.getContext('2d');
+  let imgEl = null;
+  const history = [];
+
+  $('cp-zoom').addEventListener('input', (e) => $('cp-zv').textContent = e.target.value);
+
+  $('cp-file').addEventListener('change', (e) => {
+    const f = e.target.files[0];
+    if (!f) return;
+    const img = new Image();
+    img.onload = () => {
+      imgEl = img;
+      const maxW = 480;
+      const r = Math.min(1, maxW / img.width);
+      canvas.width = Math.round(img.width * r);
+      canvas.height = Math.round(img.height * r);
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    };
+    img.src = URL.createObjectURL(f);
+  });
+
+  function rgbToHex(r, g, b) {
+    return '#' + [r, g, b].map(v => v.toString(16).padStart(2, '0')).join('').toUpperCase();
+  }
+  function rgbToHsl(r, g, b) {
+    r/=255; g/=255; b/=255;
+    const max = Math.max(r,g,b), min = Math.min(r,g,b);
+    let h, s, l = (max+min)/2;
+    if (max === min) { h = s = 0; }
+    else {
+      const d = max - min;
+      s = l > 0.5 ? d/(2-max-min) : d/(max+min);
+      switch (max) {
+        case r: h = (g-b)/d + (g<b?6:0); break;
+        case g: h = (b-r)/d + 2; break;
+        case b: h = (r-g)/d + 4; break;
+      }
+      h *= 60;
+    }
+    return `hsl(${Math.round(h)}, ${Math.round(s*100)}%, ${Math.round(l*100)}%)`;
+  }
+
+  canvas.addEventListener('mousemove', (e) => {
+    if (!imgEl) return;
+    const r = canvas.getBoundingClientRect();
+    const x = Math.round((e.clientX - r.left) * canvas.width / r.width);
+    const y = Math.round((e.clientY - r.top) * canvas.height / r.height);
+    if (x < 0 || y < 0 || x >= canvas.width || y >= canvas.height) { loupe.style.display = 'none'; return; }
+    loupe.style.display = 'block';
+    const wrap = $('cp-wrap').getBoundingClientRect();
+    let lx = e.clientX - wrap.left + 20;
+    let ly = e.clientY - wrap.top + 20;
+    if (lx + 120 > wrap.width) lx = e.clientX - wrap.left - 130;
+    if (ly + 120 > wrap.height) ly = e.clientY - wrap.top - 130;
+    loupe.style.left = lx + 'px';
+    loupe.style.top = ly + 'px';
+    const zoom = Number($('cp-zoom').value);
+    lctx.imageSmoothingEnabled = false;
+    lctx.fillStyle = '#fff'; lctx.fillRect(0, 0, 120, 120);
+    lctx.drawImage(canvas, x - 60/zoom, y - 60/zoom, 120/zoom, 120/zoom, 0, 0, 120, 120);
+    // 十字
+    lctx.strokeStyle = 'rgba(255,255,255,0.9)';
+    lctx.lineWidth = 1;
+    lctx.beginPath(); lctx.moveTo(58, 0); lctx.lineTo(62, 0); lctx.moveTo(58, 120); lctx.lineTo(62, 120);
+    lctx.moveTo(0, 58); lctx.lineTo(0, 62); lctx.moveTo(120, 58); lctx.lineTo(120, 62);
+    lctx.stroke();
+    lctx.strokeStyle = 'rgba(0,0,0,0.5)';
+    lctx.beginPath(); lctx.moveTo(59, 0); lctx.lineTo(61, 0); lctx.moveTo(59, 120); lctx.lineTo(61, 120);
+    lctx.moveTo(0, 59); lctx.lineTo(0, 61); lctx.moveTo(120, 59); lctx.lineTo(120, 61);
+    lctx.stroke();
+  });
+  canvas.addEventListener('mouseleave', () => { loupe.style.display = 'none'; });
+
+  canvas.addEventListener('click', (e) => {
+    if (!imgEl) return;
+    const r = canvas.getBoundingClientRect();
+    const x = Math.round((e.clientX - r.left) * canvas.width / r.width);
+    const y = Math.round((e.clientY - r.top) * canvas.height / r.height);
+    const px = ctx.getImageData(x, y, 1, 1).data;
+    const [R, G, B, A] = px;
+    const hex = rgbToHex(R, G, B);
+    const hsl = rgbToHsl(R, G, B);
+    $('cp-swatch').style.background = hex;
+    $('cp-readout').innerHTML = `<b>HEX</b> ${hex}<br><b>RGB</b> rgb(${R}, ${G}, ${B})<br><b>HSL</b> ${hsl}<br><b>Alpha</b> ${(A/255).toFixed(2)}`;
+    if (!history.includes(hex)) {
+      history.unshift(hex);
+      if (history.length > 24) history.pop();
+      renderHistory();
+    }
+  });
+
+  function renderHistory() {
+    $('cp-history').innerHTML = '';
+    history.forEach(h => {
+      const s = document.createElement('span');
+      s.style.background = h;
+      s.title = `${h} · 点击复制`;
+      s.addEventListener('click', async () => {
+        try { await navigator.clipboard.writeText(h); s.style.outline = '2px solid #3e2eff'; setTimeout(() => s.style.outline = '', 600); } catch {}
+      });
+      $('cp-history').appendChild(s);
+    });
+  }
+</script>

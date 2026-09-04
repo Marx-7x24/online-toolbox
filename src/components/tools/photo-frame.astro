@@ -1,0 +1,159 @@
+---
+// 相框：上传图片，可叠加多种相框（白边/阴影/复古）
+---
+<div class="pane">
+  <div>
+    <div class="field-label"><span>选择图片</span></div>
+    <input type="file" id="pf-file" accept="image/*">
+    <div class="field-label" style="margin-top:14px"><span>相框样式</span></div>
+    <select id="pf-style" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:6px">
+      <option value="white">白边相框</option>
+      <option value="shadow">投影相框</option>
+      <option value="retro">复古渐变</option>
+      <option value="gradient">彩色渐变（可换色）</option>
+      <option value="polaroid">拍立得（白边+底部留白）</option>
+    </select>
+    <div class="field-label" style="margin-top:14px"><span>边框宽度 <span id="pf-wv">40</span> px</span></div>
+    <input type="range" id="pf-width" min="10" max="120" value="40" style="width:100%">
+    <div class="field-label" style="margin-top:14px"><span>边框颜色</span></div>
+    <input type="color" id="pf-color" value="#3e2eff" style="width:100%;height:36px;border:1px solid var(--border);border-radius:6px">
+  </div>
+  <div>
+    <div class="field-label"><span>预览</span></div>
+    <div id="pf-preview" class="pf-preview"></div>
+  </div>
+</div>
+<div class="btn-row">
+  <button id="pf-run" class="primary">生成相框</button>
+  <button id="pf-dl">下载</button>
+  <button id="pf-reset">重置</button>
+  <span id="pf-msg" class="msg"></span>
+</div>
+
+<style>
+  .pf-preview { margin-top: 10px; border: 1px dashed var(--border); border-radius: 8px; padding: 10px; min-height: 120px; display: flex; align-items: center; justify-content: center; background: #fafafa; }
+  .pf-preview img { max-width: 100%; max-height: 320px; }
+  .pf-preview:empty::before { content: '尚未生成'; color: #999; }
+</style>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  let sourceFile = null;
+  let outBlob = null;
+
+  $('pf-width').addEventListener('input', (e) => $('pf-wv').textContent = e.target.value);
+
+  $('pf-file').addEventListener('change', (e) => sourceFile = e.target.files[0]);
+
+  function loadImg(f) {
+    return new Promise((res, rej) => {
+      const img = new Image();
+      img.onload = () => res(img);
+      img.onerror = rej;
+      img.src = URL.createObjectURL(f);
+    });
+  }
+
+  function roundedRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + w - r, y);
+    ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+    ctx.lineTo(x + w, y + h - r);
+    ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    ctx.lineTo(x + r, y + h);
+    ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+    ctx.lineTo(x, y + r);
+    ctx.quadraticCurveTo(x, y, x + r, y);
+    ctx.closePath();
+  }
+
+  $('pf-run').addEventListener('click', async () => {
+    if (!sourceFile) { $('pf-msg').textContent = '请先选择图片'; $('pf-msg').className = 'msg err'; return; }
+    try {
+      const img = await loadImg(sourceFile);
+      const style = $('pf-style').value;
+      const bw = Number($('pf-width').value);
+      const color = $('pf-color').value;
+      let cw, ch, ox, oy;
+      if (style === 'polaroid') {
+        cw = img.width + bw * 2;
+        ch = img.width + bw * 3; // 底部留白更大
+        ox = bw; oy = bw;
+      } else {
+        cw = img.width + bw * 2;
+        ch = img.height + bw * 2;
+        ox = bw; oy = bw;
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = cw; canvas.height = ch;
+      const ctx = canvas.getContext('2d');
+      // 背景
+      if (style === 'white') { ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, cw, ch); }
+      else if (style === 'shadow') {
+        ctx.fillStyle = '#f4f6f9'; ctx.fillRect(0, 0, cw, ch);
+        ctx.save();
+        ctx.shadowColor = 'rgba(0,0,0,0.35)';
+        ctx.shadowBlur = bw;
+        ctx.shadowOffsetX = 0; ctx.shadowOffsetY = bw/2;
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(bw/2, bw/2, img.width + bw, img.height + bw);
+        ctx.restore();
+      }
+      else if (style === 'retro') {
+        const g = ctx.createLinearGradient(0, 0, cw, ch);
+        g.addColorStop(0, '#f5e6d3'); g.addColorStop(1, '#d4a373');
+        ctx.fillStyle = g; ctx.fillRect(0, 0, cw, ch);
+      }
+      else if (style === 'gradient') {
+        const g = ctx.createLinearGradient(0, 0, cw, ch);
+        g.addColorStop(0, color); g.addColorStop(1, shade(color, -40));
+        ctx.fillStyle = g; ctx.fillRect(0, 0, cw, ch);
+      }
+      else if (style === 'polaroid') {
+        ctx.fillStyle = '#fdfdfa'; ctx.fillRect(0, 0, cw, ch);
+      }
+      // 画图
+      ctx.drawImage(img, ox, oy);
+      // polaroid 文字
+      if (style === 'polaroid') {
+        ctx.fillStyle = '#222';
+        ctx.font = `${Math.max(14, Math.round(img.width/20))}px sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.fillText('Photo', cw/2, img.height + bw*2 + Math.round(img.width/22));
+      }
+      outBlob = await new Promise(res => canvas.toBlob(res, 'image/png'));
+      $('pf-preview').innerHTML = '<img alt="预览">';
+      $('pf-preview').querySelector('img').src = URL.createObjectURL(outBlob);
+      $('pf-msg').textContent = `成功 · ${cw}×${ch} · ${(outBlob.size/1024).toFixed(1)} KB`;
+      $('pf-msg').className = 'msg ok';
+    } catch (err) {
+      $('pf-msg').textContent = '失败：' + err.message;
+      $('pf-msg').className = 'msg err';
+    }
+  });
+
+  function shade(hex, percent) {
+    const num = parseInt(hex.replace('#',''), 16);
+    let r = (num >> 16) + Math.round(255 * percent / 100);
+    let g = ((num >> 8) & 0xff) + Math.round(255 * percent / 100);
+    let b = (num & 0xff) + Math.round(255 * percent / 100);
+    r = Math.max(0, Math.min(255, r)); g = Math.max(0, Math.min(255, g)); b = Math.max(0, Math.min(255, b));
+    return '#' + [r, g, b].map(v => v.toString(16).padStart(2, '0')).join('');
+  }
+
+  $('pf-dl').addEventListener('click', () => {
+    if (!outBlob) return;
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(outBlob);
+    a.download = (sourceFile.name.replace(/\.[^.]+$/, '') || 'image') + '_framed.png';
+    a.click();
+  });
+
+  $('pf-reset').addEventListener('click', () => {
+    sourceFile = null; outBlob = null;
+    $('pf-file').value = '';
+    $('pf-preview').innerHTML = '';
+    $('pf-msg').textContent = '';
+  });
+</script>

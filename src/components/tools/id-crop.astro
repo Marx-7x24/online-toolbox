@@ -1,0 +1,130 @@
+---
+// 证件照裁切：按标准尺寸（一寸/二寸/护照/签证）自动居中裁切
+---
+<div class="pane">
+  <div>
+    <div class="field-label"><span>选择照片</span></div>
+    <input type="file" id="ic-file" accept="image/*">
+    <div class="field-label" style="margin-top:14px"><span>证件照规格</span></div>
+    <select id="ic-spec" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:6px">
+      <option value="295x413">一寸（295×413）</option>
+      <option value="413x579">二寸（413×579）</option>
+      <option value="260x378">小一寸（260×378）</option>
+      <option value="389x566">大 一寸（389×566）</option>
+      <option value="390x567">护照（390×567）</option>
+      <option value="531x591">签证（531×591，美国签证）</option>
+      <option value="480x640">驾照（480×640）</option>
+      <option value="custom">自定义</option>
+    </select>
+    <div id="ic-custom" style="display:none;margin-top:6px;display:flex;gap:6px">
+      <input type="number" id="ic-w" value="295" placeholder="宽" style="flex:1;padding:6px;border:1px solid var(--border);border-radius:6px">
+      <input type="number" id="ic-h" value="413" placeholder="高" style="flex:1;padding:6px;border:1px solid var(--border);border-radius:6px">
+    </div>
+    <div class="field-label" style="margin-top:14px"><span>底色</span></div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <select id="ic-bg" style="flex:1;padding:6px;border:1px solid var(--border);border-radius:6px">
+        <option value="transparent">透明</option>
+        <option value="#ffffff" selected>白色</option>
+        <option value="#d8362a">红色</option>
+        <option value="#3e8ee6">蓝色</option>
+        <option value="custom">自定义</option>
+      </select>
+      <input type="color" id="ic-bg-custom" value="#ffffff" style="width:50px;height:32px;border:1px solid var(--border);border-radius:6px">
+    </div>
+    <div class="field-label" style="margin-top:14px"><span>头部位置（% 决定上下偏移）</span></div>
+    <input type="range" id="ic-head" min="0" max="100" value="35" style="width:100%">
+  </div>
+  <div>
+    <div class="field-label"><span>裁切预览</span></div>
+    <div id="ic-preview" class="ic-preview"></div>
+  </div>
+</div>
+<div class="btn-row">
+  <button id="ic-run" class="primary">生成证件照</button>
+  <button id="ic-dl">下载</button>
+  <button id="ic-reset">重置</button>
+  <span id="ic-msg" class="msg"></span>
+</div>
+
+<style>
+  .ic-preview { margin-top: 10px; border: 1px dashed var(--border); border-radius: 8px; padding: 10px; min-height: 240px; display: flex; align-items: center; justify-content: center; background: repeating-conic-gradient(#eee 0% 25%, #fff 0% 50%) 50%/16px 16px; }
+  .ic-preview img { max-height: 320px; background: #fff; }
+  .ic-preview:empty::before { content: '尚未生成'; color: #999; }
+</style>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  let sourceFile = null;
+  let outBlob = null;
+
+  $('ic-spec').addEventListener('change', () => {
+    $('ic-custom').style.display = $('ic-spec').value === 'custom' ? 'flex' : 'none';
+  });
+
+  $('ic-file').addEventListener('change', (e) => sourceFile = e.target.files[0]);
+
+  function loadImg(f) {
+    return new Promise((res, rej) => {
+      const img = new Image();
+      img.onload = () => res(img);
+      img.onerror = rej;
+      img.src = URL.createObjectURL(f);
+    });
+  }
+
+  $('ic-run').addEventListener('click', async () => {
+    if (!sourceFile) { $('ic-msg').textContent = '请先选择照片'; $('ic-msg').className = 'msg err'; return; }
+    try {
+      const img = await loadImg(sourceFile);
+      const [tw, th] = $('ic-spec').value === 'custom'
+        ? [Number($('ic-w').value), Number($('ic-h').value)]
+        : $('ic-spec').value.split('x').map(Number);
+      const targetRatio = tw / th;
+      const imgRatio = img.width / img.height;
+      let sw, sh, sx, sy;
+      if (imgRatio > targetRatio) {
+        sh = img.height; sw = img.height * targetRatio;
+        sx = (img.width - sw) / 2; sy = 0;
+      } else {
+        sw = img.width; sh = img.width / targetRatio;
+        sx = 0; sy = (img.height - sh) / 2;
+      }
+      // 头部偏移：减少 sy 让头部靠上
+      const headOffset = Number($('ic-head').value) / 100; // 0-1
+      sy = Math.max(0, sy - sh * (0.3 - headOffset * 0.6));
+      sh = Math.min(sh, img.height - sy);
+      sw = Math.min(sw, img.width - sx);
+      const canvas = document.createElement('canvas');
+      canvas.width = tw; canvas.height = th;
+      const ctx = canvas.getContext('2d');
+      const bg = $('ic-bg').value === 'custom' ? $('ic-bg-custom').value : $('ic-bg').value;
+      if (bg !== 'transparent') { ctx.fillStyle = bg; ctx.fillRect(0, 0, tw, th); }
+      ctx.drawImage(img, sx, sy, sw, sh, 0, 0, tw, th);
+      const fmt = bg === 'transparent' ? 'image/png' : 'image/jpeg';
+      outBlob = await new Promise(res => canvas.toBlob(res, fmt, 0.92));
+      $('ic-preview').innerHTML = '<img alt="预览">';
+      $('ic-preview').querySelector('img').src = URL.createObjectURL(outBlob);
+      $('ic-msg').textContent = `成功 · ${tw}×${th} · ${(outBlob.size/1024).toFixed(1)} KB`;
+      $('ic-msg').className = 'msg ok';
+    } catch (err) {
+      $('ic-msg').textContent = '失败：' + err.message;
+      $('ic-msg').className = 'msg err';
+    }
+  });
+
+  $('ic-dl').addEventListener('click', () => {
+    if (!outBlob) return;
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(outBlob);
+    const ext = outBlob.type === 'image/png' ? 'png' : 'jpg';
+    a.download = 'id-photo.' + ext;
+    a.click();
+  });
+
+  $('ic-reset').addEventListener('click', () => {
+    sourceFile = null; outBlob = null;
+    $('ic-file').value = '';
+    $('ic-preview').innerHTML = '';
+    $('ic-msg').textContent = '';
+  });
+</script>

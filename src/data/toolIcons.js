@@ -217,6 +217,20 @@ export const toolIconMap = {
   'image-from-jxl': 'logo-images-jxl.svg',
   'image-from-apng': 'logo-images-apng.svg',
   'image-from-jp2': 'logo-images-jp2.svg',
+  // 图像处理：处理 / 加工
+  'idcard-merge': 'logo-idcard-merge.svg',
+  'sign-merge': 'logo-sign-merge.svg',
+  'color-blindness': 'logo-color-blindness.svg',
+  'image-cropping': 'logo-image-cropping.svg',
+  'color-picker': 'logo-color-picker.svg',
+  'photo-frame': 'logo-photo-frame.svg',
+  'image-size-revise': 'logo-image-size-revise.svg',
+  'image-rectify': 'logo-image-rectify.svg',
+  'marketing-card': 'logo-marketing-card.svg',
+  'id-crop': 'logo-id-crop.svg',
+  'image-cutter': 'logo-image-cutter.svg',
+  'color-replace': 'logo-color-replace.svg',
+  'idcard-date': 'logo-idcard-date.svg',
 };
 
 export function getToolIcon(slug) {

@@ -1,0 +1,143 @@
+---
+// 印章合并 / 去白底：上传印章图，去除白底透明后叠加到任意图片
+---
+<div class="pane">
+  <div>
+    <div class="field-label"><span>① 上传印章（PNG/JPG，推荐红章）</span></div>
+    <input type="file" id="sm-sign" accept="image/*">
+    <div class="field-label" style="margin-top:14px"><span>② 容差（白色阈值，越大去白越多）</span></div>
+    <input type="range" id="sm-tol" min="0" max="255" value="220" style="width:100%">
+    <p style="font-size:12px;color:#999;margin-top:8px">基于颜色距离去白底，非 AI 抠图。带阴影/渐变的印章建议取较大容差。</p>
+    <div id="sign-preview" class="sm-preview-mini"></div>
+  </div>
+  <div>
+    <div class="field-label"><span>③ 上传需要盖章的图片</span></div>
+    <input type="file" id="sm-base" accept="image/*">
+    <div class="field-label" style="margin-top:14px"><span>④ 印章位置 & 缩放</span></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <label>X% <input type="number" id="sm-x" value="70" min="0" max="100" style="width:100%"></label>
+      <label>Y% <input type="number" id="sm-y" value="70" min="0" max="100" style="width:100%"></label>
+      <label>宽% <input type="number" id="sm-w" value="25" min="1" max="100" style="width:100%"></label>
+      <label>旋转° <input type="number" id="sm-rot" value="-15" min="-180" max="180" style="width:100%"></label>
+    </div>
+    <div class="field-label" style="margin-top:14px"><span>合并预览</span></div>
+    <div id="sm-preview" class="sm-preview"></div>
+  </div>
+</div>
+<div class="btn-row">
+  <button id="sm-run" class="primary">合并印章</button>
+  <button id="sm-dl">下载</button>
+  <button id="sm-reset">重置</button>
+  <span id="sm-msg" class="msg"></span>
+</div>
+
+<style>
+  .sm-preview-mini, .sm-preview { margin-top: 10px; border: 1px dashed var(--border); border-radius: 8px; padding: 10px; min-height: 120px; display: flex; align-items: center; justify-content: center; background: #fafafa; }
+  .sm-preview-mini img, .sm-preview img { max-width: 100%; max-height: 280px; }
+  .sm-preview-mini:empty::before { content: '印章预览'; color: #999; }
+  .sm-preview:empty::before { content: '尚未生成'; color: #999; }
+  input[type="number"] { padding: 6px; border: 1px solid var(--border); border-radius: 6px; box-sizing: border-box; }
+</style>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  let signFile = null, baseFile = null, processedSignCanvas = null;
+  let outBlob = null;
+
+  function loadImage(file) {
+    return new Promise((res, rej) => {
+      const img = new Image();
+      img.onload = () => res(img);
+      img.onerror = rej;
+      img.src = URL.createObjectURL(file);
+    });
+  }
+
+  function processSign(img, tol) {
+    const canvas = document.createElement('canvas');
+    canvas.width = img.width; canvas.height = img.height;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(img, 0, 0);
+    const data = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const px = data.data;
+    for (let i = 0; i < px.length; i += 4) {
+      const r = px[i], g = px[i+1], b = px[i+2];
+      // 颜色距离：白色越近越透明
+      const dist = Math.sqrt((255-r)**2 + (255-g)**2 + (255-b)**2);
+      // dist=0(纯白) → alpha=0；dist=441(纯黑) → alpha=255
+      const t = Math.max(0, Math.min(255, dist / (441 - tol*441/255) * 255));
+      px[i+3] = Math.min(px[i+3], t);
+    }
+    ctx.putImageData(data, 0, 0);
+    return canvas;
+  }
+
+  $('sm-sign').addEventListener('change', async (e) => {
+    signFile = e.target.files[0];
+    if (!signFile) return;
+    const img = await loadImage(signFile);
+    processedSignCanvas = processSign(img, Number($('sm-tol').value));
+    $('sign-preview').innerHTML = '<img alt="印章预览">';
+    $('sign-preview').querySelector('img').src = processedSignCanvas.toDataURL();
+  });
+
+  $('sm-tol').addEventListener('input', async () => {
+    if (!signFile) return;
+    const img = await loadImage(signFile);
+    processedSignCanvas = processSign(img, Number($('sm-tol').value));
+    $('sign-preview').querySelector('img').src = processedSignCanvas.toDataURL();
+  });
+
+  $('sm-base').addEventListener('change', (e) => baseFile = e.target.files[0]);
+
+  $('sm-run').addEventListener('click', async () => {
+    if (!signFile || !baseFile) { $('sm-msg').textContent = '请同时上传印章和底图'; $('sm-msg').className = 'msg err'; return; }
+    try {
+      const baseImg = await loadImage(baseFile);
+      const signImg = processedSignCanvas;
+      const canvas = document.createElement('canvas');
+      canvas.width = baseImg.width; canvas.height = baseImg.height;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(baseImg, 0, 0);
+      const xp = Number($('sm-x').value) / 100;
+      const yp = Number($('sm-y').value) / 100;
+      const wp = Number($('sm-w').value) / 100;
+      const sw = baseImg.width * wp;
+      const sh = sw * signImg.height / signImg.width;
+      const sx = baseImg.width * xp - sw / 2;
+      const sy = baseImg.height * yp - sh / 2;
+      const rot = Number($('sm-rot').value) * Math.PI / 180;
+      const cx = sx + sw / 2;
+      const cy = sy + sh / 2;
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.rotate(rot);
+      ctx.drawImage(signImg, -sw/2, -sh/2, sw, sh);
+      ctx.restore();
+      outBlob = await new Promise(res => canvas.toBlob(res, 'image/png'));
+      $('sm-preview').innerHTML = '<img alt="预览">';
+      $('sm-preview').querySelector('img').src = URL.createObjectURL(outBlob);
+      $('sm-msg').textContent = `合并成功 · ${(outBlob.size/1024).toFixed(1)} KB`;
+      $('sm-msg').className = 'msg ok';
+    } catch (err) {
+      $('sm-msg').textContent = '失败：' + err.message;
+      $('sm-msg').className = 'msg err';
+    }
+  });
+
+  $('sm-dl').addEventListener('click', () => {
+    if (!outBlob) return;
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(outBlob);
+    a.download = (baseFile.name.replace(/\.[^.]+$/, '') || 'image') + '_signed.png';
+    a.click();
+  });
+
+  $('sm-reset').addEventListener('click', () => {
+    signFile = null; baseFile = null; processedSignCanvas = null; outBlob = null;
+    $('sm-sign').value = ''; $('sm-base').value = '';
+    $('sign-preview').innerHTML = '';
+    $('sm-preview').innerHTML = '';
+    $('sm-msg').textContent = '';
+  });
+</script>

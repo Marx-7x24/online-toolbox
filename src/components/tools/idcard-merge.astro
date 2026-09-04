@@ -1,0 +1,162 @@
+---
+// 证件照合并：把多张小证件照按指定行列排版到一张大图（A4）
+---
+<div class="pane">
+  <div>
+    <div class="field-label"><span>选择多张证件照（按文件名排序）</span></div>
+    <input type="file" id="icmerge-files" accept="image/*" multiple>
+    <div id="icmerge-thumbs" class="icmerge-thumbs"></div>
+    <div class="field-label" style="margin-top:14px"><span>每张缩放后尺寸 <span id="icmerge-sz">150×200</span> px</span></div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <input type="number" id="icmerge-w" value="150" min="40" max="500" style="width:80px">
+      <span>×</span>
+      <input type="number" id="icmerge-h" value="200" min="40" max="500" style="width:80px">
+      <span>px</span>
+    </div>
+    <div class="field-label" style="margin-top:14px"><span>排版</span></div>
+    <select id="icmerge-layout" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:6px">
+      <option value="auto">自动（按数量选最优）</option>
+      <option value="1x1">1×1</option>
+      <option value="2x2">2×2</option>
+      <option value="3x3">3×3</option>
+      <option value="2x3">2×3</option>
+      <option value="3x4">3×4</option>
+      <option value="4x6">4×6（A4 6 寸照）</option>
+    </select>
+  </div>
+  <div>
+    <div class="field-label"><span>合并预览</span></div>
+    <div id="icmerge-preview" class="icmerge-preview"></div>
+  </div>
+</div>
+<div class="btn-row">
+  <button id="icmerge-run" class="primary">生成合并图</button>
+  <button id="icmerge-dl">下载</button>
+  <button id="icmerge-reset">重置</button>
+  <span id="icmerge-msg" class="msg"></span>
+</div>
+
+<style>
+  .icmerge-thumbs { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; min-height: 40px; }
+  .icmerge-thumbs img { width: 50px; height: 50px; object-fit: cover; border-radius: 4px; border: 1px solid var(--border); }
+  .icmerge-preview { margin-top: 10px; border: 1px dashed var(--border); border-radius: 8px; padding: 10px; min-height: 120px; display: flex; align-items: center; justify-content: center; background: #fafafa; }
+  .icmerge-preview img { max-width: 100%; max-height: 320px; }
+  .icmerge-preview:empty::before { content: '尚未生成'; color: #999; }
+  input[type="number"] { padding: 6px; border: 1px solid var(--border); border-radius: 6px; }
+</style>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  const files = [];
+  let outBlob = null;
+
+  $('icmerge-w').addEventListener('input', updateSizeLabel);
+  $('icmerge-h').addEventListener('input', updateSizeLabel);
+  function updateSizeLabel() { $('icmerge-sz').textContent = `${$('icmerge-w').value}×${$('icmerge-h').value}`; }
+
+  $('icmerge-files').addEventListener('change', (e) => {
+    const arr = Array.from(e.target.files).slice().sort((a, b) => a.name.localeCompare(b.name));
+    files.push(...arr);
+    renderThumbs();
+  });
+
+  function renderThumbs() {
+    const wrap = $('icmerge-thumbs');
+    wrap.innerHTML = '';
+    files.forEach((f, i) => {
+      const img = document.createElement('img');
+      img.src = URL.createObjectURL(f);
+      img.title = f.name;
+      $('icmerge-thumbs').appendChild(img);
+    });
+  }
+
+  function autoLayout(n) {
+    if (n <= 1) return [1, 1];
+    if (n <= 4) return [2, 2];
+    if (n <= 6) return [2, 3];
+    if (n <= 9) return [3, 3];
+    if (n <= 12) return [3, 4];
+    return [4, 6];
+  }
+
+  function loadImage(file) {
+    return new Promise((res, rej) => {
+      const img = new Image();
+      img.onload = () => res(img);
+      img.onerror = rej;
+      img.src = URL.createObjectURL(file);
+    });
+  }
+
+  async function drawCover(ctx, img, dx, dy, dw, dh) {
+    // cover 模式：保持比例，居中裁切
+    const ratio = img.width / img.height;
+    const target = dw / dh;
+    let sw, sh, sx, sy;
+    if (ratio > target) {
+      sh = img.height;
+      sw = img.height * target;
+      sx = (img.width - sw) / 2;
+      sy = 0;
+    } else {
+      sw = img.width;
+      sh = img.width / target;
+      sx = 0;
+      sy = (img.height - sh) / 2;
+    }
+    ctx.drawImage(img, sx, sy, sw, sh, dx, dy, dw, dh);
+  }
+
+  $('icmerge-run').addEventListener('click', async () => {
+    if (files.length === 0) { $('icmerge-msg').textContent = '请先选择图片'; $('icmerge-msg').className = 'msg err'; return; }
+    const w = Number($('icmerge-w').value);
+    const h = Number($('icmerge-h').value);
+    if (w < 40 || h < 40) { $('icmerge-msg').textContent = '尺寸太小'; $('icmerge-msg').className = 'msg err'; return; }
+    try {
+      const layout = $('icmerge-layout').value;
+      let [cols, rows] = layout === 'auto' ? autoLayout(files.length) : layout.split('x').map(Number);
+      while (cols * rows < files.length) rows++;
+      const gap = 8;
+      const canvasW = cols * w + (cols + 1) * gap;
+      const canvasH = rows * h + (rows + 1) * gap;
+      const canvas = document.createElement('canvas');
+      canvas.width = canvasW; canvas.height = canvasH;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, canvasW, canvasH);
+      for (let i = 0; i < files.length; i++) {
+        const img = await loadImage(files[i]);
+        const r = Math.floor(i / cols);
+        const c = i % cols;
+        const x = gap + c * (w + gap);
+        const y = gap + r * (h + gap);
+        await drawCover(ctx, img, x, y, w, h);
+      }
+      outBlob = await new Promise(res => canvas.toBlob(res, 'image/png'));
+      $('icmerge-preview').innerHTML = '<img alt="预览">';
+      $('icmerge-preview').querySelector('img').src = URL.createObjectURL(outBlob);
+      $('icmerge-msg').textContent = `生成成功 · ${files.length} 张 → ${cols}×${rows} 排版 · ${(outBlob.size/1024).toFixed(1)} KB`;
+      $('icmerge-msg').className = 'msg ok';
+    } catch (err) {
+      $('icmerge-msg').textContent = '生成失败：' + err.message;
+      $('icmerge-msg').className = 'msg err';
+    }
+  });
+
+  $('icmerge-dl').addEventListener('click', () => {
+    if (!outBlob) return;
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(outBlob);
+    a.download = 'id-card-merged.png';
+    a.click();
+  });
+
+  $('icmerge-reset').addEventListener('click', () => {
+    files.length = 0; outBlob = null;
+    $('icmerge-files').value = '';
+    $('icmerge-thumbs').innerHTML = '';
+    $('icmerge-preview').innerHTML = '';
+    $('icmerge-msg').textContent = '';
+  });
+</script>
