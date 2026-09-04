@@ -1,6 +1,5 @@
 ---
 import Base from '../../../layouts/Base.astro';
-import Sidebar from '../../../components/Sidebar.astro';
 import ToolCard from '../../../components/ToolCard.astro';
 import Support from '../../../components/Support.astro';
 import JsonLd from '../../../components/JsonLd.astro';
@@ -35,6 +34,7 @@ const ToolComponent = modules[`../../../components/tools/${tool.slug}.astro`].de
   description={ti.desc}
   keywords={ti.keywords.join(',')}
   lang={lang}
+  active={category?.slug || 'home'}
 >
   {/* 结构化数据：面包屑（搜索结果可直接展示层级）+ 工具本体（免费 Web 应用） */}
   <JsonLd data={[
@@ -61,38 +61,33 @@ const ToolComponent = modules[`../../../components/tools/${tool.slug}.astro`].de
     },
   ]} />
 
-  <div class="home-layout">
-    <Sidebar lang={lang} active={category?.slug || 'home'} />
-
-    <div class="home-main">
-      <div class="page-head">
-        <p style="font-size:13px;margin:0 0 6px;">
-          <a href={`/${lang}/`} style="color:var(--text-hint);">{t(lang, 'breadHome')}</a>
-          <span style="color:var(--text-hint);"> / </span>
-          <a href={`/${lang}/category/${category.slug}/`} style="color:var(--text-hint);">{cName}</a>
-        </p>
-        <h1>{ti.name}</h1>
-        <p>{ti.desc}</p>
-      </div>
-
-      <div class="tool-body">
-        <ToolComponent />
-      </div>
-
-      <Support lang={lang} />
-
-      {related.length > 0 && (
-        <section class="related-tools">
-          <h2 class="home-section__title">{t(lang, 'relatedTools')}</h2>
-          <div class="tool-grid">
-            {related.map((rt) => {
-              const rti = toolI18n(rt, lang);
-              const search = [rti.name, rti.desc, rt.name_en || '', rt.desc_en || '', ...rti.keywords].join(' ').replace(/\s+/g, ' ').trim().toLowerCase();
-              return <ToolCard lang={lang} slug={rt.slug} name={rti.name} desc={rti.desc} category={category.slug} search={search} />;
-            })}
-          </div>
-        </section>
-      )}
-    </div>
+  {/* 面包屑 + 工具标题（懒人式：搜索框下方 h1 + 简介） */}
+  <div class="tool-page-head">
+    <p class="breadcrumb">
+      <a href={`/${lang}/`}>{t(lang, 'breadHome')}</a>
+      <span> / </span>
+      <a href={`/${lang}/category/${category.slug}/`}>{cName}</a>
+    </p>
+    <h1>{ti.name}</h1>
+    <p>{ti.desc}</p>
   </div>
+
+  <div class="tool-body">
+    <ToolComponent />
+  </div>
+
+  <Support lang={lang} />
+
+  {related.length > 0 && (
+    <section class="related-tools">
+      <h2>{t(lang, 'relatedTools')}</h2>
+      <div class="tools-grid">
+        {related.map((rt) => {
+          const rti = toolI18n(rt, lang);
+          const search = [rti.name, rti.desc, rt.name_en || '', rt.desc_en || '', ...rti.keywords].join(' ').replace(/\s+/g, ' ').trim().toLowerCase();
+          return <ToolCard lang={lang} slug={rt.slug} name={rti.name} desc={rti.desc} category={category.slug} search={search} />;
+        })}
+      </div>
+    </section>
+  )}
 </Base>

@@ -3,14 +3,16 @@ import '../styles/global.css';
 import { t } from '../i18n/ui.ts';
 import { tools, categories, categoryI18n } from '../data/tools.js';
 import { getToolIcon } from '../data/toolIcons.js';
+import Sidebar from '../components/Sidebar.astro';
 
 interface Props {
   title: string;
   description: string;
   keywords?: string;
   lang?: string;
+  active?: string; // 侧栏高亮：'home' | 'recent' | category slug
 }
-const { title, description, keywords, lang = 'zh' } = Astro.props;
+const { title, description, keywords, lang = 'zh', active = 'home' } = Astro.props;
 // 客户端可用的工具索引：侧边栏「最近使用」与 /recent/ 独立页都靠它在浏览器端渲染。
 // 带上 desc 与懒人图标文件名，保证独立页卡片外观与首页完全一致。
 const toolMap = Object.fromEntries(
@@ -69,52 +71,60 @@ const switchUrl = Astro.url.pathname.replace(`/${lang}/`, `/${otherLang}/`) || `
   <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
 </head>
 <body>
-  <header class="site-header">
-    <div class="wrap">
-      <a href={`/${lang}/`} class="logo">{t(lang, 'siteName')}</a>
-      <nav class="site-nav">
-        <a href={`/${lang}/about/`}>{t(lang, 'about')}</a>
-      </nav>
+  <!-- 懒人式左右结构：左侧 aside 导航 + 右侧主内容 -->
+  <div class="container">
+    <Sidebar lang={lang} active={active} />
 
-      <div class="header-search">
-        <svg class="header-search__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-        <input type="search" id="global-search" placeholder={t(lang, 'searchPlaceholder')} autocomplete="off" />
+    <main class="main-content" id="main-content">
+      <h1 class="sr-only">{title}</h1>
+
+      <!-- 顶部搜索框（sticky，仿懒人） -->
+      <div class="search-container" id="search-box">
+        <input
+          type="search"
+          id="global-search"
+          class="search-input"
+          autocomplete="off"
+          maxlength="20"
+          placeholder={t(lang, 'searchPlaceholder')}
+          aria-label={t(lang, 'searchPlaceholder')}
+        />
+        <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+        <button type="button" class="search-clear" id="search-clear" aria-label="清空搜索">✕</button>
+        <div class="lang-switch">
+          <a href={switchUrl} class="lang-switch__btn" hreflang={otherLang}>
+            {otherLang === 'en' ? 'EN' : '中'}
+          </a>
+        </div>
       </div>
 
-      <div class="lang-switch">
-        <a href={switchUrl} class="lang-switch__btn" hreflang={otherLang}>
-          {otherLang === 'en' ? 'EN' : '中'}
-        </a>
-      </div>
-    </div>
-  </header>
+      <slot />
 
-  <main class="wrap">
-    <slot />
-  </main>
-
-  <footer class="site-footer">
-    <div class="wrap">
-      {/* 全站内链：每个页面底部都带首页/最近使用/各分类/关于，利于收录与站内跳转 */}
-      <nav class="footer-links">
-        <a href={`/${lang}/`}>{t(lang, 'home')}</a>
-        <a href={`/${lang}/recent/`}>{t(lang, 'recentTools')}</a>
-        {categories.map((c) => (
-          <a href={`/${lang}/category/${c.slug}/`}>{categoryI18n(c, lang).name}</a>
-        ))}
-        <a href={`/${lang}/about/`}>{t(lang, 'about')}</a>
-      </nav>
-      <p>{t(lang, 'footerPrivacy')}</p>
-      <p>{t(lang, 'footerCopy')}</p>
-    </div>
-  </footer>
+      <!-- 页脚 -->
+      <footer class="site-footer">
+        <nav class="footer-links" aria-label={t(lang, 'home')}>
+          <a href={`/${lang}/`}>{t(lang, 'home')}</a>
+          <a href={`/${lang}/recent/`}>{t(lang, 'recentTools')}</a>
+          {categories.map((c) => (
+            <a href={`/${lang}/category/${c.slug}/`}>{categoryI18n(c, lang).name}</a>
+          ))}
+          <a href={`/${lang}/about/`}>{t(lang, 'about')}</a>
+        </nav>
+        <p>{t(lang, 'footerPrivacy')}</p>
+        <p>{t(lang, 'footerCopy')}</p>
+      </footer>
+    </main>
+  </div>
 
   <script is:inline set:html={`window.__TOOLS__ = ${JSON.stringify(toolMap)};`}></script>
   <script is:inline set:html={`window.__RECENT_I18N__ = ${JSON.stringify(recentI18n)};`}></script>
 
   <script>
+    import { CATEGORY_ICONS } from '../data/categoryIcons.js';
+
     (function () {
       const input = document.getElementById('global-search');
+      const clearBtn = document.getElementById('search-clear');
       if (!input) return;
       let debounce;
 
@@ -133,17 +143,28 @@ const switchUrl = Astro.url.pathname.replace(`/${lang}/`, `/${otherLang}/`) || `
 
       input.addEventListener('input', function () {
         clearTimeout(debounce);
+        const v = input.value.trim();
+        if (clearBtn) clearBtn.classList.toggle('show', !!v);
         debounce = setTimeout(function () {
-          applyFilter(input.value.trim().toLowerCase());
+          applyFilter(v.toLowerCase());
         }, 150);
       });
 
-      // 支持通过 URL ?q=关键词 直接进入搜索结果（配合首页 WebSite 的 SearchAction 结构化数据，
-      // 也让搜索结果可以分享；过滤仍在本地完成，不上传任何数据）
+      if (clearBtn) {
+        clearBtn.addEventListener('click', function () {
+          input.value = '';
+          clearBtn.classList.remove('show');
+          applyFilter('');
+          input.focus();
+        });
+      }
+
+      // 支持通过 URL ?q=关键词 直接进入搜索结果
       try {
         const q = new URLSearchParams(location.search).get('q');
         if (q) {
           input.value = q;
+          if (clearBtn) clearBtn.classList.add('show');
           applyFilter(q.trim().toLowerCase());
         }
       } catch (e) {}
@@ -151,12 +172,10 @@ const switchUrl = Astro.url.pathname.replace(`/${lang}/`, `/${otherLang}/`) || `
   </script>
 
   <script>
-    import { CATEGORY_ICONS } from '../data/categoryIcons.js';
-
     (function () {
       const RECENT_KEY = 'recentTools';
-      const MAX_RECENT = 12; // 本地最多保留 12 条（全部在 /recent/ 独立页展示）
-      const SIDEBAR_RECENT = 6; // 左侧边栏只显示前 6 条，其余去独立页看
+      const MAX_RECENT = 12;
+      const SIDEBAR_RECENT = 6;
       const I18N = window.__RECENT_I18N__ || {};
       const CLOCK_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>';
       const EMPTY_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>';
@@ -171,7 +190,6 @@ const switchUrl = Astro.url.pathname.replace(`/${lang}/`, `/${otherLang}/`) || `
         return Array.isArray(arr) ? arr : [];
       }
 
-      // 把 slug 列表解析成可直接渲染的工具对象（按当前语言取名/描述）
       function resolveItems(slugs, lang) {
         if (!window.__TOOLS__) return [];
         return slugs.map(function (slug) {
@@ -187,19 +205,20 @@ const switchUrl = Astro.url.pathname.replace(`/${lang}/`, `/${otherLang}/`) || `
         }).filter(Boolean);
       }
 
-      // 单张工具卡片：懒人真实图标优先，无映射则回退分类图标（与首页 ToolCard 外观一致）
+      // 懒人式卡片：title 行（28px 图标 + 名称）+ 两行截断描述
       function cardHtml(item, lang) {
         let iconHtml;
         if (item.icon) {
-          iconHtml = '<img src="/icons/lanren/' + escapeHtml(item.icon) + '" alt="' + escapeHtml(item.name) + '" loading="lazy" class="tool-card__img" />';
+          iconHtml = '<img src="/icons/lanren/' + escapeHtml(item.icon) + '" alt="' + escapeHtml(item.name) + '" loading="lazy" />';
         } else {
           const c = CATEGORY_ICONS[item.category] || CATEGORY_ICONS.dev;
           iconHtml = '<span class="category-icon" style="background:' + c.color + '15;color:' + c.color + '">' + c.svg + '</span>';
         }
         return '<a href="/' + lang + '/tools/' + escapeHtml(item.slug) + '/" class="tool-card">' +
-          '<div class="tool-card__icon">' + iconHtml + '</div>' +
-          '<div class="tool-card__body"><h3>' + escapeHtml(item.name) + '</h3><p>' + escapeHtml(item.desc) + '</p></div>' +
-          '</a>';
+          '<div class="tool-card-link">' +
+          '<h3 class="tool-card-title">' + iconHtml + '<span>' + escapeHtml(item.name) + '</span></h3>' +
+          '<p class="tool-card-desc">' + escapeHtml(item.desc) + '</p>' +
+          '</div></a>';
       }
 
       function recordVisit() {
@@ -214,7 +233,6 @@ const switchUrl = Astro.url.pathname.replace(`/${lang}/`, `/${otherLang}/`) || `
         try { localStorage.setItem(RECENT_KEY, JSON.stringify(recent)); } catch (e) {}
       }
 
-      // 左侧边栏：显示前 6 条，超出时给「查看全部」进独立页
       function renderRecent() {
         const container = document.querySelector('.sidebar-recent');
         if (!container) return;
@@ -225,19 +243,18 @@ const switchUrl = Astro.url.pathname.replace(`/${lang}/`, `/${otherLang}/`) || `
           return;
         }
         let html = items.slice(0, SIDEBAR_RECENT).map(function (item) {
-          return '<a href="/' + lang + '/tools/' + escapeHtml(item.slug) + '/" class="sidebar-item sidebar-item--recent">' +
-            '<span class="sidebar-icon sidebar-icon--recent">' + CLOCK_SVG + '</span>' +
-            '<span class="sidebar-label">' + escapeHtml(item.name) + '</span>' +
+          return '<a href="/' + lang + '/tools/' + escapeHtml(item.slug) + '/" class="nav-item nav-item--recent">' +
+            '<span class="nav-icon">' + CLOCK_SVG + '</span>' +
+            '<span class="nav-label">' + escapeHtml(item.name) + '</span>' +
             '</a>';
         }).join('');
         if (items.length > SIDEBAR_RECENT) {
-          html += '<a href="/' + lang + '/recent/" class="sidebar-item sidebar-item--recent sidebar-item--viewall">' +
-            '<span class="sidebar-label">' + escapeHtml(I18N.viewAll) + '</span></a>';
+          html += '<a href="/' + lang + '/recent/" class="nav-item nav-item--recent nav-item--viewall">' +
+            '<span class="nav-label">' + escapeHtml(I18N.viewAll) + '</span></a>';
         }
         container.innerHTML = html;
       }
 
-      // /recent/ 独立页：工具栏（条数 + 清空）+ 卡片网格，空则显示空状态
       function renderRecentPage() {
         const page = document.querySelector('.recent-page');
         if (!page) return;
@@ -256,7 +273,7 @@ const switchUrl = Astro.url.pathname.replace(`/${lang}/`, `/${otherLang}/`) || `
             '<span class="recent-toolbar__count">' + items.length + ' ' + escapeHtml(I18N.countUnit) + '</span>' +
             '<button type="button" class="recent-toolbar__clear" data-clear-recent>' + escapeHtml(I18N.clear) + '</button>' +
           '</div>' +
-          '<div class="tool-grid">' + items.map(function (item) { return cardHtml(item, lang); }).join('') + '</div>';
+          '<div class="tools-grid">' + items.map(function (item) { return cardHtml(item, lang); }).join('') + '</div>';
 
         const btn = page.querySelector('[data-clear-recent]');
         if (btn) {

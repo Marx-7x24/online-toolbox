@@ -1,7 +1,6 @@
 ---
 import Base from '../../layouts/Base.astro';
 import ToolCard from '../../components/ToolCard.astro';
-import Sidebar from '../../components/Sidebar.astro';
 import JsonLd from '../../components/JsonLd.astro';
 
 // 结构化数据用的绝对地址：域名取自 astro.config 的 site（由 SITE_URL 环境变量注入）
@@ -20,8 +19,8 @@ const { lang } = Astro.props;
   description={t(lang, 'aboutIntro')}
   keywords="在线工具,免费工具,工具箱,JSON格式化,Base64,时间戳转换,图片压缩,online tools,free tools"
   lang={lang}
+  active="home"
 >
-  {/* 结构化数据：站点信息 + 站内搜索（?q= 已由 Base 的搜索脚本支持） */}
   <JsonLd data={{
     '@context': 'https://schema.org',
     '@type': 'WebSite',
@@ -38,35 +37,25 @@ const { lang } = Astro.props;
     },
   }} />
 
-  <div class="home-layout">
-    <Sidebar lang={lang} active="home" />
-
-    <div class="home-main">
-      <div class="page-head">
-        <h1>{t(lang, 'siteName')}</h1>
-        <p>{tools.length} {t(lang, 'toolsCount')} · {t(lang, 'tagline')}</p>
-      </div>
-
-      {categories.map((c) => {
-        const list = getToolsByCategory(c.slug);
-        if (!list.length) return null;
-        const cName = categoryI18n(c, lang).name;
-        return (
-          <section id={`cat-${c.slug}`} class="home-section">
-            <h2 class="home-section__title">
-              {cName}
-              <span class="home-section__count">{list.length} {t(lang, 'toolsCount')}</span>
-            </h2>
-            <div class="tool-grid">
-              {list.map((tool) => {
-                const ti = toolI18n(tool, lang);
-                const search = [ti.name, ti.desc, tool.name_en || '', tool.desc_en || '', ...ti.keywords].join(' ').replace(/\s+/g, ' ').trim().toLowerCase();
-                return <ToolCard lang={lang} slug={tool.slug} name={ti.name} desc={ti.desc} category={c.slug} search={search} />;
-              })}
-            </div>
-          </section>
-        );
-      })}
-    </div>
-  </div>
+  {/* 分类区块：懒人式 h2 带主色竖条 + tools-grid */}
+  {categories.map((c) => {
+    const list = getToolsByCategory(c.slug);
+    if (!list.length) return null;
+    const cName = categoryI18n(c, lang).name;
+    return (
+      <section id={`cat-${c.slug}`} class="home-section">
+        <h2>
+          <a href={`/${lang}/category/${c.slug}/`} class="more">{cName}</a>
+          <span class="home-section__count">{list.length} {t(lang, 'toolsCount')}</span>
+        </h2>
+        <div class="tools-grid">
+          {list.map((tool) => {
+            const ti = toolI18n(tool, lang);
+            const search = [ti.name, ti.desc, tool.name_en || '', tool.desc_en || '', ...ti.keywords].join(' ').replace(/\s+/g, ' ').trim().toLowerCase();
+            return <ToolCard lang={lang} slug={tool.slug} name={ti.name} desc={ti.desc} category={c.slug} search={search} />;
+          })}
+        </div>
+      </section>
+    );
+  })}
 </Base>

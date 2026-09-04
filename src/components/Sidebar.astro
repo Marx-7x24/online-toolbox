@@ -5,43 +5,74 @@ import CategoryIcon from './CategoryIcon.astro';
 
 interface Props {
   lang: string;
-  active?: string; // 'home' 或 category slug
+  active?: string; // 'home' | 'recent' | category slug
 }
 const { lang, active = 'home' } = Astro.props;
 ---
 
-<aside class="sidebar">
-  <a href={`/${lang}/`} class={`sidebar-item ${active === 'home' ? 'active' : ''}`}>
-    <span class="sidebar-icon sidebar-icon--home">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
-    </span>
-    <span class="sidebar-label">{t(lang, 'home')}</span>
-  </a>
+<!-- 懒人式左侧 aside：logo + 导航 + 分类 + 底部 -->
+<aside class="aside-content">
+  <header class="sidebar-header">
+    <a href={`/${lang}/`} class="logo">
+      <svg class="logo-image" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+        <rect x="8" y="8" width="84" height="84" rx="18" fill="#3e2eff"/>
+        <path d="M30 62 L46 46 L54 54 L72 36" stroke="#fff" stroke-width="9" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="72" cy="36" r="5" fill="#fff"/>
+      </svg>
+      <span>{t(lang, 'siteName')} <span class="logo-badge">Toolbox</span></span>
+    </a>
+  </header>
 
-  <div class="sidebar-divider"></div>
+  <nav class="nav-menu" aria-label={t(lang, 'home')}>
+    <!-- 首页 -->
+    <a href={`/${lang}/`} class={`nav-item ${active === 'home' ? 'active' : ''}`} data-nav-id="home">
+      <span class="nav-icon">
+        <svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" fill="currentColor"><path d="M854.4 553.6l-300.8-256c-22.4-22.4-64-22.4-86.4 0l-300.8 256v-102.4l304-268.8c22.4-22.4 57.6-22.4 80 0l304 268.8v102.4z m-86.4 0v256c0 35.2-35.2 41.6-70.4 41.6h-102.4v-86.4c0-16-25.6-41.6-41.6-41.6h-86.4c-16 0-41.6 25.6-41.6 41.6v86.4h-102.4c-35.2 0-70.4-9.6-70.4-41.6v-256l256-214.4 259.2 214.4z"></path></svg>
+      </span>
+      <span class="nav-label">{t(lang, 'home')}</span>
+    </a>
 
-  {/* 「最近使用」独立页面入口：点击打开 /zh/recent/ （仿懒人工具 /recent/） */}
-  <a href={`/${lang}/recent/`} class={`sidebar-item ${active === 'recent' ? 'active' : ''}`}>
-    <span class="sidebar-icon sidebar-icon--recent">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
-    </span>
-    <span class="sidebar-label">{t(lang, 'recentTools')}</span>
-  </a>
-  <div class="sidebar-recent" data-lang={lang}>
-    <div class="sidebar-recent-empty">{t(lang, 'recentEmpty')}</div>
+    <!-- 最近使用 -->
+    <a href={`/${lang}/recent/`} class={`nav-item ${active === 'recent' ? 'active' : ''}`} data-nav-id="recent">
+      <span class="nav-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+      </span>
+      <span class="nav-label">{t(lang, 'recentTools')}</span>
+    </a>
+    <!-- 最近使用列表（JS 渲染） -->
+    <div class="sidebar-recent" data-lang={lang}>
+      <div class="sidebar-recent-empty">{t(lang, 'recentEmpty')}</div>
+    </div>
+
+    <div class="nav-divider"></div>
+
+    <!-- 工具分类 -->
+    {categories.map((c) => {
+      const count = getToolsByCategory(c.slug).length;
+      const cName = categoryI18n(c, lang).name;
+      return (
+        <a href={`/${lang}/category/${c.slug}/`} class={`nav-item ${active === c.slug ? 'active' : ''}`} data-nav-id={c.slug}>
+          <span class="nav-icon"><CategoryIcon category={c.slug} /></span>
+          <span class="nav-label">{cName}</span>
+          <span class="nav-count">{count}</span>
+        </a>
+      );
+    })}
+
+    <div class="nav-divider"></div>
+
+    <!-- 关于 -->
+    <a href={`/${lang}/about/`} class={`nav-item ${active === 'about' ? 'active' : ''}`} data-nav-id="about">
+      <span class="nav-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+      </span>
+      <span class="nav-label">{t(lang, 'about')}</span>
+    </a>
+  </nav>
+
+  <div class="sidebar-footer">
+    <a href={`/${lang}/about/`} class="nav-item">
+      <span class="nav-label">{t(lang, 'footerPrivacy')}</span>
+    </a>
   </div>
-
-  <div class="sidebar-divider"></div>
-
-  {categories.map((c) => {
-    const count = getToolsByCategory(c.slug).length;
-    const cName = categoryI18n(c, lang).name;
-    return (
-      <a href={`/${lang}/category/${c.slug}/`} class={`sidebar-item ${active === c.slug ? 'active' : ''}`}>
-        <span class="sidebar-icon"><CategoryIcon category={c.slug} /></span>
-        <span class="sidebar-label">{cName}</span>
-        <span class="sidebar-count">{count}</span>
-      </a>
-    );
-  })}
 </aside>

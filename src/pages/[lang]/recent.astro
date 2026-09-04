@@ -1,6 +1,5 @@
 ---
 import Base from '../../layouts/Base.astro';
-import Sidebar from '../../components/Sidebar.astro';
 import { t } from '../../i18n/ui.ts';
 
 export function getStaticPaths() {
@@ -13,18 +12,13 @@ const { lang } = Astro.props;
   title={`${t(lang, 'recentPageTitle')} - ${t(lang, 'siteName')}`}
   description={t(lang, 'recentPageSubtitle')}
   lang={lang}
+  active="recent"
 >
-  <div class="home-layout">
-    <Sidebar lang={lang} active="recent" />
-
-    <div class="home-main">
-      <div class="page-head">
-        <h1>{t(lang, 'recentPageTitle')}</h1>
-        <p>{t(lang, 'recentPageSubtitle')}</p>
-      </div>
-
-      <!-- 内容由客户端从 localStorage 渲染（数据只在用户自己浏览器里，服务端拿不到） -->
-      <div class="recent-page" data-lang={lang}></div>
-    </div>
+  <div class="tool-page-head">
+    <h1>{t(lang, 'recentPageTitle')}</h1>
+    <p>{t(lang, 'recentPageSubtitle')}</p>
   </div>
+
+  <!-- 内容由客户端从 localStorage 渲染（数据只在用户自己浏览器里，服务端拿不到） -->
+  <div class="recent-page" data-lang={lang}></div>
 </Base>

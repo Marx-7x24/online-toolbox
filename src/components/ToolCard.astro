@@ -14,16 +14,17 @@ const { slug, name, desc, category, search = '', lang = 'zh' } = Astro.props;
 const iconFile = getToolIcon(slug);
 ---
 
+<!-- 懒人式工具卡片：title(28px icon + 名称) + 两行描述 -->
 <a href={`/${lang}/tools/${slug}/`} class="tool-card" data-search={search}>
-  <div class="tool-card__icon">
-    {iconFile ? (
-      <img src={`/icons/lanren/${iconFile}`} alt={name} loading="lazy" class="tool-card__img" />
-    ) : (
-      <CategoryIcon category={category} />
-    )}
-  </div>
-  <div class="tool-card__body">
-    <h3>{name}</h3>
-    <p>{desc}</p>
+  <div class="tool-card-link">
+    <h3 class="tool-card-title">
+      {iconFile ? (
+        <img src={`/icons/lanren/${iconFile}`} alt={`${name} 工具图标`} loading="lazy" width="28" height="28" />
+      ) : (
+        <CategoryIcon category={category} />
+      )}
+      <span>{name}</span>
+    </h3>
+    <p class="tool-card-desc">{desc}</p>
   </div>
 </a>
