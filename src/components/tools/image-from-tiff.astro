@@ -1,0 +1,152 @@
+---
+// TIFF/TIF → JPG/PNG（懒加载 UTIF.js）
+---
+<div class="pane">
+  <div>
+    <div class="field-label"><span>选择 TIFF 图片</span></div>
+    <input type="file" id="iftiff-file" accept=".tif,.tiff,image/tiff">
+    <div id="iftiff-info" class="msg"></div>
+    <div class="field-label" style="margin-top:14px"><span>输出格式 & 画质</span></div>
+    <select id="iftiff-fmt" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:6px">
+      <option value="image/jpeg">JPG（较小）</option>
+      <option value="image/png">PNG（无损）</option>
+    </select>
+    <div class="field-label" style="margin-top:14px"><span>页码 <span id="iftiff-pv">1</span>（多页 TIFF 可切换）</span></div>
+    <input type="range" id="iftiff-page" min="1" max="1" value="1" step="1" style="width:100%">
+    <p style="font-size:12px;color:#999;margin-top:8px">首次使用需联网加载解码器 ~30KB。</p>
+  </div>
+  <div>
+    <div class="field-label"><span>输出预览</span></div>
+    <div id="iftiff-preview" class="iftiff-preview"></div>
+  </div>
+</div>
+<div class="btn-row">
+  <button id="iftiff-run" class="primary">开始转换</button>
+  <button id="iftiff-dl">下载</button>
+  <button id="iftiff-reset">重置</button>
+  <span id="iftiff-msg" class="msg"></span>
+</div>
+
+<style>
+  .iftiff-preview { margin-top: 10px; border: 1px dashed var(--border); border-radius: 8px; padding: 10px; min-height: 120px; display: flex; align-items: center; justify-content: center; background: #fafafa; }
+  .iftiff-preview img { max-width: 100%; max-height: 320px; }
+  .iftiff-preview:empty::before { content: '尚未选择图片'; color: #999; }
+</style>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  let sourceFile = null;
+  let pages = []; // 每页 RGBA
+  let dims = [];  // [{w,h}, ...]
+  let outBlob = null;
+  let outExt = 'jpg';
+
+  $('iftiff-file').addEventListener('change', (e) => {
+    const f = e.target.files[0];
+    if (!f) return;
+    sourceFile = f;
+    $('iftiff-info').textContent = `已选择：${f.name} · ${(f.size/1024).toFixed(1)} KB`;
+    $('iftiff-info').className = 'msg ok';
+  });
+
+  $('iftiff-page').addEventListener('input', e => $('iftiff-pv').textContent = e.target.value);
+
+  function loadScript(src) {
+    return new Promise((res, rej) => {
+      const s = document.createElement('script');
+      s.src = src; s.onload = res; s.onerror = rej;
+      document.head.appendChild(s);
+    });
+  }
+
+  async function loadUtif() {
+    if (window.UTIF) return window.UTIF;
+    await loadScript('https://cdn.jsdelivr.net/npm/utif@3.1.0/UTIF.js');
+    return window.UTIF;
+  }
+
+  $('iftiff-run').addEventListener('click', async () => {
+    if (!sourceFile) { $('iftiff-msg').textContent = '请先选择 TIFF 图片'; $('iftiff-msg').className = 'msg err'; return; }
+    $('iftiff-msg').textContent = '加载解码器…'; $('iftiff-msg').className = 'msg';
+    try {
+      const UTIF = await loadUtif();
+      const buf = await sourceFile.arrayBuffer();
+      const ifds = UTIF.decode(buf);
+      pages = []; dims = [];
+      for (let i = 0; i < ifds.length; i++) {
+        const rgba = UTIF.toRGBA8(ifds[i]);
+        pages.push(rgba);
+        dims.push({ w: ifds[i].width, h: ifds[i].height });
+      }
+      $('iftiff-page').max = pages.length;
+      $('iftiff-page').value = 1;
+      $('iftiff-pv').textContent = '1';
+      $('iftiff-info').textContent = `已解码 · 共 ${pages.length} 页 · ${dims[0].w}×${dims[0].h}`;
+      $('iftiff-info').className = 'msg ok';
+      renderPreview();
+    } catch (err) {
+      $('iftiff-msg').textContent = '解码失败：' + err.message;
+      $('iftiff-msg').className = 'msg err';
+    }
+  });
+
+  function renderPreview() {
+    if (!pages.length) return;
+    const idx = Number($('iftiff-page').value) - 1;
+    const { w, h } = dims[idx];
+    const canvas = document.createElement('canvas');
+    canvas.width = w; canvas.height = h;
+    const ctx = canvas.getContext('2d');
+    const imgData = new ImageData(new Uint8ClampedArray(pages[idx]), w, h);
+    ctx.putImageData(imgData, 0, 0);
+    $('iftiff-preview').innerHTML = '<img alt="预览">';
+    $('iftiff-preview').querySelector('img').src = canvas.toDataURL();
+  }
+
+  $('iftiff-page').addEventListener('change', convert);
+  $('iftiff-fmt').addEventListener('change', convert);
+
+  async function convert() {
+    if (!pages.length) return;
+    const idx = Number($('iftiff-page').value) - 1;
+    const { w, h } = dims[idx];
+    const canvas = document.createElement('canvas');
+    canvas.width = w; canvas.height = h;
+    const ctx = canvas.getContext('2d');
+    const imgData = new ImageData(new Uint8ClampedArray(pages[idx]), w, h);
+    ctx.putImageData(imgData, 0, 0);
+    const fmt = $('iftiff-fmt').value;
+    if (fmt === 'image/jpeg') {
+      const composite = document.createElement('canvas');
+      composite.width = w; composite.height = h;
+      const cctx = composite.getContext('2d');
+      cctx.fillStyle = '#ffffff'; cctx.fillRect(0, 0, w, h);
+      cctx.drawImage(canvas, 0, 0);
+      outBlob = await new Promise(res => composite.toBlob(res, fmt, 0.92));
+      outExt = 'jpg';
+    } else {
+      outBlob = await new Promise(res => canvas.toBlob(res, fmt));
+      outExt = 'png';
+    }
+    renderPreview();
+    $('iftiff-msg').textContent = `就绪 · ${(outBlob.size/1024).toFixed(1)} KB`;
+    $('iftiff-msg').className = 'msg ok';
+  }
+
+  $('iftiff-dl').addEventListener('click', () => {
+    if (!outBlob) { $('iftiff-msg').textContent = '请先转换'; $('iftiff-msg').className = 'msg err'; return; }
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(outBlob);
+    a.download = (sourceFile.name.replace(/\.[^.]+$/, '') || 'image') + '.' + outExt;
+    a.click();
+  });
+
+  $('iftiff-reset').addEventListener('click', () => {
+    sourceFile = null; pages = []; dims = []; outBlob = null;
+    $('iftiff-file').value = '';
+    $('iftiff-info').textContent = '';
+    $('iftiff-preview').innerHTML = '';
+    $('iftiff-msg').textContent = '';
+    $('iftiff-page').max = 1; $('iftiff-page').value = 1; $('iftiff-pv').textContent = '1';
+  });
+</script>

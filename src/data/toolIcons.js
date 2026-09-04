@@ -204,6 +204,19 @@ export const toolIconMap = {
   'email': 'logo-email.svg',
   'baidu-push': 'logo-baidu.svg',
   'text-formatter-lanren': 'logo-text-formatter.svg',
+  // 图像处理：格式转换（懒人 12 个独立格式合并去重后）
+  'image-to-png': 'logo-images-png.svg',
+  'image-to-jpg': 'logo-images-jpg.svg',
+  'image-to-webp': 'logo-images-webp.svg',
+  'image-to-bmp': 'logo-images-bmp.svg',
+  'image-to-gif': 'logo-images-gif.svg',
+  'image-from-heic': 'logo-images-heic.svg',
+  'image-from-avif': 'logo-images-avif.svg',
+  'image-from-tiff': 'logo-images-tiff.svg',
+  'image-from-psd': 'logo-images-psd.svg',
+  'image-from-jxl': 'logo-images-jxl.svg',
+  'image-from-apng': 'logo-images-apng.svg',
+  'image-from-jp2': 'logo-images-jp2.svg',
 };
 
 export function getToolIcon(slug) {

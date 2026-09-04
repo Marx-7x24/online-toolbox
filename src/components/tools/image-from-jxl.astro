@@ -1,0 +1,91 @@
+---
+// JPEG XL (JXL) → JPG（依赖浏览器原生解码：Chrome 91+/Edge 91+ 实验）
+---
+<div class="pane">
+  <div>
+    <div class="field-label"><span>选择 JPEG XL 图片</span></div>
+    <input type="file" id="ifjxl-file" accept=".jxl,image/jxl">
+    <div id="ifjxl-info" class="msg"></div>
+    <div class="field-label" style="margin-top:14px"><span>画质 <span id="ifjxl-qv">92%</span></span></div>
+    <input type="range" id="ifjxl-q" min="1" max="100" value="92" style="width:100%">
+    <p style="font-size:12px;color:#999;margin-top:8px">
+      ⚠️ JPEG XL 是新兴格式，浏览器原生支持有限：Safari 17+ 默认开启，Chrome/Edge 需手动开启实验 flag（chrome://flags/#enable-jxl）。
+      <br>不支持的浏览器会提示解码失败，请用原生工具（XnView / IrfanView）转换。
+    </p>
+  </div>
+  <div>
+    <div class="field-label"><span>JPG 预览</span></div>
+    <div id="ifjxl-preview" class="ifjxl-preview"></div>
+  </div>
+</div>
+<div class="btn-row">
+  <button id="ifjxl-run" class="primary">尝试解码</button>
+  <button id="ifjxl-dl">下载 JPG</button>
+  <button id="ifjxl-reset">重置</button>
+  <span id="ifjxl-msg" class="msg"></span>
+</div>
+
+<style>
+  .ifjxl-preview { margin-top: 10px; border: 1px dashed var(--border); border-radius: 8px; padding: 10px; min-height: 120px; display: flex; align-items: center; justify-content: center; background: #fafafa; }
+  .ifjxl-preview img { max-width: 100%; max-height: 320px; }
+  .ifjxl-preview:empty::before { content: '尚未选择图片'; color: #999; }
+</style>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  let sourceFile = null;
+  let jpgBlob = null;
+
+  $('ifjxl-q').addEventListener('input', e => $('ifjxl-qv').textContent = e.target.value + '%');
+
+  $('ifjxl-file').addEventListener('change', (e) => {
+    const f = e.target.files[0];
+    if (!f) return;
+    sourceFile = f;
+    $('ifjxl-info').textContent = `已选择：${f.name} · ${(f.size/1024).toFixed(1)} KB`;
+    $('ifjxl-info').className = 'msg ok';
+  });
+
+  $('ifjxl-run').addEventListener('click', async () => {
+    if (!sourceFile) { $('ifjxl-msg').textContent = '请先选择 JXL 图片'; $('ifjxl-msg').className = 'msg err'; return; }
+    try {
+      const url = URL.createObjectURL(sourceFile);
+      const img = new Image();
+      await new Promise((res, rej) => {
+        img.onload = res;
+        img.onerror = () => rej(new Error('浏览器不支持 JPEG XL 解码（请尝试 Chrome 91+/Edge 91+ 并开启实验 flag，或用 XnView 转换）'));
+        img.src = url;
+      });
+      const canvas = document.createElement('canvas');
+      canvas.width = img.naturalWidth; canvas.height = img.naturalHeight;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0);
+      const q = Number($('ifjxl-q').value) / 100;
+      jpgBlob = await new Promise((res, rej) => canvas.toBlob(b => b ? res(b) : rej(new Error('JPG 编码失败')), 'image/jpeg', q));
+      $('ifjxl-preview').innerHTML = '<img alt="预览">';
+      $('ifjxl-preview').querySelector('img').src = URL.createObjectURL(jpgBlob);
+      $('ifjxl-msg').textContent = `转换成功 · ${(jpgBlob.size/1024).toFixed(1)} KB`;
+      $('ifjxl-msg').className = 'msg ok';
+    } catch (err) {
+      $('ifjxl-msg').textContent = err.message;
+      $('ifjxl-msg').className = 'msg err';
+    }
+  });
+
+  $('ifjxl-dl').addEventListener('click', () => {
+    if (!jpgBlob) { $('ifjxl-msg').textContent = '请先转换'; $('ifjxl-msg').className = 'msg err'; return; }
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(jpgBlob);
+    a.download = (sourceFile.name.replace(/\.[^.]+$/, '') || 'image') + '.jpg';
+    a.click();
+  });
+
+  $('ifjxl-reset').addEventListener('click', () => {
+    sourceFile = null; jpgBlob = null;
+    $('ifjxl-file').value = '';
+    $('ifjxl-info').textContent = '';
+    $('ifjxl-preview').innerHTML = '';
+    $('ifjxl-msg').textContent = '';
+  });
+</script>

@@ -1,0 +1,138 @@
+---
+// 多张图片合成 GIF 动图（懒加载 gif.js ~30KB）
+---
+<div class="pane">
+  <div>
+    <div class="field-label"><span>选择多张图片（按选择顺序成帧）</span></div>
+    <input type="file" id="itgif-files" accept="image/*" multiple>
+    <div id="itgif-thumbs" class="itgif-thumbs"></div>
+    <div class="field-label" style="margin-top:14px"><span>每帧延迟 <span id="itgif-dv">200</span> ms</span></div>
+    <input type="range" id="itgif-delay" min="50" max="2000" step="50" value="200" style="width:100%">
+    <div class="field-label" style="margin-top:14px"><span>宽度 <span id="itgif-wv">320</span> px（保持比例，高度自动）</span></div>
+    <input type="range" id="itgif-w" min="80" max="800" step="20" value="320" style="width:100%">
+  </div>
+  <div>
+    <div class="field-label"><span>GIF 预览</span></div>
+    <div id="itgif-preview" class="itgif-preview"></div>
+  </div>
+</div>
+<div class="btn-row">
+  <button id="itgif-run" class="primary">生成 GIF</button>
+  <button id="itgif-dl">下载 GIF</button>
+  <button id="itgif-reset">重置</button>
+  <span id="itgif-msg" class="msg"></span>
+</div>
+
+<style>
+  .itgif-thumbs { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; min-height: 40px; }
+  .itgif-thumbs img { width: 60px; height: 60px; object-fit: cover; border-radius: 4px; border: 1px solid var(--border); }
+  .itgif-preview { margin-top: 10px; border: 1px dashed var(--border); border-radius: 8px; padding: 10px; min-height: 120px; display: flex; align-items: center; justify-content: center; background: #fafafa; }
+  .itgif-preview img { max-width: 100%; max-height: 320px; }
+  .itgif-preview:empty::before { content: '尚未生成'; color: #999; }
+</style>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  const files = [];
+  let gifBlob = null;
+
+  $('itgif-delay').addEventListener('input', e => $('itgif-dv').textContent = e.target.value);
+  $('itgif-w').addEventListener('input', e => $('itgif-wv').textContent = e.target.value);
+
+  $('itgif-files').addEventListener('change', async (e) => {
+    const arr = Array.from(e.target.files);
+    if (!arr.length) return;
+    files.push(...arr);
+    renderThumbs();
+  });
+
+  function renderThumbs() {
+    const wrap = $('itgif-thumbs');
+    wrap.innerHTML = '';
+    files.forEach((f, i) => {
+      const img = document.createElement('img');
+      img.src = URL.createObjectURL(f);
+      img.title = f.name + '（点击移除）';
+      img.style.cursor = 'pointer';
+      img.addEventListener('click', () => { files.splice(i, 1); renderThumbs(); });
+      wrap.appendChild(img);
+    });
+  }
+
+  async function loadGifJs() {
+    if (window.GIF) return window.GIF;
+    await loadScript('https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.js');
+    return window.GIF;
+  }
+
+  function loadScript(src) {
+    return new Promise((res, rej) => {
+      const s = document.createElement('script');
+      s.src = src; s.onload = res; s.onerror = rej;
+      document.head.appendChild(s);
+    });
+  }
+
+  async function loadImage(file) {
+    return new Promise((res, rej) => {
+      const img = new Image();
+      img.onload = () => res(img);
+      img.onerror = rej;
+      img.src = URL.createObjectURL(file);
+    });
+  }
+
+  $('itgif-run').addEventListener('click', async () => {
+    if (files.length === 0) { $('itgif-msg').textContent = '请先选择至少 1 张图片'; $('itgif-msg').className = 'msg err'; return; }
+    $('itgif-msg').textContent = '加载编码器…'; $('itgif-msg').className = 'msg';
+    try {
+      const GIF = await loadGifJs();
+      const w = Number($('itgif-w').value);
+      const delay = Number($('itgif-delay').value);
+
+      const gif = new GIF({ workers: 2, quality: 10, width: w, workerScript: 'https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.worker.js' });
+
+      for (const f of files) {
+        const img = await loadImage(f);
+        const ratio = img.height / img.width;
+        const h = Math.round(w * ratio);
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, w, h);
+        ctx.drawImage(img, 0, 0, w, h);
+        gif.addFrame(ctx, { copy: true, delay });
+      }
+
+      gif.on('progress', (p) => { $('itgif-msg').textContent = `生成中… ${Math.round(p*100)}%`; });
+      gif.on('finished', (blob) => {
+        gifBlob = blob;
+        $('itgif-preview').innerHTML = '<img alt="预览">';
+        $('itgif-preview').querySelector('img').src = URL.createObjectURL(blob);
+        $('itgif-msg').textContent = `生成成功 · ${(blob.size/1024).toFixed(1)} KB · ${files.length} 帧`;
+        $('itgif-msg').className = 'msg ok';
+      });
+      gif.render();
+    } catch (err) {
+      $('itgif-msg').textContent = '生成失败：' + err.message;
+      $('itgif-msg').className = 'msg err';
+    }
+  });
+
+  $('itgif-dl').addEventListener('click', () => {
+    if (!gifBlob) { $('itgif-msg').textContent = '请先生成'; $('itgif-msg').className = 'msg err'; return; }
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(gifBlob);
+    a.download = 'animated.gif';
+    a.click();
+  });
+
+  $('itgif-reset').addEventListener('click', () => {
+    files.length = 0; gifBlob = null;
+    $('itgif-files').value = '';
+    $('itgif-thumbs').innerHTML = '';
+    $('itgif-preview').innerHTML = '';
+    $('itgif-msg').textContent = '';
+  });
+</script>

@@ -1,0 +1,91 @@
+---
+// 任意图片格式 → WebP（可调画质）
+---
+<div class="pane">
+  <div>
+    <div class="field-label"><span>选择图片</span></div>
+    <input type="file" id="itwp-file" accept="image/*">
+    <div id="itwp-info" class="msg"></div>
+    <div class="field-label" style="margin-top:14px"><span>画质 <span id="itwp-qv">92%</span></span></div>
+    <input type="range" id="itwp-q" min="1" max="100" value="92" style="width:100%">
+  </div>
+  <div>
+    <div class="field-label"><span>WebP 预览</span></div>
+    <div id="itwp-preview" class="itwp-preview"></div>
+  </div>
+</div>
+<div class="btn-row">
+  <button id="itwp-run" class="primary">转换为 WebP</button>
+  <button id="itwp-dl">下载 WebP</button>
+  <button id="itwp-reset">重置</button>
+  <span id="itwp-msg" class="msg"></span>
+</div>
+
+<style>
+  .itwp-preview { margin-top: 10px; border: 1px dashed var(--border); border-radius: 8px; padding: 10px; min-height: 120px; display: flex; align-items: center; justify-content: center; background: #fafafa; }
+  .itwp-preview img { max-width: 100%; max-height: 320px; }
+  .itwp-preview:empty::before { content: '尚未选择图片'; color: #999; }
+</style>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  let sourceFile = null;
+  let wpBlob = null;
+
+  $('itwp-q').addEventListener('input', e => $('itwp-qv').textContent = e.target.value + '%');
+
+  $('itwp-file').addEventListener('change', (e) => {
+    const f = e.target.files[0];
+    if (!f) return;
+    sourceFile = f;
+    $('itwp-info').textContent = `已选择：${f.name} · ${(f.size/1024).toFixed(1)} KB · ${f.type || '未知类型'}`;
+    $('itwp-info').className = 'msg ok';
+  });
+
+  $('itwp-run').addEventListener('click', async () => {
+    if (!sourceFile) { $('itwp-msg').textContent = '请先选择图片'; $('itwp-msg').className = 'msg err'; return; }
+    // 部分浏览器（老 Safari）不支持 WebP 编码
+    if (!('toBlob' in HTMLCanvasElement.prototype) || !canvasSupports('webp')) {
+      $('itwp-msg').textContent = '当前浏览器不支持 WebP 编码，请用 Chrome/Edge/Firefox/Safari 14+';
+      $('itwp-msg').className = 'msg err';
+      return;
+    }
+    try {
+      const bitmap = await createImageBitmap(sourceFile);
+      const canvas = document.createElement('canvas');
+      canvas.width = bitmap.width; canvas.height = bitmap.height;
+      canvas.getContext('2d').drawImage(bitmap, 0, 0);
+      const q = Number($('itwp-q').value) / 100;
+      wpBlob = await new Promise((res, rej) => canvas.toBlob(b => b ? res(b) : rej(new Error('WebP 编码失败')), 'image/webp', q));
+      $('itwp-preview').innerHTML = '<img alt="预览">';
+      $('itwp-preview').querySelector('img').src = URL.createObjectURL(wpBlob);
+      $('itwp-msg').textContent = `转换成功 · ${(wpBlob.size/1024).toFixed(1)} KB · 画质 ${Math.round(q*100)}%`;
+      $('itwp-msg').className = 'msg ok';
+    } catch (err) {
+      $('itwp-msg').textContent = '转换失败：' + err.message;
+      $('itwp-msg').className = 'msg err';
+    }
+  });
+
+  function canvasSupports(type) {
+    const c = document.createElement('canvas');
+    c.width = c.height = 1;
+    return c.toDataURL('image/' + type).startsWith('data:image/' + type);
+  }
+
+  $('itwp-dl').addEventListener('click', () => {
+    if (!wpBlob) { $('itwp-msg').textContent = '请先转换'; $('itwp-msg').className = 'msg err'; return; }
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(wpBlob);
+    a.download = (sourceFile.name.replace(/\.[^.]+$/, '') || 'image') + '.webp';
+    a.click();
+  });
+
+  $('itwp-reset').addEventListener('click', () => {
+    sourceFile = null; wpBlob = null;
+    $('itwp-file').value = '';
+    $('itwp-info').textContent = '';
+    $('itwp-preview').innerHTML = '';
+    $('itwp-msg').textContent = '';
+  });
+</script>

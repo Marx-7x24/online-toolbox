@@ -1,0 +1,83 @@
+---
+// 任意图片格式 → JPEG（可调画质）
+---
+<div class="pane">
+  <div>
+    <div class="field-label"><span>选择图片</span></div>
+    <input type="file" id="itjpg-file" accept="image/*">
+    <div id="itjpg-info" class="msg"></div>
+    <div class="field-label" style="margin-top:14px"><span>画质 <span id="itjpg-qv">92%</span></span></div>
+    <input type="range" id="itjpg-q" min="1" max="100" value="92" style="width:100%">
+  </div>
+  <div>
+    <div class="field-label"><span>JPEG 预览</span></div>
+    <div id="itjpg-preview" class="itjpg-preview"></div>
+  </div>
+</div>
+<div class="btn-row">
+  <button id="itjpg-run" class="primary">转换为 JPEG</button>
+  <button id="itjpg-dl">下载 JPG</button>
+  <button id="itjpg-reset">重置</button>
+  <span id="itjpg-msg" class="msg"></span>
+</div>
+
+<style>
+  .itjpg-preview { margin-top: 10px; border: 1px dashed var(--border); border-radius: 8px; padding: 10px; min-height: 120px; display: flex; align-items: center; justify-content: center; background: #fafafa; }
+  .itjpg-preview img { max-width: 100%; max-height: 320px; }
+  .itjpg-preview:empty::before { content: '尚未选择图片'; color: #999; }
+</style>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  let sourceFile = null;
+  let jpgBlob = null;
+
+  $('itjpg-q').addEventListener('input', e => $('itjpg-qv').textContent = e.target.value + '%');
+
+  $('itjpg-file').addEventListener('change', (e) => {
+    const f = e.target.files[0];
+    if (!f) return;
+    sourceFile = f;
+    $('itjpg-info').textContent = `已选择：${f.name} · ${(f.size/1024).toFixed(1)} KB · ${f.type || '未知类型'}`;
+    $('itjpg-info').className = 'msg ok';
+  });
+
+  $('itjpg-run').addEventListener('click', async () => {
+    if (!sourceFile) { $('itjpg-msg').textContent = '请先选择图片'; $('itjpg-msg').className = 'msg err'; return; }
+    try {
+      const bitmap = await createImageBitmap(sourceFile);
+      const canvas = document.createElement('canvas');
+      canvas.width = bitmap.width; canvas.height = bitmap.height;
+      // 透明背景填白（JPEG 不支持透明）
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(bitmap, 0, 0);
+      const q = Number($('itjpg-q').value) / 100;
+      jpgBlob = await new Promise((res, rej) => canvas.toBlob(b => b ? res(b) : rej(new Error('JPEG 编码失败')), 'image/jpeg', q));
+      $('itjpg-preview').innerHTML = '<img alt="预览">';
+      $('itjpg-preview').querySelector('img').src = URL.createObjectURL(jpgBlob);
+      $('itjpg-msg').textContent = `转换成功 · ${(jpgBlob.size/1024).toFixed(1)} KB · 画质 ${Math.round(q*100)}%`;
+      $('itjpg-msg').className = 'msg ok';
+    } catch (err) {
+      $('itjpg-msg').textContent = '转换失败：' + err.message;
+      $('itjpg-msg').className = 'msg err';
+    }
+  });
+
+  $('itjpg-dl').addEventListener('click', () => {
+    if (!jpgBlob) { $('itjpg-msg').textContent = '请先转换'; $('itjpg-msg').className = 'msg err'; return; }
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(jpgBlob);
+    a.download = (sourceFile.name.replace(/\.[^.]+$/, '') || 'image') + '.jpg';
+    a.click();
+  });
+
+  $('itjpg-reset').addEventListener('click', () => {
+    sourceFile = null; jpgBlob = null;
+    $('itjpg-file').value = '';
+    $('itjpg-info').textContent = '';
+    $('itjpg-preview').innerHTML = '';
+    $('itjpg-msg').textContent = '';
+  });
+</script>

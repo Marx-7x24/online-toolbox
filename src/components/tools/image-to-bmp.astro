@@ -1,0 +1,127 @@
+---
+// 任意图片 → BMP（手写 BMP 编码，无库依赖）
+---
+<div class="pane">
+  <div>
+    <div class="field-label"><span>选择图片</span></div>
+    <input type="file" id="itbmp-file" accept="image/*">
+    <div id="itbmp-info" class="msg"></div>
+  </div>
+  <div>
+    <div class="field-label"><span>BMP 预览（位图）</span></div>
+    <div id="itbmp-preview" class="itbmp-preview"></div>
+  </div>
+</div>
+<div class="btn-row">
+  <button id="itbmp-run" class="primary">转换为 BMP</button>
+  <button id="itbmp-dl">下载 BMP</button>
+  <button id="itbmp-reset">重置</button>
+  <span id="itbmp-msg" class="msg"></span>
+</div>
+
+<style>
+  .itbmp-preview { margin-top: 10px; border: 1px dashed var(--border); border-radius: 8px; padding: 10px; min-height: 120px; display: flex; align-items: center; justify-content: center; background: #fafafa; }
+  .itbmp-preview img { max-width: 100%; max-height: 320px; image-rendering: pixelated; }
+  .itbmp-preview:empty::before { content: '尚未选择图片'; color: #999; }
+</style>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  let sourceFile = null;
+  let bmpBlob = null;
+
+  $('itbmp-file').addEventListener('change', (e) => {
+    const f = e.target.files[0];
+    if (!f) return;
+    sourceFile = f;
+    $('itbmp-info').textContent = `已选择：${f.name} · ${(f.size/1024).toFixed(1)} KB · ${f.type || '未知类型'}`;
+    $('itbmp-info').className = 'msg ok';
+  });
+
+  // Canvas → 24-bit BMP（无压缩，自底向上）
+  function canvasToBmp(canvas) {
+    const w = canvas.width, h = canvas.height;
+    const ctx = canvas.getContext('2d');
+    const imageData = ctx.getImageData(0, 0, w, h);
+    const data = imageData.data;
+    const rowSize = ((24 * w + 31) >> 5) << 2; // 4 字节对齐
+    const pixelDataSize = rowSize * h;
+    const fileSize = 54 + pixelDataSize;
+
+    const buffer = new ArrayBuffer(fileSize);
+    const view = new DataView(buffer);
+
+    // BMP 文件头 (14 字节)
+    view.setUint8(0, 0x42); view.setUint8(1, 0x4d); // "BM"
+    view.setUint32(2, fileSize, true);
+    view.setUint16(6, 0, true); view.setUint16(8, 0, true);
+    view.setUint32(10, 54, true); // 像素数据偏移
+
+    // DIB 头 (40 字节 BITMAPINFOHEADER)
+    view.setUint32(14, 40, true);
+    view.setInt32(18, w, true);
+    view.setInt32(22, -h, true); // 负高度 = 自底向上
+    view.setUint16(26, 1, true); // 颜色平面数
+    view.setUint16(28, 24, true); // 每像素位数
+    view.setUint32(30, 0, true); // BI_RGB 无压缩
+    view.setUint32(34, pixelDataSize, true);
+    view.setInt32(38, 2835, true); // X ppm
+    view.setInt32(42, 2835, true); // Y ppm
+    view.setUint32(46, 0, true);
+    view.setUint32(50, 0, true);
+
+    // 像素数据：BGR 顺序 + 每行末尾补 0 对齐
+    let offset = 54;
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        const i = (y * w + x) * 4;
+        view.setUint8(offset++, data[i + 2]); // B
+        view.setUint8(offset++, data[i + 1]); // G
+        view.setUint8(offset++, data[i]);     // R
+      }
+      // 行末 padding
+      const pad = rowSize - w * 3;
+      for (let p = 0; p < pad; p++) view.setUint8(offset++, 0);
+    }
+
+    return new Blob([buffer], { type: 'image/bmp' });
+  }
+
+  $('itbmp-run').addEventListener('click', async () => {
+    if (!sourceFile) { $('itbmp-msg').textContent = '请先选择图片'; $('itbmp-msg').className = 'msg err'; return; }
+    try {
+      const bitmap = await createImageBitmap(sourceFile);
+      const canvas = document.createElement('canvas');
+      canvas.width = bitmap.width; canvas.height = bitmap.height;
+      // 透明背景填白
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(bitmap, 0, 0);
+      bmpBlob = canvasToBmp(canvas);
+      $('itbmp-preview').innerHTML = '<img alt="预览">';
+      $('itbmp-preview').querySelector('img').src = URL.createObjectURL(bmpBlob);
+      $('itbmp-msg').textContent = `转换成功 · ${(bmpBlob.size/1024).toFixed(1)} KB · ${bitmap.width}×${bitmap.height}`;
+      $('itbmp-msg').className = 'msg ok';
+    } catch (err) {
+      $('itbmp-msg').textContent = '转换失败：' + err.message;
+      $('itbmp-msg').className = 'msg err';
+    }
+  });
+
+  $('itbmp-dl').addEventListener('click', () => {
+    if (!bmpBlob) { $('itbmp-msg').textContent = '请先转换'; $('itbmp-msg').className = 'msg err'; return; }
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(bmpBlob);
+    a.download = (sourceFile.name.replace(/\.[^.]+$/, '') || 'image') + '.bmp';
+    a.click();
+  });
+
+  $('itbmp-reset').addEventListener('click', () => {
+    sourceFile = null; bmpBlob = null;
+    $('itbmp-file').value = '';
+    $('itbmp-info').textContent = '';
+    $('itbmp-preview').innerHTML = '';
+    $('itbmp-msg').textContent = '';
+  });
+</script>

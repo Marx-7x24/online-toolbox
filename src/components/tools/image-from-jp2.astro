@@ -1,0 +1,122 @@
+---
+// JPEG 2000 (JP2) → JPG（依赖浏览器原生解码或 openjpeg.js WASM）
+---
+<div class="pane">
+  <div>
+    <div class="field-label"><span>选择 JPEG 2000 图片</span></div>
+    <input type="file" id="ifjp2-file" accept=".jp2,.j2k,.jpf,.jpx,image/jp2,image/jpeg2000">
+    <div id="ifjp2-info" class="msg"></div>
+    <div class="field-label" style="margin-top:14px"><span>画质 <span id="ifjp2-qv">92%</span></span></div>
+    <input type="range" id="ifjp2-q" min="1" max="100" value="92" style="width:100%">
+    <p style="font-size:12px;color:#999;margin-top:8px">
+      ⚠️ JPEG 2000 浏览器原生支持极差：仅 Safari 完整支持，Chrome/Edge/Firefox 默认不支持。
+      <br>本工具先尝试浏览器原生解码，失败时自动加载 openjpeg.js WASM 解码器（首次约 2MB）。
+      <br>仍失败请用 XnView / IrfanView 转换。
+    </p>
+  </div>
+  <div>
+    <div class="field-label"><span>JPG 预览</span></div>
+    <div id="ifjp2-preview" class="ifjp2-preview"></div>
+  </div>
+</div>
+<div class="btn-row">
+  <button id="ifjp2-run" class="primary">尝试解码</button>
+  <button id="ifjp2-dl">下载 JPG</button>
+  <button id="ifjp2-reset">重置</button>
+  <span id="ifjp2-msg" class="msg"></span>
+</div>
+
+<style>
+  .ifjp2-preview { margin-top: 10px; border: 1px dashed var(--border); border-radius: 8px; padding: 10px; min-height: 120px; display: flex; align-items: center; justify-content: center; background: #fafafa; }
+  .ifjp2-preview img { max-width: 100%; max-height: 320px; }
+  .ifjp2-preview:empty::before { content: '尚未选择图片'; color: #999; }
+</style>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  let sourceFile = null;
+  let jpgBlob = null;
+
+  $('ifjp2-q').addEventListener('input', e => $('ifjp2-qv').textContent = e.target.value + '%');
+
+  $('ifjp2-file').addEventListener('change', (e) => {
+    const f = e.target.files[0];
+    if (!f) return;
+    sourceFile = f;
+    $('ifjp2-info').textContent = `已选择：${f.name} · ${(f.size/1024).toFixed(1)} KB`;
+    $('ifjp2-info').className = 'msg ok';
+  });
+
+  function loadScript(src) {
+    return new Promise((res, rej) => {
+      const s = document.createElement('script');
+      s.src = src; s.onload = res; s.onerror = rej;
+      document.head.appendChild(s);
+    });
+  }
+
+  async function tryNativeDecode(file) {
+    return new Promise((res, rej) => {
+      const img = new Image();
+      img.onload = () => res(img);
+      img.onerror = () => rej(new Error('浏览器原生不支持 JP2 解码'));
+      img.src = URL.createObjectURL(file);
+    });
+  }
+
+  async function tryOpenJpegDecode(file) {
+    await loadScript('https://cdn.jsdelivr.net/npm/openjpeg.js@0.0.2/dist/openjpeg.min.js');
+    if (!window.openjpeg) throw new Error('openjpeg 库加载失败');
+    const buf = new Uint8Array(await file.arrayBuffer());
+    const result = await window.openjpeg.decode(buf.data || buf, { canvas: true });
+    return result.image || result;
+  }
+
+  async function decodeAnyWay(file) {
+    try {
+      return { source: 'native', img: await tryNativeDecode(file) };
+    } catch {
+      $('ifjp2-msg').textContent = '原生不支持，加载 openjpeg.js…'; $('ifjp2-msg').className = 'msg';
+      const img = await tryOpenJpegDecode(file);
+      return { source: 'wasm', img };
+    }
+  }
+
+  $('ifjp2-run').addEventListener('click', async () => {
+    if (!sourceFile) { $('ifjp2-msg').textContent = '请先选择 JP2 图片'; $('ifjp2-msg').className = 'msg err'; return; }
+    try {
+      const { source, img } = await decodeAnyWay(sourceFile);
+      const canvas = document.createElement('canvas');
+      canvas.width = img.naturalWidth || img.width;
+      canvas.height = img.naturalHeight || img.height;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0);
+      const q = Number($('ifjp2-q').value) / 100;
+      jpgBlob = await new Promise((res, rej) => canvas.toBlob(b => b ? res(b) : rej(new Error('JPG 编码失败')), 'image/jpeg', q));
+      $('ifjp2-preview').innerHTML = '<img alt="预览">';
+      $('ifjp2-preview').querySelector('img').src = URL.createObjectURL(jpgBlob);
+      $('ifjp2-msg').textContent = `转换成功 · ${(jpgBlob.size/1024).toFixed(1)} KB · 解码方式：${source}`;
+      $('ifjp2-msg').className = 'msg ok';
+    } catch (err) {
+      $('ifjp2-msg').textContent = '解码失败：' + err.message;
+      $('ifjp2-msg').className = 'msg err';
+    }
+  });
+
+  $('ifjp2-dl').addEventListener('click', () => {
+    if (!jpgBlob) { $('ifjp2-msg').textContent = '请先转换'; $('ifjp2-msg').className = 'msg err'; return; }
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(jpgBlob);
+    a.download = (sourceFile.name.replace(/\.[^.]+$/, '') || 'image') + '.jpg';
+    a.click();
+  });
+
+  $('ifjp2-reset').addEventListener('click', () => {
+    sourceFile = null; jpgBlob = null;
+    $('ifjp2-file').value = '';
+    $('ifjp2-info').textContent = '';
+    $('ifjp2-preview').innerHTML = '';
+    $('ifjp2-msg').textContent = '';
+  });
+</script>

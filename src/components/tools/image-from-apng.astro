@@ -1,0 +1,136 @@
+---
+// APNG → 多张 PNG（懒加载 upng-js）
+---
+<div class="pane">
+  <div>
+    <div class="field-label"><span>选择 APNG 动图</span></div>
+    <input type="file" id="ifapng-file" accept=".apng,image/apng,image/png">
+    <div id="ifapng-info" class="msg"></div>
+    <p style="font-size:12px;color:#999;margin-top:8px">
+      APNG 是带动画的 PNG，绝大多数浏览器（如 Chrome/Safari/Edge）都不原生解码播放。
+      本工具可拆出每一帧为独立 PNG 文件，ZIP 打包下载。
+      <br>首次使用需联网加载 upng-js ~10KB。
+    </p>
+  </div>
+  <div>
+    <div class="field-label"><span>帧预览</span></div>
+    <div id="ifapng-preview" class="ifapng-preview"></div>
+  </div>
+</div>
+<div class="btn-row">
+  <button id="ifapng-run" class="primary">拆解为帧</button>
+  <button id="ifapng-dl">打包下载 PNG</button>
+  <button id="ifapng-reset">重置</button>
+  <span id="ifapng-msg" class="msg"></span>
+</div>
+
+<style>
+  .ifapng-preview { margin-top: 10px; border: 1px dashed var(--border); border-radius: 8px; padding: 10px; min-height: 120px; display: flex; gap: 6px; flex-wrap: wrap; align-content: flex-start; background: #fafafa; max-height: 320px; overflow: auto; }
+  .ifapng-preview img { width: 80px; height: 80px; object-fit: contain; border: 1px solid var(--border); background: #fff; border-radius: 4px; }
+  .ifapng-preview:empty::before { content: '尚未拆解'; color: #999; }
+</style>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  let sourceFile = null;
+  let frameBlobs = []; // 每帧 PNG Blob
+  let frameNames = [];
+
+  $('ifapng-file').addEventListener('change', (e) => {
+    const f = e.target.files[0];
+    if (!f) return;
+    sourceFile = f;
+    $('ifapng-info').textContent = `已选择：${f.name} · ${(f.size/1024).toFixed(1)} KB`;
+    $('ifapng-info').className = 'msg ok';
+  });
+
+  function loadScript(src) {
+    return new Promise((res, rej) => {
+      const s = document.createElement('script');
+      s.src = src; s.onload = res; s.onerror = rej;
+      document.head.appendChild(s);
+    });
+  }
+
+  async function loadUpng() {
+    if (window.UPNG) return window.UPNG;
+    await loadScript('https://cdn.jsdelivr.net/npm/upng-js@2.1.0/UPNG.js');
+    return window.UPNG;
+  }
+
+  $('ifapng-run').addEventListener('click', async () => {
+    if (!sourceFile) { $('ifapng-msg').textContent = '请先选择 APNG 文件'; $('ifapng-msg').className = 'msg err'; return; }
+    $('ifapng-msg').textContent = '加载解码器…'; $('ifapng-msg').className = 'msg';
+    try {
+      const UPNG = await loadUpng();
+      const buf = await sourceFile.arrayBuffer();
+      const img = UPNG.decode(buf);
+      const frames = UPNG.toFrames(img); // RGBA Array of Array
+      frameBlobs = []; frameNames = [];
+      const base = sourceFile.name.replace(/\.[^.]+$/, '') || 'frame';
+
+      for (let i = 0; i < frames.length; i++) {
+        const rgba = frames[i];
+        const w = img.width, h = img.height;
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        const id = new ImageData(new Uint8ClampedArray(rgba), w, h);
+        ctx.putImageData(id, 0, 0);
+        const blob = await new Promise(res => canvas.toBlob(res, 'image/png'));
+        frameBlobs.push(blob);
+        frameNames.push(`${base}_${String(i+1).padStart(3, '0')}.png`);
+      }
+
+      $('ifapng-info').textContent = `已拆解 · ${frameBlobs.length} 帧 · ${img.width}×${img.height}`;
+      $('ifapng-info').className = 'msg ok';
+      $('ifapng-preview').innerHTML = '';
+      for (let i = 0; i < Math.min(frameBlobs.length, 20); i++) {
+        const img = document.createElement('img');
+        img.src = URL.createObjectURL(frameBlobs[i]);
+        img.title = frameNames[i];
+        $('ifapng-preview').appendChild(img);
+      }
+      if (frameBlobs.length > 20) {
+        const note = document.createElement('span');
+        note.style.cssText = 'font-size:12px;color:#999;padding:8px';
+        note.textContent = `… 仅预览前 20 帧，共 ${frameBlobs.length} 帧`;
+        $('ifapng-preview').appendChild(note);
+      }
+      $('ifapng-msg').textContent = `拆解完成 · ${frameBlobs.length} 帧`;
+      $('ifapng-msg').className = 'msg ok';
+    } catch (err) {
+      $('ifapng-msg').textContent = '拆解失败：' + (err.message || '可能不是有效的 APNG');
+      $('ifapng-msg').className = 'msg err';
+    }
+  });
+
+  $('ifapng-dl').addEventListener('click', async () => {
+    if (!frameBlobs.length) { $('ifapng-msg').textContent = '请先拆解'; $('ifapng-msg').className = 'msg err'; return; }
+    // 直接逐帧下载（无 ZIP 库时）
+    if (frameBlobs.length === 1) {
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(frameBlobs[0]);
+      a.download = frameNames[0]; a.click();
+      return;
+    }
+    $('ifapng-msg').textContent = '正在逐帧下载…'; $('ifapng-msg').className = 'msg';
+    for (let i = 0; i < frameBlobs.length; i++) {
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(frameBlobs[i]);
+      a.download = frameNames[i];
+      a.click();
+      await new Promise(r => setTimeout(r, 150)); // 防止浏览器拦截
+    }
+    $('ifapng-msg').textContent = `已下载 ${frameBlobs.length} 帧`;
+    $('ifapng-msg').className = 'msg ok';
+  });
+
+  $('ifapng-reset').addEventListener('click', () => {
+    sourceFile = null; frameBlobs = []; frameNames = [];
+    $('ifapng-file').value = '';
+    $('ifapng-info').textContent = '';
+    $('ifapng-preview').innerHTML = '';
+    $('ifapng-msg').textContent = '';
+  });
+</script>
