@@ -1,0 +1,113 @@
+---
+// PDF 转图片：每页渲染为 PNG/JPG，懒加载 pdfjs-dist
+---
+<div class="pane">
+  <div>
+    <div class="field-label"><span>选择 PDF 文件</span></div>
+    <input type="file" id="pi-file" accept="application/pdf">
+    <div class="field-label" style="margin-top:14px"><span>输出格式</span></div>
+    <select id="pi-fmt" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:6px">
+      <option value="image/png">PNG（无损）</option>
+      <option value="image/jpeg">JPG（较小）</option>
+      <option value="image/webp">WebP（推荐）</option>
+    </select>
+    <div class="field-label" style="margin-top:14px"><span>分辨率 <span id="pi-sv">2.0</span>×（倍数）</span></div>
+    <input type="range" id="pi-scale" min="1" max="4" step="0.5" value="2" style="width:100%">
+    <p style="font-size:12px;color:#999;margin-top:8px">每页转一张图，逐页下载（无 ZIP 库时）。分辨率越高越清晰，但文件越大。</p>
+  </div>
+  <div>
+    <div class="field-label"><span>页面缩略</span></div>
+    <div id="pi-thumbs" class="pi-thumbs"></div>
+  </div>
+</div>
+<div class="btn-row">
+  <button id="pi-run" class="primary">开始转换</button>
+  <button id="pi-dl">下载全部</button>
+  <button id="pi-reset">重置</button>
+  <span id="pi-msg" class="msg"></span>
+</div>
+
+<style>
+  .pi-thumbs { margin-top: 10px; border: 1px dashed var(--border); border-radius: 8px; padding: 10px; min-height: 120px; display: flex; gap: 8px; flex-wrap: wrap; align-content: flex-start; background: #fafafa; max-height: 360px; overflow: auto; }
+  .pi-thumbs img { width: 80px; border: 1px solid var(--border); border-radius: 4px; background: #fff; }
+  .pi-thumbs:empty::before { content: '尚未转换'; color: #999; }
+</style>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  let sourceFile = null;
+  let pageBlobs = [];
+
+  $('pi-scale').addEventListener('input', e => $('pi-sv').textContent = e.target.value);
+  $('pi-file').addEventListener('change', (e) => sourceFile = e.target.files[0]);
+
+  function loadScript(src) {
+    return new Promise((res, rej) => {
+      const s = document.createElement('script');
+      s.src = src; s.onload = res; s.onerror = rej;
+      document.head.appendChild(s);
+    });
+  }
+  async function loadPdfJs() {
+    if (window.pdfjsLib) return window.pdfjsLib;
+    await loadScript('https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js');
+    window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
+    return window.pdfjsLib;
+  }
+
+  $('pi-run').addEventListener('click', async () => {
+    if (!sourceFile) { $('pi-msg').textContent = '请先选择 PDF'; $('pi-msg').className = 'msg err'; return; }
+    $('pi-msg').textContent = '加载渲染器…'; $('pi-msg').className = 'msg';
+    pageBlobs = [];
+    try {
+      const pdfjs = await loadPdfJs();
+      const buf = await sourceFile.arrayBuffer();
+      const pdf = await pdfjs.getDocument({ data: buf }).promise;
+      const fmt = $('pi-fmt').value;
+      const ext = fmt === 'image/png' ? 'png' : (fmt === 'image/jpeg' ? 'jpg' : 'webp');
+      const scale = Number($('pi-scale').value);
+      $('pi-thumbs').innerHTML = '';
+      for (let i = 1; i <= pdf.numPages; i++) {
+        $('pi-msg').textContent = `转换中 ${i}/${pdf.numPages}`;
+        const page = await pdf.getPage(i);
+        const vp = page.getViewport({ scale });
+        const canvas = document.createElement('canvas');
+        canvas.width = vp.width; canvas.height = vp.height;
+        await page.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
+        const blob = await new Promise(res => canvas.toBlob(res, fmt, 0.92));
+        pageBlobs.push({ blob, name: `${(sourceFile.name.replace(/\.pdf$/i, '') || 'page')}_${String(i).padStart(3,'0')}.${ext}` });
+        // 缩略
+        const thumb = document.createElement('img');
+        thumb.src = URL.createObjectURL(blob);
+        thumb.title = pageBlobs[i-1].name;
+        $('pi-thumbs').appendChild(thumb);
+      }
+      $('pi-msg').textContent = `完成 · ${pdf.numPages} 页`;
+      $('pi-msg').className = 'msg ok';
+    } catch (err) {
+      $('pi-msg').textContent = '失败：' + err.message;
+      $('pi-msg').className = 'msg err';
+    }
+  });
+
+  $('pi-dl').addEventListener('click', async () => {
+    if (!pageBlobs.length) return;
+    $('pi-msg').textContent = `下载 ${pageBlobs.length} 张…`; $('pi-msg').className = 'msg';
+    for (const p of pageBlobs) {
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(p.blob);
+      a.download = p.name;
+      a.click();
+      await new Promise(r => setTimeout(r, 200));
+    }
+    $('pi-msg').textContent = `已下载 ${pageBlobs.length} 张`;
+    $('pi-msg').className = 'msg ok';
+  });
+
+  $('pi-reset').addEventListener('click', () => {
+    sourceFile = null; pageBlobs = [];
+    $('pi-file').value = '';
+    $('pi-thumbs').innerHTML = '';
+    $('pi-msg').textContent = '';
+  });
+</script>

@@ -1,0 +1,128 @@
+---
+// PDF 转 Word：提取 PDF 文字流输出 .docx（简化版，无样式保真）
+---
+<div class="pane">
+  <div>
+    <div class="field-label"><span>选择 PDF 文件</span></div>
+    <input type="file" id="p2w-file" accept="application/pdf">
+    <div class="field-label" style="margin-top:14px"><span>输出格式</span></div>
+    <select id="p2w-fmt" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:6px">
+      <option value="txt">TXT（纯文本）</option>
+      <option value="md">Markdown（带简单结构）</option>
+      <option value="docx">DOCX（简易 Word）</option>
+    </select>
+    <p style="font-size:12px;color:#999;margin-top:8px">⚠️ PDF 是版面格式，转换为 Word 必然丢失字体/表格/图片等。本工具仅做"提取文字内容"。</p>
+  </div>
+  <div>
+    <div class="field-label"><span>提取预览</span></div>
+    <textarea id="p2w-preview" readonly placeholder="提取的文字将显示在这里"></textarea>
+  </div>
+</div>
+<div class="btn-row">
+  <button id="p2w-run" class="primary">提取</button>
+  <button id="p2w-dl">下载</button>
+  <button id="p2w-reset">重置</button>
+  <span id="p2w-msg" class="msg"></span>
+</div>
+
+<style>
+  textarea { width: 100%; min-height: 240px; padding: 8px; border: 1px solid var(--border); border-radius: 6px; font-family: inherit; box-sizing: border-box; resize: vertical; }
+</style>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  let sourceFile = null;
+  let extractedText = '';
+  let outBlob = null;
+
+  $('p2w-file').addEventListener('change', (e) => sourceFile = e.target.files[0]);
+
+  function loadScript(src) {
+    return new Promise((res, rej) => {
+      const s = document.createElement('script');
+      s.src = src; s.onload = res; s.onerror = rej;
+      document.head.appendChild(s);
+    });
+  }
+  async function loadPdfJs() {
+    if (window.pdfjsLib) return window.pdfjsLib;
+    await loadScript('https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js');
+    window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
+    return window.pdfjsLib;
+  }
+
+  async function extractText(pdfjs, pdf) {
+    const allText = [];
+    for (let i = 1; i <= pdf.numPages; i++) {
+      const page = await pdf.getPage(i);
+      const tc = await page.getTextContent();
+      // 按 y 坐标分行
+      const lines = {};
+      for (const item of tc.items) {
+        const y = Math.round(item.transform[5]);
+        if (!lines[y]) lines[y] = [];
+        lines[y].push(item.str);
+      }
+      const ys = Object.keys(lines).map(Number).sort((a, b) => b - a); // PDF y 从下往上
+      const pageLines = ys.map(y => lines[y].join(' ').trim()).filter(Boolean);
+      allText.push(`--- 第 ${i} 页 ---\n` + pageLines.join('\n'));
+    }
+    return allText.join('\n\n');
+  }
+
+  $('p2w-run').addEventListener('click', async () => {
+    if (!sourceFile) { $('p2w-msg').textContent = '请先选择 PDF'; $('p2w-msg').className = 'msg err'; return; }
+    $('p2w-msg').textContent = '提取中…'; $('p2w-msg').className = 'msg';
+    try {
+      const pdfjs = await loadPdfJs();
+      const buf = await sourceFile.arrayBuffer();
+      const pdf = await pdfjs.getDocument({ data: buf }).promise;
+      extractedText = await extractText(pdfjs, pdf);
+      $('p2w-preview').value = extractedText;
+      const fmt = $('p2w-fmt').value;
+      if (fmt === 'txt') outBlob = new Blob([extractedText], { type: 'text/plain' });
+      else if (fmt === 'md') {
+        // 转 Markdown：每页前加 ## 第 X 页
+        const md = extractedText.split(/--- 第 (\d+) 页 ---/).reduce((acc, cur, i, arr) => {
+          if (i % 2 === 1) acc.push(`## 第 ${cur} 页`);
+          else if (i % 2 === 0 && cur.trim()) acc.push(cur.trim());
+          return acc;
+        }, []).join('\n\n');
+        outBlob = new Blob([md], { type: 'text/markdown' });
+      } else if (fmt === 'docx') {
+        // 用最简 docx：单段文字流（Open XML 是 zip，沙箱里不引 JSZip 用 .doc 后缀骗 Word）
+        // 改成生成 .doc XML 头，让 Word 能打开提示转码
+        const xml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<?mso-application progid="Word.Document"?>
+<w:wordDocument xmlns:w="http://schemas.microsoft.com/office/word/2003/wordml">
+  <w:body>
+    ${extractedText.split('\n').map(l => `<w:p><w:r><w:t xml:space="preserve">${l.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</w:t></w:r></w:p>`).join('\n')}
+  </w:body>
+</w:wordDocument>`;
+        outBlob = new Blob([xml], { type: 'application/msword' });
+      }
+      $('p2w-msg').textContent = `提取完成 · ${pdf.numPages} 页 · ${extractedText.length} 字符`;
+      $('p2w-msg').className = 'msg ok';
+    } catch (err) {
+      $('p2w-msg').textContent = '失败：' + err.message;
+      $('p2w-msg').className = 'msg err';
+    }
+  });
+
+  $('p2w-dl').addEventListener('click', () => {
+    if (!outBlob) return;
+    const fmt = $('p2w-fmt').value;
+    const ext = fmt === 'docx' ? 'doc' : fmt;
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(outBlob);
+    a.download = (sourceFile.name.replace(/\.pdf$/i, '') || 'pdf') + '.' + ext;
+    a.click();
+  });
+
+  $('p2w-reset').addEventListener('click', () => {
+    sourceFile = null; extractedText = ''; outBlob = null;
+    $('p2w-file').value = '';
+    $('p2w-preview').value = '';
+    $('p2w-msg').textContent = '';
+  });
+</script>

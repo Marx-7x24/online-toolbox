@@ -1,0 +1,107 @@
+---
+// PDF 加页码：在每页底部叠加「第 X / Y 页」
+---
+<div class="pane">
+  <div>
+    <div class="field-label"><span>选择 PDF 文件</span></div>
+    <input type="file" id="ppn-file" accept="application/pdf">
+    <div class="field-label" style="margin-top:14px"><span>起始页码</span></div>
+    <input type="number" id="ppn-start" value="1" min="0" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:6px;box-sizing:border-box">
+    <div class="field-label" style="margin-top:14px"><span>位置</span></div>
+    <select id="ppn-pos" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:6px">
+      <option value="bottom-center">底部居中</option>
+      <option value="bottom-right">底部右</option>
+      <option value="bottom-left">底部左</option>
+      <option value="top-center">顶部居中</option>
+    </select>
+    <div class="field-label" style="margin-top:14px"><span>字号 <span id="ppn-sv">12</span></span></div>
+    <input type="range" id="ppn-size" min="6" max="48" value="12" style="width:100%">
+  </div>
+  <div>
+    <div class="field-label"><span>说明</span></div>
+    <p style="font-size:13px;color:#666;background:#f8f9fb;padding:12px;border-radius:8px;line-height:1.6">
+      在每页指定位置嵌入「第 N / M 页」字样。<br>
+      字体使用 PDF 内置 Helvetica；字号单位为 pt（每页坐标系）。<br>
+      支持自定义起始页码（适用于书籍/报告的章节分页）。
+    </p>
+  </div>
+</div>
+<div class="btn-row">
+  <button id="ppn-run" class="primary">添加页码</button>
+  <button id="ppn-dl">下载</button>
+  <button id="ppn-reset">重置</button>
+  <span id="ppn-msg" class="msg"></span>
+</div>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  let sourceFile = null;
+  let outBlob = null;
+
+  $('ppn-size').addEventListener('input', e => $('ppn-sv').textContent = e.target.value);
+  $('ppn-file').addEventListener('change', (e) => sourceFile = e.target.files[0]);
+
+  function loadScript(src) {
+    return new Promise((res, rej) => {
+      const s = document.createElement('script');
+      s.src = src; s.onload = res; s.onerror = rej;
+      document.head.appendChild(s);
+    });
+  }
+  async function loadPdfLib() {
+    if (window.PDFLib) return window.PDFLib;
+    await loadScript('https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js');
+    return window.PDFLib;
+  }
+
+  $('ppn-run').addEventListener('click', async () => {
+    if (!sourceFile) { $('ppn-msg').textContent = '请先选择 PDF'; $('ppn-msg').className = 'msg err'; return; }
+    $('ppn-msg').textContent = '处理中…'; $('ppn-msg').className = 'msg';
+    try {
+      const PDFLib = await loadPdfLib();
+      const { rgb, StandardFonts } = PDFLib;
+      const buf = await sourceFile.arrayBuffer();
+      const pdfDoc = await PDFLib.PDFDocument.load(buf);
+      const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+      const pages = pdfDoc.getPages();
+      const total = pages.length;
+      const startNum = Number($('ppn-start').value);
+      const size = Number($('ppn-size').value);
+      const pos = $('ppn-pos').value;
+      for (let i = 0; i < total; i++) {
+        const page = pages[i];
+        const { width, height } = page.getSize();
+        const text = `第 ${startNum + i} / ${startNum + total - 1} 页`;
+        const tw = font.widthOfTextAtSize(text, size);
+        const margin = 20;
+        let x, y;
+        if (pos === 'bottom-center') { x = (width - tw) / 2; y = margin; }
+        else if (pos === 'bottom-right') { x = width - tw - margin; y = margin; }
+        else if (pos === 'bottom-left') { x = margin; y = margin; }
+        else { x = (width - tw) / 2; y = height - margin - size; }
+        page.drawText(text, { x, y, size, font, color: rgb(0, 0, 0) });
+      }
+      const out = await pdfDoc.save();
+      outBlob = new Blob([out], { type: 'application/pdf' });
+      $('ppn-msg').textContent = `成功 · ${total} 页`;
+      $('ppn-msg').className = 'msg ok';
+    } catch (err) {
+      $('ppn-msg').textContent = '失败：' + err.message;
+      $('ppn-msg').className = 'msg err';
+    }
+  });
+
+  $('ppn-dl').addEventListener('click', () => {
+    if (!outBlob) return;
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(outBlob);
+    a.download = (sourceFile.name.replace(/\.pdf$/i, '') || 'pdf') + '_numbered.pdf';
+    a.click();
+  });
+
+  $('ppn-reset').addEventListener('click', () => {
+    sourceFile = null; outBlob = null;
+    $('ppn-file').value = '';
+    $('ppn-msg').textContent = '';
+  });
+</script>

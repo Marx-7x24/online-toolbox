@@ -1,0 +1,140 @@
+---
+// PDF 重复页面检测：扫描每页指纹找出重复页
+---
+<div class="pane">
+  <div>
+    <div class="field-label"><span>选择 PDF 文件</span></div>
+    <input type="file" id="pd-file" accept="application/pdf">
+    <div class="field-label" style="margin-top:14px"><span>相似度阈值 <span id="pd-tv">95</span>%</span></div>
+    <input type="range" id="pd-thr" min="70" max="100" value="95" style="width:100%">
+    <p style="font-size:12px;color:#999;margin-top:8px">计算每页文字 + 图像指纹，超过阈值的视为重复。</p>
+  </div>
+  <div>
+    <div class="field-label"><span>扫描结果</span></div>
+    <div id="pd-result" class="pd-result"></div>
+  </div>
+</div>
+<div class="btn-row">
+  <button id="pd-run" class="primary">开始扫描</button>
+  <button id="pd-reset">重置</button>
+  <span id="pd-msg" class="msg"></span>
+</div>
+
+<style>
+  .pd-result { margin-top: 10px; border: 1px dashed var(--border); border-radius: 8px; padding: 10px; min-height: 120px; background: #fafafa; font-size: 13px; line-height: 1.7; }
+  .pd-result:empty::before { content: '尚未扫描'; color: #999; }
+  .pd-result .dup { color: #e53935; font-weight: 600; }
+  .pd-result .group { padding: 6px 8px; border-bottom: 1px solid var(--border); }
+  .pd-result .group:last-child { border-bottom: 0; }
+</style>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  let sourceFile = null;
+
+  $('pd-thr').addEventListener('input', e => $('pd-tv').textContent = e.target.value);
+  $('pd-file').addEventListener('change', (e) => sourceFile = e.target.files[0]);
+
+  function loadScript(src) {
+    return new Promise((res, rej) => {
+      const s = document.createElement('script');
+      s.src = src; s.onload = res; s.onerror = rej;
+      document.head.appendChild(s);
+    });
+  }
+  async function loadPdfJs() {
+    if (window.pdfjsLib) return window.pdfjsLib;
+    await loadScript('https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js');
+    window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
+    return window.pdfjsLib;
+  }
+
+  async function pageFingerprint(page) {
+    // 文本指纹：提取页面前 500 字
+    const tc = await page.getTextContent();
+    const text = tc.items.map(i => i.str).join(' ').slice(0, 500);
+    // 图像指纹：渲染缩略图 → 32x32 灰度
+    const vp = page.getViewport({ scale: 0.2 });
+    const canvas = document.createElement('canvas');
+    canvas.width = 32; canvas.height = 32;
+    const ctx = canvas.getContext('2d');
+    const tmpCanvas = document.createElement('canvas');
+    tmpCanvas.width = vp.width; tmpCanvas.height = vp.height;
+    await page.render({ canvasContext: tmpCanvas.getContext('2d'), viewport: vp }).promise;
+    ctx.drawImage(tmpCanvas, 0, 0, 32, 32);
+    const imgData = ctx.getImageData(0, 0, 32, 32);
+    let grayHash = 0;
+    for (let i = 0; i < imgData.data.length; i += 4) {
+      const g = (imgData.data[i] + imgData.data[i+1] + imgData.data[i+2]) / 3;
+      grayHash = grayHash * 31 + Math.round(g);
+    }
+    return { text, image: grayHash & 0xFFFFFF };
+  }
+
+  function similarity(a, b) {
+    // 文本：公共字符比例
+    const setA = new Set(a.text.split(/\s+/));
+    const setB = new Set(b.text.split(/\s+/));
+    const inter = [...setA].filter(x => setB.has(x)).length;
+    const uni = new Set([...setA, ...setB]).size || 1;
+    const textSim = inter / uni;
+    // 图像：归一化对比
+    const diff = Math.abs(a.image - b.image) / 0xFFFFFF;
+    const imageSim = 1 - diff;
+    return (textSim * 0.4 + imageSim * 0.6);
+  }
+
+  $('pd-run').addEventListener('click', async () => {
+    if (!sourceFile) { $('pd-msg').textContent = '请先选择 PDF'; $('pd-msg').className = 'msg err'; return; }
+    $('pd-msg').textContent = '加载中…'; $('pd-msg').className = 'msg';
+    $('pd-result').innerHTML = '';
+    try {
+      const pdfjs = await loadPdfJs();
+      const buf = await sourceFile.arrayBuffer();
+      const pdf = await pdfjs.getDocument({ data: buf }).promise;
+      const total = pdf.numPages;
+      const fps = [];
+      for (let i = 1; i <= total; i++) {
+        $('pd-msg').textContent = `扫描中 ${i}/${total}`;
+        const page = await pdf.getPage(i);
+        fps.push(await pageFingerprint(page));
+      }
+      const thr = Number($('pd-thr').value) / 100;
+      const groups = [];
+      const visited = new Array(total).fill(false);
+      for (let i = 0; i < total; i++) {
+        if (visited[i]) continue;
+        const grp = [i + 1];
+        visited[i] = true;
+        for (let j = i + 1; j < total; j++) {
+          if (visited[j]) continue;
+          if (similarity(fps[i], fps[j]) >= thr) {
+            grp.push(j + 1);
+            visited[j] = true;
+          }
+        }
+        if (grp.length > 1) groups.push(grp);
+      }
+      if (groups.length === 0) {
+        $('pd-result').innerHTML = `<div>扫描 ${total} 页，未发现重复页面（阈值 ${thr*100}%）</div>`;
+        $('pd-msg').textContent = '完成 · 无重复';
+      } else {
+        const html = groups.map(g => `<div class="group"><span class="dup">重复组：</span>第 ${g.join('、')} 页（共 ${g.length} 页）</div>`).join('');
+        const dupCount = groups.reduce((s, g) => s + g.length - 1, 0);
+        $('pd-result').innerHTML = `<div>扫描 ${total} 页，发现 ${groups.length} 组重复，可移除 ${dupCount} 页</div>${html}`;
+        $('pd-msg').textContent = `完成 · ${groups.length} 组重复 · ${dupCount} 页可移除`;
+      }
+      $('pd-msg').className = 'msg ok';
+    } catch (err) {
+      $('pd-msg').textContent = '失败：' + err.message;
+      $('pd-msg').className = 'msg err';
+    }
+  });
+
+  $('pd-reset').addEventListener('click', () => {
+    sourceFile = null;
+    $('pd-file').value = '';
+    $('pd-result').innerHTML = '';
+    $('pd-msg').textContent = '';
+  });
+</script>

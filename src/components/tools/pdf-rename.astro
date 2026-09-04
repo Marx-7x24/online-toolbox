@@ -1,0 +1,115 @@
+---
+// PDF 批量重命名：按模板改名
+---
+<div class="pane">
+  <div>
+    <div class="field-label"><span>选择多个 PDF 文件</span></div>
+    <input type="file" id="prn-files" accept="application/pdf" multiple>
+    <div id="prn-list" class="prn-list"></div>
+  </div>
+  <div>
+    <div class="field-label"><span>命名规则</span></div>
+    <select id="prn-rule" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:6px">
+      <option value="prefix">加前缀</option>
+      <option value="suffix">加后缀（扩展名前）</option>
+      <option value="number">加序号（001/002/...）</option>
+      <option value="replace">替换关键字</option>
+      <option value="date">加日期前缀</option>
+    </select>
+    <div class="field-label" style="margin-top:14px"><span id="prn-extra-label">前缀文本</span></div>
+    <input type="text" id="prn-extra" value="新文件_" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:6px;box-sizing:border-box">
+    <div id="prn-extra2" style="display:none;margin-top:6px">
+      <input type="text" id="prn-extra2-input" placeholder="替换为" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:6px;box-sizing:border-box">
+    </div>
+  </div>
+</div>
+<div class="btn-row">
+  <button id="prn-run" class="primary">生成新名称</button>
+  <button id="prn-dl">下载所有（ZIP 不可用，改为逐个）</button>
+  <button id="prn-reset">重置</button>
+  <span id="prn-msg" class="msg"></span>
+</div>
+
+<style>
+  .prn-list { margin-top: 10px; border: 1px dashed var(--border); border-radius: 8px; padding: 8px; min-height: 80px; background: #fafafa; max-height: 280px; overflow: auto; font-size: 13px; }
+  .prn-list .row { padding: 4px 8px; border-bottom: 1px solid var(--border); display: flex; gap: 8px; align-items: center; }
+  .prn-list .row:last-child { border-bottom: 0; }
+  .prn-list .old { color: #888; flex: 1; }
+  .prn-list .new { color: #3e2eff; font-weight: 600; flex: 1; }
+</style>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  let files = [];
+
+  $('prn-rule').addEventListener('change', updateForm);
+  function updateForm() {
+    const r = $('prn-rule').value;
+    const labels = { prefix: '前缀文本', suffix: '后缀文本', number: '起始序号', replace: '原关键字（要替换的）', date: '日期格式（YYYY-MM-DD）' };
+    $('prn-extra-label').textContent = labels[r];
+    $('prn-extra2').style.display = (r === 'replace') ? 'block' : 'none';
+    if (r === 'number') $('prn-extra').value = $('prn-extra').value || '001';
+    if (r === 'date') $('prn-extra').value = $('prn-extra').value || 'YYYY-MM-DD';
+  }
+  updateForm();
+
+  $('prn-files').addEventListener('change', e => {
+    files = Array.from(e.target.files);
+    renderPreview();
+  });
+
+  function computeNewName(oldName, idx) {
+    const base = oldName.replace(/\.pdf$/i, '');
+    const r = $('prn-rule').value;
+    const v = $('prn-extra').value;
+    if (r === 'prefix') return `${v}${base}.pdf`;
+    if (r === 'suffix') return `${base}${v}.pdf`;
+    if (r === 'number') {
+      const start = Number(v) || 1;
+      const num = String(start + idx).padStart(3, '0');
+      return `${base}_${num}.pdf`;
+    }
+    if (r === 'replace') {
+      const v2 = $('prn-extra2-input').value;
+      return `${base.split(v).join(v2)}.pdf`;
+    }
+    if (r === 'date') {
+      const d = new Date();
+      const dateStr = v.replace('YYYY', d.getFullYear()).replace('MM', String(d.getMonth()+1).padStart(2,'0')).replace('DD', String(d.getDate()).padStart(2,'0'));
+      return `${dateStr}_${base}.pdf`;
+    }
+    return oldName;
+  }
+
+  function renderPreview() {
+    const html = files.map((f, i) => `<div class="row"><span class="old">${f.name}</span><span>→</span><span class="new">${computeNewName(f.name, i)}</span></div>`).join('');
+    $('prn-list').innerHTML = html || '<div style="color:#999;padding:8px">尚未选择文件</div>';
+  }
+
+  $('prn-run').addEventListener('click', () => {
+    if (!files.length) { $('prn-msg').textContent = '请先选择文件'; $('prn-msg').className = 'msg err'; return; }
+    renderPreview();
+    $('prn-msg').textContent = `已生成 ${files.length} 个新名称（点击"下载所有"逐个另存）`;
+    $('prn-msg').className = 'msg ok';
+  });
+
+  $('prn-dl').addEventListener('click', async () => {
+    if (!files.length) return;
+    for (let i = 0; i < files.length; i++) {
+      const newName = computeNewName(files[i].name, i);
+      const blob = new Blob([await files[i].arrayBuffer()], { type: 'application/pdf' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = newName;
+      a.click();
+      await new Promise(r => setTimeout(r, 200));
+    }
+    $('prn-msg').textContent = `已逐个下载 ${files.length} 个文件`;
+    $('prn-msg').className = 'msg ok';
+  });
+
+  $('prn-reset').addEventListener('click', () => {
+    files = []; $('prn-files').value = ''; $('prn-list').innerHTML = '';
+    $('prn-msg').textContent = '';
+  });
+</script>

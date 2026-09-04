@@ -231,6 +231,16 @@ export const toolIconMap = {
   'image-cutter': 'logo-image-cutter.svg',
   'color-replace': 'logo-color-replace.svg',
   'idcard-date': 'logo-idcard-date.svg',
+  // 文档转换：PDF 工具
+  'pdf-rename': 'logo-pdf-rename.svg',
+  'pdf-scale': 'logo-pdf-scale.svg',
+  'pdf-page-number': 'logo-pdf-page-number.svg',
+  'pdf-compress': 'logo-pdf-compress.svg',
+  'pdf-image': 'logo-pdf-image.svg',
+  'pdf-watermark': 'logo-pdf-watermark.svg',
+  'pdf-dedup': 'logo-pdf-dedup.svg',
+  'pdf-word': 'logo-pdf-word.svg',
+  'word2pdf': 'logo-word-pdf.svg',
 };
 
 export function getToolIcon(slug) {

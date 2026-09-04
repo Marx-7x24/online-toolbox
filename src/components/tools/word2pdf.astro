@@ -1,0 +1,171 @@
+---
+// Word(docx) 转 PDF：mammoth.js 读 docx → 渲染到 canvas → 嵌入 PDF（简化版）
+---
+<div class="pane">
+  <div>
+    <div class="field-label"><span>选择 Word 文件（.docx）</span></div>
+    <input type="file" id="w2p-file" accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document">
+    <div class="field-label" style="margin-top:14px"><span>页面尺寸</span></div>
+    <select id="w2p-size" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:6px">
+      <option value="a4">A4 (210 × 297 mm)</option>
+      <option value="letter">Letter</option>
+      <option value="a3">A3</option>
+    </select>
+    <div class="field-label" style="margin-top:14px"><span>字号 <span id="w2p-sv">14</span> pt</span></div>
+    <input type="range" id="w2p-font" min="9" max="24" value="14" style="width:100%">
+    <p style="font-size:12px;color:#999;margin-top:8px">⚠️ Word 转 PDF 在浏览器端无法完美保真。本工具将 .docx 转 HTML 后按段落渲染到 PDF 页面，复杂表格/图片可能丢失或错位。建议用 Word/WPS 直接另存。</p>
+  </div>
+  <div>
+    <div class="field-label"><span>提取预览</span></div>
+    <div id="w2p-preview" class="w2p-preview"></div>
+  </div>
+</div>
+<div class="btn-row">
+  <button id="w2p-run" class="primary">转换为 PDF</button>
+  <button id="w2p-dl">下载</button>
+  <button id="w2p-reset">重置</button>
+  <span id="w2p-msg" class="msg"></span>
+</div>
+
+<style>
+  .w2p-preview { margin-top: 10px; border: 1px dashed var(--border); border-radius: 8px; padding: 10px; min-height: 120px; background: #fafafa; max-height: 280px; overflow: auto; font-size: 13px; line-height: 1.6; }
+  .w2p-preview h1, .w2p-preview h2, .w2p-preview h3 { margin: 8px 0 4px; }
+  .w2p-preview p { margin: 4px 0; }
+  .w2p-preview ul, .w2p-preview ol { padding-left: 24px; }
+  .w2p-preview:empty::before { content: '尚未转换'; color: #999; }
+</style>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  let sourceFile = null;
+  let outBlob = null;
+  let htmlContent = '';
+
+  $('w2p-font').addEventListener('input', e => $('w2p-sv').textContent = e.target.value);
+  $('w2p-file').addEventListener('change', (e) => sourceFile = e.target.files[0]);
+
+  function loadScript(src) {
+    return new Promise((res, rej) => {
+      const s = document.createElement('script');
+      s.src = src; s.onload = res; s.onerror = rej;
+      document.head.appendChild(s);
+    });
+  }
+  async function loadMammoth() {
+    if (window.mammoth) return window.mammoth;
+    await loadScript('https://cdn.jsdelivr.net/npm/mammoth@1.6.0/mammoth.browser.min.js');
+    return window.mammoth;
+  }
+  async function loadPdfLib() {
+    if (window.PDFLib) return window.PDFLib;
+    await loadScript('https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js');
+    return window.PDFLib;
+  }
+
+  function htmlToLines(html) {
+    // 极简 HTML → 行
+    const tmp = document.createElement('div');
+    tmp.innerHTML = html;
+    const lines = [];
+    function walk(node, prefix = '') {
+      if (node.nodeType === 3) {
+        const t = node.textContent.trim();
+        if (t) lines.push({ text: t, bold: false, h: 0 });
+        return;
+      }
+      if (node.nodeType !== 1) return;
+      const tag = node.tagName.toLowerCase();
+      if (['h1','h2','h3','h4','h5','h6'].includes(tag)) {
+        const level = parseInt(tag[1]);
+        const t = node.textContent.trim();
+        if (t) lines.push({ text: t, h: level });
+        return;
+      }
+      if (tag === 'p') {
+        const isBold = !!node.querySelector('strong, b');
+        const t = node.textContent.trim();
+        if (t) lines.push({ text: t, bold: isBold });
+        else lines.push({ text: '', h: 0 });
+        return;
+      }
+      if (tag === 'li') {
+        const t = node.textContent.trim();
+        if (t) lines.push({ text: '• ' + t, h: 0 });
+        return;
+      }
+      if (tag === 'br') { lines.push({ text: '', h: 0 }); return; }
+      // 容器：递归
+      for (const c of node.childNodes) walk(c);
+    }
+    walk(tmp);
+    return lines;
+  }
+
+  $('w2p-run').addEventListener('click', async () => {
+    if (!sourceFile) { $('w2p-msg').textContent = '请先选择 docx'; $('w2p-msg').className = 'msg err'; return; }
+    $('w2p-msg').textContent = '加载转换器…'; $('w2p-msg').className = 'msg';
+    try {
+      const mammoth = await loadMammoth();
+      const PDFLib = await loadPdfLib();
+      const { rgb, StandardFonts } = PDFLib;
+      const buf = await sourceFile.arrayBuffer();
+      const result = await mammoth.convertToHtml({ arrayBuffer: buf });
+      htmlContent = result.value;
+      $('w2p-preview').innerHTML = htmlContent;
+      const lines = htmlToLines(htmlContent);
+      const fontSize = Number($('w2p-font').value);
+      const SIZES = { a4: [595, 842], letter: [612, 792], a3: [842, 1191] };
+      const [W, H] = SIZES[$('w2p-size').value];
+      const margin = 60;
+      const lineH = fontSize * 1.5;
+      const usableH = H - margin * 2;
+      const linesPerPage = Math.floor(usableH / lineH);
+      const pdfDoc = await PDFLib.PDFDocument.create();
+      const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+      const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+      const totalPages = Math.ceil(lines.length / linesPerPage) || 1;
+      for (let p = 0; p < totalPages; p++) {
+        const page = pdfDoc.addPage([W, H]);
+        let y = H - margin;
+        const slice = lines.slice(p * linesPerPage, (p + 1) * linesPerPage);
+        for (const ln of slice) {
+          const sz = ln.h ? fontSize * (1.6 - ln.h * 0.15) : fontSize;
+          const f = (ln.h || ln.bold) ? fontBold : font;
+          // 简化：超长截断
+          let text = ln.text;
+          while (f.widthOfTextAtSize(text, sz) > W - margin * 2) {
+            text = text.slice(0, -2);
+          }
+          page.drawText(text, { x: margin, y, size: sz, font: f, color: rgb(0, 0, 0) });
+          y -= lineH;
+          if (y < margin) break;
+        }
+        // 页码
+        const pn = `第 ${p + 1} / ${totalPages} 页`;
+        page.drawText(pn, { x: W - margin - 60, y: margin / 2, size: 9, font, color: rgb(0.5, 0.5, 0.5) });
+      }
+      const out = await pdfDoc.save();
+      outBlob = new Blob([out], { type: 'application/pdf' });
+      $('w2p-msg').textContent = `成功 · ${lines.length} 行 / ${totalPages} 页 · ${(outBlob.size/1024).toFixed(1)} KB`;
+      $('w2p-msg').className = 'msg ok';
+    } catch (err) {
+      $('w2p-msg').textContent = '失败：' + err.message;
+      $('w2p-msg').className = 'msg err';
+    }
+  });
+
+  $('w2p-dl').addEventListener('click', () => {
+    if (!outBlob) return;
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(outBlob);
+    a.download = (sourceFile.name.replace(/\.docx$/i, '') || 'doc') + '.pdf';
+    a.click();
+  });
+
+  $('w2p-reset').addEventListener('click', () => {
+    sourceFile = null; outBlob = null; htmlContent = '';
+    $('w2p-file').value = '';
+    $('w2p-preview').innerHTML = '';
+    $('w2p-msg').textContent = '';
+  });
+</script>
