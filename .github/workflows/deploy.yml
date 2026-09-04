@@ -28,7 +28,7 @@ jobs:
       - name: Build
         run: npm run build
 
-      # 首次部署时，Cloudflare Pages 项目可能还不存在；先尝试创建，已存在会报错并被忽略
+      # 首次部署时，Cloudflare Pages 项目可能还不存在；先尝试创建（CI 非交互环境必须带 --production-branch），已存在会报错并被忽略
       - name: Ensure Cloudflare Pages project exists
         uses: cloudflare/wrangler-action@v3
         continue-on-error: true
@@ -38,7 +38,7 @@ jobs:
         with:
           apiToken: ${{ secrets.CF_API_TOKEN }}
           accountId: ${{ secrets.CF_ACCOUNT_ID }}
-          command: pages project create online-toolbox
+          command: pages project create online-toolbox --production-branch=main
 
       - name: Deploy to Cloudflare Pages
         uses: cloudflare/wrangler-action@v3
