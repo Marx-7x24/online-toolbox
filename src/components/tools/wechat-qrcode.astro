@@ -1,0 +1,155 @@
+---
+// 微信群活码生成器：把群邀请链接生成二维码活码卡片，可列多个群并导出 PNG
+// 注：纯前端生成静态二维码；动态跳转/7天轮换需要服务端，本工具提供静态活码卡片
+---
+<div class="pane">
+  <div>
+    <div class="field-label"><span>卡片标题</span></div>
+    <input type="text" id="wqr-title" value="扫码进群" style="width:100%;padding:7px;border:1px solid var(--border-color);border-radius:6px;box-sizing:border-box">
+
+    <div class="field-label" style="margin-top:12px"><span>主群邀请链接 / 二维码内容</span></div>
+    <input type="text" id="wqr-url" placeholder="https:// 群邀请链接或二维码文本内容" style="width:100%;padding:7px;border:1px solid var(--border-color);border-radius:6px;box-sizing:border-box;font-family:ui-monospace,monospace">
+
+    <div class="field-label" style="margin-top:12px"><span>副群/分组（每行「群名 | 链接」，可选）</span></div>
+    <textarea id="wqr-extras" rows="4" placeholder="备用群1 | https://&#10;备用群2 | https://" style="width:100%;padding:8px;border:1px solid var(--border-color);border-radius:6px;box-sizing:border-box;font-size:13px;line-height:1.7;resize:vertical"></textarea>
+
+    <div class="field-label" style="margin-top:12px"><span>有效期限 / 说明（可选，显示在卡片底部）</span></div>
+    <input type="text" id="wqr-note" value="扫码进群，7 天内有效" style="width:100%;padding:7px;border:1px solid var(--border-color);border-radius:6px;box-sizing:border-box">
+
+    <div class="field-label" style="margin-top:12px"><span>主题色</span></div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <input type="color" id="wqr-color" value="#07C160" style="width:42px;height:32px;border:1px solid var(--border-color);border-radius:6px">
+      <span style="font-size:13px;color:var(--text-sub)">用于二维码暗色与卡片标签</span>
+    </div>
+
+    <div class="btn-row" style="margin-top:14px">
+      <button id="wqr-gen" class="primary">生成活码卡片</button>
+      <button id="wqr-export" class="primary">导出 PNG</button>
+    </div>
+    <p class="msg" id="wqr-msg"></p>
+  </div>
+  <div>
+    <div class="field-label"><span>预览</span></div>
+    <div id="wqr-screen" style="background:#fff;border-radius:14px;padding:22px 20px;display:flex;flex-direction:column;align-items:center;box-shadow:0 1px 6px rgba(0,0,0,.08);border:2px solid #07C160">
+      <div id="wqr-t" style="font-size:20px;font-weight:700;color:#111">扫码进群</div>
+      <div id="wqr-canvas-wrap" style="margin-top:14px;background:#fff;padding:10px;border-radius:8px"></div>
+      <div id="wqr-extra-list" style="margin-top:14px;width:100%"></div>
+      <div id="wqr-note-el" style="margin-top:14px;font-size:12px;color:#888;text-align:center">扫码进群，7 天内有效</div>
+    </div>
+  </div>
+</div>
+
+<script>
+import QRCode from 'qrcode';
+
+const $ = (id) => document.getElementById(id);
+let lastDataUrl = null;
+
+const colorInput = $('wqr-color');
+function applyTheme(){
+  const c = colorInput.value;
+  $('wqr-screen').style.borderColor = c;
+}
+colorInput.addEventListener('input', applyTheme);
+
+async function regen(){
+  const url = $('wqr-url').value.trim();
+  const color = colorInput.value;
+  if (!url){ $('wqr-msg').textContent='请填写主群链接'; $('wqr-msg').className='msg err'; return; }
+  $('wqr-msg').textContent='生成中…'; $('wqr-msg').className='msg';
+  try {
+    lastDataUrl = await QRCode.toDataURL(url, {
+      width: 240, margin: 1,
+      color: { dark: color, light: '#ffffff' },
+      errorCorrectionLevel: 'M'
+    });
+    $('wqr-canvas-wrap').innerHTML = `<img src="${lastDataUrl}" style="width:240px;height:240px;display:block;border-radius:6px">`;
+    $('wqr-msg').textContent='已生成'; $('wqr-msg').className='msg ok';
+  } catch (e){
+    $('wqr-msg').textContent='生成失败：' + (e.message || e); $('wqr-msg').className='msg err';
+  }
+}
+
+$('wqr-gen').addEventListener('click', regen);
+
+['wqr-title','wqr-note','wqr-url','wqr-extras'].forEach(id => {
+  $(id).addEventListener('input', () => {
+    $('wqr-t').textContent = $('wqr-title').value || '扫码进群';
+    $('wqr-note-el').textContent = $('wqr-note').value || '';
+    const lines = $('wqr-extras').value.split('\n').map(l => l.trim()).filter(Boolean);
+    if (lines.length){
+      $('wqr-extra-list').innerHTML = `<div style="font-size:12px;color:#888;margin-bottom:6px">备用群</div>` + lines.map(l => {
+        const [n, u] = l.split('|').map(s => s.trim());
+        return `<div style="display:flex;justify-content:space-between;padding:6px 8px;background:#f6f6f6;border-radius:5px;margin-bottom:4px;font-size:13px"><span>${(n||'').replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]))}</span><span style="color:#999;font-family:monospace;font-size:11px;overflow:hidden;text-overflow:ellipsis;max-width:60%">${(u||'').replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]))}</span></div>`;
+      }).join('');
+    } else {
+      $('wqr-extra-list').innerHTML = '';
+    }
+  });
+});
+
+$('wqr-export').addEventListener('click', async () => {
+  if (!lastDataUrl) await regen();
+  if (!lastDataUrl) return;
+  const title = $('wqr-title').value || '扫码进群';
+  const note = $('wqr-note').value || '';
+  const color = colorInput.value;
+  const W = 460, pad = 28, qrSize = 240;
+  const cnv = document.createElement('canvas'); const ctx = cnv.getContext('2d');
+  ctx.font = '600 20px "PingFang SC","Microsoft YaHei",sans-serif';
+  const lines = $('wqr-extras').value.split('\n').map(l => l.trim()).filter(Boolean);
+  let extrasH = lines.length ? (26 + lines.length*30) : 0;
+  const noteH = note ? 24 : 0;
+  const gap = 16;
+  const H = pad*2 + 28 + gap + qrSize + gap + extrasH + (extrasH?gap:0) + noteH;
+  cnv.width = W; cnv.height = H;
+  // 背景
+  ctx.fillStyle = '#fff'; ctx.fillRect(0,0,W,H);
+  // 边框
+  ctx.strokeStyle = color; ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.roundRect(pad/2, pad/2, W-pad, H-pad, 14); ctx.stroke();
+  // 标题
+  ctx.fillStyle = '#111'; ctx.textAlign='center'; ctx.textBaseline='top';
+  ctx.fillText(title, W/2, pad+4);
+  // 二维码
+  const img = new Image(); img.src = lastDataUrl;
+  const qrY = pad + 28 + gap;
+  ctx.fillStyle = '#fff'; ctx.fillRect(pad, qrY, qrSize, qrSize);
+  ctx.drawImage(img, pad, qrY, qrSize, qrSize);
+  // 右侧提示区（如果有 extras，放右侧）
+  // 备用群：放在底部
+  let ey = qrY + qrSize + gap;
+  if (lines.length){
+    ctx.fillStyle = '#888'; ctx.font = '12px "PingFang SC",sans-serif'; ctx.textAlign='center';
+    ctx.fillText('备用群', W/2, ey); ey += 18;
+    ctx.textAlign='left';
+    lines.forEach(l => {
+      const [n, u] = l.split('|').map(s => s.trim());
+      ctx.fillStyle = '#f6f6f6';
+      ctx.beginPath(); ctx.roundRect(pad, ey, W-pad*2, 26, 5); ctx.fill();
+      ctx.fillStyle = '#111'; ctx.font = '13px "PingFang SC",sans-serif'; ctx.textBaseline='middle';
+      ctx.fillText((n||''), pad+10, ey+13);
+      ctx.fillStyle = '#999'; ctx.font = '11px monospace';
+      const w = ctx.measureText((n||'')+' ').width;
+      ctx.fillText((u||''), pad+20+w, ey+13);
+      ctx.textBaseline='top';
+      ey += 30;
+    });
+    ey += gap;
+  }
+  // 备注
+  if (note){
+    ctx.fillStyle = '#888'; ctx.font = '12px "PingFang SC",sans-serif'; ctx.textAlign='center'; ctx.textBaseline='top';
+    ctx.fillText(note, W/2, ey);
+  }
+  cnv.toBlob(b => {
+    const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download='wechat-group-live-qr.png'; a.click();
+    $('wqr-msg').textContent='已导出活码卡片 PNG'; $('wqr-msg').className='msg ok';
+  });
+});
+
+// 初始化：尝试填默认值生成
+$('wqr-url').value = 'https://example.com/your-group-invite';
+applyTheme();
+regen();
+</script>

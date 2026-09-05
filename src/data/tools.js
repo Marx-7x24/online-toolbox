@@ -11,6 +11,25 @@ export const categories = [
   { slug: 'life', name: '便民工具', name_en: 'Life', icon: 'compass' },
 ];
 
+// 子分类（小类）：用于分类页右侧导航与分组。目前仅「图片处理」启用，对齐懒人工具箱。
+// 懒人把微信聊天类工具（生成截图=图片）统一归在「图片处理 / 微信工具」下。
+export const subcategories = {
+  image: [
+    { slug: 'format', name: '格式转换', name_en: 'Format' },
+    { slug: 'edit', name: '图片编辑', name_en: 'Edit' },
+    { slug: 'wechat', name: '微信工具', name_en: 'WeChat' },
+  ],
+};
+
+// 工具所属小类（用于分类页分组与右侧小类导航）。
+// 优先取显式 subcategory；图片类未显式标注时按 slug 前缀推断（image-to-/image-from- → 格式转换，其余 → 图片编辑）。
+export function toolSub(tool) {
+  if (tool.subcategory) return tool.subcategory;
+  if (tool.category !== 'image') return null;
+  if (tool.slug.startsWith('image-to-') || tool.slug.startsWith('image-from-')) return 'format';
+  return 'edit';
+}
+
 export const tools = [
   // ---------- 编程开发 ----------
   {
@@ -1604,15 +1623,105 @@ export const tools = [
     keywords: ['车牌归属地', '车牌查询', '号牌城市', '车牌号'],
     keywords_en: ['license plate', 'plate lookup', 'plate region', 'car plate'],
   },
+  // ---------- 微信工具（图片处理 / 小类「微信工具」，对齐懒人工具箱） ----------
   {
-    slug: 'wechat-chat',
+    slug: 'wechat',
     name: '微信聊天模拟器',
     name_en: 'WeChat Chat Simulator',
-    desc: '自定义昵称、头像与左右气泡构造仿真微信对话，支持时间标注并可导出 PNG 图片。',
-    desc_en: 'Build a realistic WeChat conversation with custom names, avatars and left/right bubbles, timestamped and exportable to PNG.',
-    category: 'life',
+    desc: '自定义昵称、头像与左右气泡构造仿真单聊对话，支持时间标注并导出 PNG 图片。',
+    desc_en: 'Build a realistic one-on-one WeChat conversation with custom names, avatars and left/right bubbles, timestamped, exportable to PNG.',
+    category: 'image',
+    subcategory: 'wechat',
     keywords: ['微信聊天模拟器', '微信对话生成', '聊天截图', '微信模拟'],
     keywords_en: ['wechat chat simulator', 'wechat conversation', 'chat screenshot', 'fake chat'],
+  },
+  {
+    slug: 'wechat-chat',
+    name: '微信聊天对话模板',
+    name_en: 'WeChat Chat Templates',
+    desc: '内置搞笑、土味、表白、怼人等多类微信聊天对话文案，一键复制完整对话，可直接粘进模拟器生成截图。',
+    desc_en: 'Built-in funny, cringe, confession and roast WeChat chat scripts; one-click copy the whole dialogue to paste into the simulator.',
+    category: 'image',
+    subcategory: 'wechat',
+    keywords: ['微信对话模板', '聊天文案', '搞笑对话', '复制对话'],
+    keywords_en: ['wechat chat template', 'chat script', 'funny dialogue', 'copy chat'],
+  },
+  {
+    slug: 'wechat-group',
+    name: '微信群聊天模拟器',
+    name_en: 'WeChat Group Chat Simulator',
+    desc: '自定义多个群成员头像昵称，构造群聊对话并导出 PNG，适合做群聊截图。',
+    desc_en: 'Define multiple group members with avatars and names, build a group conversation and export to PNG.',
+    category: 'image',
+    subcategory: 'wechat',
+    keywords: ['微信群聊', '群聊模拟', '群聊截图', '微信模拟'],
+    keywords_en: ['wechat group chat', 'group chat simulator', 'group screenshot', 'fake chat'],
+  },
+  {
+    slug: 'wechat-moments',
+    name: '朋友圈模拟生成器',
+    name_en: 'WeChat Moments Simulator',
+    desc: '自定义朋友圈正文、图片、点赞与评论，生成仿真朋友圈截图并导出 PNG。',
+    desc_en: 'Customize Moments post text, images, likes and comments; generate a realistic Moments screenshot and export PNG.',
+    category: 'image',
+    subcategory: 'wechat',
+    keywords: ['朋友圈模拟', '朋友圈截图', '朋友圈生成', '微信'],
+    keywords_en: ['wechat moments', 'moments simulator', 'moments screenshot'],
+  },
+  {
+    slug: 'wechat-multi',
+    name: '微信多开生成器',
+    name_en: 'WeChat Multi-Open Generator',
+    desc: '生成微信多开批处理文件（.bat），一键开启多个微信实例，本地生成不上传。',
+    desc_en: 'Generate a WeChat multi-open batch file (.bat) to launch several instances at once; generated locally, never uploaded.',
+    category: 'image',
+    subcategory: 'wechat',
+    keywords: ['微信多开', '多开生成', '微信双开', 'bat'],
+    keywords_en: ['wechat multi-open', 'wechat dual', 'multi-open bat'],
+  },
+  {
+    slug: 'wechat-pro',
+    name: '专业微信聊天模拟器',
+    name_en: 'Pro WeChat Chat Simulator',
+    desc: '进阶版对话模拟：自定义聊天背景、语音消息气泡、系统提示与时间分割线，导出高清 PNG。',
+    desc_en: 'Advanced chat simulator with custom background, voice-message bubbles, system tips and time dividers; export HD PNG.',
+    category: 'image',
+    subcategory: 'wechat',
+    keywords: ['专业微信模拟', '微信对话', '高清截图', '聊天背景'],
+    keywords_en: ['pro wechat simulator', 'wechat chat', 'hd screenshot'],
+  },
+  {
+    slug: 'wechat-qrcode',
+    name: '微信群活码生成器',
+    name_en: 'WeChat Group Live QR',
+    desc: '为群邀请链接生成二维码活码卡片，可列多个群并导出 PNG（纯前端生成静态码，动态跳转需服务端）。',
+    desc_en: 'Generate a group-invite QR code card; list multiple groups and export PNG (pure frontend makes a static code; dynamic routing needs a server).',
+    category: 'image',
+    subcategory: 'wechat',
+    keywords: ['微信群活码', '群二维码', '活码生成', '加群码'],
+    keywords_en: ['wechat group qr', 'live qr', 'group qrcode'],
+  },
+  {
+    slug: 'wechat-wallet',
+    name: '微信零钱模拟器',
+    name_en: 'WeChat Wallet Simulator',
+    desc: '自定义零钱、零钱通余额与交易流水，生成仿真微信钱包截图并导出 PNG。',
+    desc_en: 'Set balance and Wealth Pass balance with transaction history; generate a realistic WeChat wallet screenshot and export PNG.',
+    category: 'image',
+    subcategory: 'wechat',
+    keywords: ['微信零钱', '零钱模拟', '钱包截图', '微信钱包'],
+    keywords_en: ['wechat wallet', 'balance simulator', 'wallet screenshot'],
+  },
+  {
+    slug: 'wechat-alipay',
+    name: '微信支付宝收款码合并',
+    name_en: 'WeChat & Alipay Pay QR Merge',
+    desc: '把微信收款码与支付宝收款码合并到一张图片，可上传二维码图片，导出 PNG。',
+    desc_en: 'Merge WeChat and Alipay payment QR codes into one image; upload QR images and export PNG.',
+    category: 'image',
+    subcategory: 'wechat',
+    keywords: ['收款码合并', '微信支付宝', '双码合一', '收款图片'],
+    keywords_en: ['pay qr merge', 'wechat alipay', 'payment qr'],
   },
   {
     slug: 'retirement-calculator',

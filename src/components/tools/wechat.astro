@@ -1,0 +1,168 @@
+---
+// 微信聊天模拟器（单聊）：纯前端构造对话（头像/昵称/左右气泡/时间），Canvas 导出 PNG
+---
+<div class="pane">
+  <div>
+    <div class="field-label"><span>对方昵称</span></div>
+    <input type="text" id="wc-other-name" value="小美" style="width:100%;padding:7px;border:1px solid var(--border-color);border-radius:6px;box-sizing:border-box">
+    <div style="display:flex;gap:8px;align-items:center;margin-top:8px">
+      <input type="color" id="wc-other-color" value="#10AEFF" style="width:42px;height:32px;border:1px solid var(--border-color);border-radius:6px">
+      <input type="file" id="wc-other-avatar" accept="image/*">
+    </div>
+
+    <div class="field-label" style="margin-top:14px"><span>我的昵称</span></div>
+    <input type="text" id="wc-me-name" value="我" style="width:100%;padding:7px;border:1px solid var(--border-color);border-radius:6px;box-sizing:border-box">
+    <div style="display:flex;gap:8px;align-items:center;margin-top:8px">
+      <input type="color" id="wc-me-color" value="#07C160" style="width:42px;height:32px;border:1px solid var(--border-color);border-radius:6px">
+      <input type="file" id="wc-me-avatar" accept="image/*">
+    </div>
+
+    <div class="field-label" style="margin-top:16px"><span>消息内容</span></div>
+    <textarea id="wc-text" placeholder="输入一条消息…" style="width:100%;height:64px;padding:8px;border:1px solid var(--border-color);border-radius:6px;box-sizing:border-box;font-size:14px;resize:vertical"></textarea>
+    <div style="display:flex;gap:14px;align-items:center;margin-top:8px">
+      <label><input type="radio" name="wc-side" value="other" checked> 对方</label>
+      <label><input type="radio" name="wc-side" value="me"> 我</label>
+    </div>
+    <div class="field-label" style="margin-top:8px"><span>时间（可选，如 14:30）</span></div>
+    <input type="text" id="wc-time" placeholder="留空则不显示" style="width:100%;padding:7px;border:1px solid var(--border-color);border-radius:6px;box-sizing:border-box">
+    <div class="btn-row" style="margin-top:10px">
+      <button id="wc-add" class="primary">添加消息</button>
+      <button id="wc-undo">撤销</button>
+      <button id="wc-clear">清空</button>
+    </div>
+  </div>
+  <div>
+    <div class="field-label"><span>预览</span></div>
+    <div id="wc-screen" style="max-width:320px;margin:0 auto;background:#ededed;border-radius:14px;overflow:hidden;box-shadow:0 4px 18px rgba(0,0,0,.12)">
+      <div id="wc-header" style="background:#ededed;padding:10px 12px;font-size:15px;font-weight:600;text-align:center;color:#111;border-bottom:1px solid #d9d9d9"></div>
+      <div id="wc-chat" style="padding:12px 10px;min-height:300px;display:flex;flex-direction:column;gap:12px"></div>
+    </div>
+    <div class="btn-row" style="justify-content:center">
+      <button id="wc-export" class="primary">导出 PNG</button>
+    </div>
+    <p class="msg" id="wc-msg"></p>
+  </div>
+</div>
+
+<style>
+  .wc-row { display:flex; gap:8px; align-items:flex-start; }
+  .wc-row.me { flex-direction:row-reverse; }
+  .wc-avatar { width:38px;height:38px;border-radius:6px;flex-shrink:0;object-fit:cover;display:flex; align-items:center;justify-content:center;color:#fff;font-size:15px;font-weight:600; }
+  .wc-bubble { max-width:210px;padding:8px 11px;border-radius:6px;font-size:15px;line-height:1.45;word-break:break-word;white-space:pre-wrap;box-shadow:0 1px 1px rgba(0,0,0,.04); }
+  .wc-row.other .wc-bubble { background:#fff; }
+  .wc-row.me .wc-bubble { background:#95EC69; }
+  .wc-time { text-align:center;font-size:12px;color:#9aa0a6; }
+</style>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  let msgs = [];
+  const avatars = { me:null, other:null };
+  const AV = { me:()=>$('wc-me-color').value, other:()=>$('wc-other-color').value };
+  const NM = { me:()=>$('wc-me-name').value||'我', other:()=>$('wc-other-name').value||'对方' };
+
+  function readAvatar(side, input){
+    const f = input.files[0]; if(!f) return;
+    const r = new FileReader();
+    r.onload = () => { avatars[side] = r.result; render(); };
+    r.readAsDataURL(f);
+  }
+  $('wc-other-avatar').addEventListener('change', e=>readAvatar('other', e.target));
+  $('wc-me-avatar').addEventListener('change', e=>readAvatar('me', e.target));
+
+  function avatarHtml(side){
+    const c = AV[side](); const n = NM[side]();
+    if (avatars[side]) return `<img class="wc-avatar" src="${avatars[side]}">`;
+    return `<div class="wc-avatar" style="background:${c}">${n.slice(0,1)}</div>`;
+  }
+  function render(){
+    $('wc-header').textContent = NM.other();
+    const box = $('wc-chat');
+    if (!msgs.length){ box.innerHTML = '<div style="color:#9aa0a6;font-size:13px;text-align:center;margin:auto">添加消息开始模拟对话</div>'; return; }
+    box.innerHTML = msgs.map(m=>{
+      const time = m.time ? `<div class="wc-time">${m.time.replace(/</g,'&lt;')}</div>` : '';
+      return time + `<div class="wc-row ${m.side}">${avatarHtml(m.side)}<div class="wc-bubble">${m.text.replace(/</g,'&lt;')}</div></div>`;
+    }).join('');
+    box.scrollTop = box.scrollHeight;
+  }
+  function add(){
+    const text = $('wc-text').value.trim(); if(!text){ $('wc-msg').textContent='请输入消息内容'; $('wc-msg').className='msg err'; return; }
+    const side = document.querySelector('input[name=wc-side]:checked').value;
+    const time = $('wc-time').value.trim();
+    msgs.push({ side, text, time });
+    $('wc-text').value=''; $('wc-time').value='';
+    render(); $('wc-msg').textContent='已添加'; $('wc-msg').className='msg ok';
+  }
+  $('wc-add').addEventListener('click', add);
+  $('wc-text').addEventListener('keydown', e=>{ if(e.key==='Enter'&&(e.ctrlKey||e.metaKey)) add(); });
+  $('wc-undo').addEventListener('click', ()=>{ msgs.pop(); render(); });
+  $('wc-clear').addEventListener('click', ()=>{ if(msgs.length&&confirm('清空全部消息？')){ msgs=[]; render(); } });
+
+  // ---- Canvas 导出 ----
+  function wrapText(ctx, text, maxW){
+    const lines=[]; let line='';
+    for (const ch of text){
+      if (ch==='\n'){ lines.push(line); line=''; continue; }
+      const test = line + ch;
+      if (ctx.measureText(test).width > maxW && line){ lines.push(line); line = ch; }
+      else line = test;
+    }
+    if (line) lines.push(line);
+    return lines;
+  }
+  function drawAvatar(ctx, side, x, y, size){
+    ctx.save();
+    ctx.beginPath(); ctx.roundRect(x, y, size, size, 6); ctx.clip();
+    if (avatars[side]){
+      const img = new Image(); img.src = avatars[side];
+      ctx.drawImage(img, x, y, size, size);
+    } else {
+      ctx.fillStyle = AV[side](); ctx.fillRect(x, y, size, size);
+      ctx.fillStyle = '#fff'; ctx.font = '600 16px sans-serif'; ctx.textBaseline='middle'; ctx.textAlign='center';
+      ctx.fillText(NM[side]().slice(0,1), x+size/2, y+size/2);
+    }
+    ctx.restore();
+  }
+  $('wc-export').addEventListener('click', () => {
+    if (!msgs.length){ $('wc-msg').textContent='请先添加消息'; $('wc-msg').className='msg err'; return; }
+    const W=375, pad=10, av=38, gap=12, bubbleMax=210, fs=15, bw=10, bh=8;
+    const cnv = document.createElement('canvas'); const ctx = cnv.getContext('2d');
+    ctx.font = `${fs}px "PingFang SC","Microsoft YaHei",sans-serif`;
+    let total = 54 + 14;
+    const layout = msgs.map(m=>{
+      const lines = wrapText(ctx, m.text, bubbleMax);
+      const h = lines.length*fs*1.45 + bh*2;
+      const itemH = Math.max(h, av) + (m.time?18:0) + gap;
+      return { m, lines, h, itemH };
+    });
+    total += layout.reduce((s,x)=>s+x.itemH, 0);
+    cnv.width = W; cnv.height = Math.max(total, 360);
+    ctx.fillStyle = '#ededed'; ctx.fillRect(0,0,W,cnv.height);
+    ctx.fillStyle = '#ededed'; ctx.fillRect(0,0,W,54);
+    ctx.fillStyle = '#111'; ctx.font = '600 16px "PingFang SC",sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(NM.other()(), W/2, 27);
+    ctx.strokeStyle = '#d9d9d9'; ctx.beginPath(); ctx.moveTo(0,54); ctx.lineTo(W,54); ctx.stroke();
+    let y = 54 + 14;
+    ctx.textAlign='left'; ctx.textBaseline='alphabetic';
+    layout.forEach(({m,lines,h,itemH})=>{
+      let yy = y;
+      if (m.time){ ctx.fillStyle='#9aa0a6'; ctx.font='12px sans-serif'; ctx.textAlign='center'; ctx.fillText(m.time, W/2, yy+10); ctx.textAlign='left'; yy += 18; }
+      const rowH = Math.max(h, av);
+      const ax = (m.side==='me') ? W-pad-av : pad;
+      drawAvatar(ctx, m.side, ax, yy, av);
+      const bx = (m.side==='me') ? W-pad-av-gap-bubbleMax : pad+av+gap;
+      ctx.fillStyle = (m.side==='me') ? '#95EC69' : '#fff';
+      const by = yy + (rowH-h)/2;
+      ctx.save(); ctx.shadowColor='rgba(0,0,0,.04)'; ctx.shadowBlur=1; ctx.shadowOffsetY=1;
+      ctx.beginPath(); ctx.roundRect(bx, by, bubbleMax, h, 6); ctx.fill(); ctx.restore();
+      ctx.fillStyle = '#111'; ctx.font = `${fs}px "PingFang SC","Microsoft YaHei",sans-serif`;
+      lines.forEach((ln,i)=> ctx.fillText(ln, bx+bw, by+bh + fs*1.45*(i+1) - fs*0.3));
+      y += itemH;
+    });
+    cnv.toBlob(b=>{
+      const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download='wechat-chat.png'; a.click();
+      $('wc-msg').textContent='已导出 wechat-chat.png'; $('wc-msg').className='msg ok';
+    });
+  });
+  render();
+</script>

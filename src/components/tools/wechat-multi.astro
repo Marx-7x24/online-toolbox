@@ -1,0 +1,107 @@
+---
+// 微信多开生成器：生成多开 .bat 批处理，本地生成不上传
+---
+<div class="pane">
+  <div>
+    <div class="field-label"><span>微信安装路径</span></div>
+    <input type="text" id="wm-path" value='C:\Program Files\Tencent\WeChat\WeChat.exe' style="width:100%;padding:7px;border:1px solid var(--border-color);border-radius:6px;box-sizing:border-box;font-family:ui-monospace,monospace">
+    <p style="font-size:12px;color:var(--text-sub);margin:4px 0 0">默认路径仅供参考，请按你电脑实际安装位置修改（右键微信快捷方式→属性→目标）。</p>
+
+    <div class="field-label" style="margin-top:14px"><span>多开数量</span></div>
+    <div style="display:flex;align-items:center;gap:10px">
+      <input type="range" id="wm-count-range" min="2" max="10" value="2" style="flex:1">
+      <input type="number" id="wm-count" min="2" max="10" value="2" style="width:64px;padding:6px;border:1px solid var(--border-color);border-radius:6px">
+      <span>个</span>
+    </div>
+
+    <div class="field-label" style="margin-top:14px"><span>高级选项</span></div>
+    <label style="display:flex;align-items:center;gap:6px;font-size:14px">
+      <input type="checkbox" id="wm-admin"> 启用「请求管理员权限」自启动（右键管理员运行）
+    </label>
+    <label style="display:flex;align-items:center;gap:6px;font-size:14px;margin-top:6px">
+      <input type="checkbox" id="wm-delay" checked> 每个进程启动间隔 1 秒（更稳定）
+    </label>
+
+    <div class="btn-row" style="margin-top:18px">
+      <button id="wm-gen" class="primary">生成脚本</button>
+      <button id="wm-dl" class="primary">下载 .bat</button>
+      <button id="wm-copy">复制内容</button>
+    </div>
+    <p class="msg" id="wm-msg"></p>
+  </div>
+  <div>
+    <div class="field-label"><span>脚本预览</span></div>
+    <textarea id="wm-out" readonly style="width:100%;height:280px;padding:10px;border:1px solid var(--border-color);border-radius:6px;box-sizing:border-box;font-family:ui-monospace,monospace;font-size:13px;background:#1e1e1e;color:#d4d4d4;resize:vertical;line-height:1.55"></textarea>
+    <div style="margin-top:12px;font-size:13px;color:var(--text-sub);line-height:1.65">
+      <strong style="color:var(--text-color)">使用说明：</strong><br>
+      1. 下载 .bat 后双击运行（必要时右键→以管理员身份运行）；<br>
+      2. 仅适用于 <strong>Windows</strong> 系统；<br>
+      3. 此技巧为「同进程多开」，部分微信版本可能限制，请合理使用；<br>
+      4. 脚本<strong>不上传任何信息</strong>，全部在浏览器本地生成。
+    </div>
+  </div>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const range = $('wm-count-range'), num = $('wm-count');
+
+range.addEventListener('input', () => num.value = range.value);
+num.addEventListener('input', () => {
+  let v = +num.value; v = Math.max(2, Math.min(10, v || 2));
+  num.value = v; range.value = v;
+});
+
+function build(){
+  const path = $('wm-path').value.trim() || 'C:\\Program Files\\Tencent\\WeChat\\WeChat.exe';
+  const n = Math.max(2, Math.min(10, +num.value || 2));
+  const admin = $('wm-admin').checked;
+  const delay = $('wm-delay').checked;
+  const lines = [];
+  if (admin){
+    lines.push('@echo off');
+    lines.push(':: 请求管理员权限自启动');
+    lines.push('%1 mshta vbscript:CreateObject("Shell.Application").ShellExecute("%~s0","","","runas",1)(window.close)&exit');
+    lines.push('');
+  } else {
+    lines.push('@echo off');
+  }
+  lines.push('title 微信多开启动器 - 共 ' + n + ' 个');
+  lines.push('echo 即将启动 ' + n + ' 个微信，请稍候...');
+  lines.push('echo.');
+  for (let i = 1; i <= n; i++){
+    lines.push('echo [' + i + '/' + n + '] 启动微信 #' + i);
+    lines.push('start "" "' + path + '"');
+    if (delay && i < n) lines.push('timeout /t 1 /nobreak >nul');
+  }
+  lines.push('');
+  lines.push('echo 完成。可关闭此窗口。');
+  lines.push('pause');
+  return lines.join('\r\n');
+}
+
+$('wm-gen').addEventListener('click', () => {
+  $('wm-out').value = build();
+  $('wm-msg').textContent = '已生成 ' + num.value + ' 开的脚本'; $('wm-msg').className = 'msg ok';
+});
+
+$('wm-dl').addEventListener('click', () => {
+  const content = build();
+  $('wm-out').value = content;
+  const blob = new Blob([content], { type: 'application/octet-stream' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = 'wechat-multi-open.bat'; a.click();
+  $('wm-msg').textContent = '已下载 wechat-multi-open.bat'; $('wm-msg').className = 'msg ok';
+});
+
+$('wm-copy').addEventListener('click', () => {
+  const text = $('wm-out').value || build();
+  $('wm-out').value = text;
+  const ta = document.createElement('textarea'); ta.value = text; ta.style.position='fixed'; ta.style.opacity='0'; document.body.appendChild(ta); ta.select();
+  try { document.execCommand('copy'); $('wm-msg').textContent='已复制脚本内容'; $('wm-msg').className='msg ok'; }
+  catch(e){ $('wm-msg').textContent='复制失败，请手动选择'; $('wm-msg').className='msg err'; }
+  document.body.removeChild(ta);
+});
+
+$('wm-out').value = build();
+</script>

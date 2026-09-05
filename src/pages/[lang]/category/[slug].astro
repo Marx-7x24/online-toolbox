@@ -5,7 +5,7 @@ import JsonLd from '../../../components/JsonLd.astro';
 
 // 结构化数据用的绝对地址：域名取自 astro.config 的 site（由 SITE_URL 环境变量注入）
 const siteUrl = (p) => new URL(p, Astro.site).href;
-import { categories, getToolsByCategory, categoryI18n, toolI18n } from '../../../data/tools.js';
+import { categories, getToolsByCategory, categoryI18n, toolI18n, subcategories, toolSub } from '../../../data/tools.js';
 import { t } from '../../../i18n/ui.ts';
 
 export function getStaticPaths() {
@@ -16,6 +16,19 @@ export function getStaticPaths() {
 const { lang, category } = Astro.props;
 const list = getToolsByCategory(category.slug);
 const cName = categoryI18n(category, lang).name;
+
+// 子分类（小类）：若该分类定义了子分类，则右侧出 sticky 小类导航 + 按小类分组出 section
+const subs = subcategories[category.slug] || [];
+let grouped = null;
+if (subs.length) {
+  grouped = subs
+    .map((s) => ({ ...s, items: list.filter((t2) => toolSub(t2) === s.slug) }))
+    .filter((g) => g.items.length > 0);
+  // 把剩余未归类的工具放到一个「其他」组（如有）
+  const groupedSlugs = new Set(subs.map((s) => s.slug));
+  const others = list.filter((t2) => !groupedSlugs.has(toolSub(t2) || ''));
+  if (others.length) grouped.push({ slug: 'other', name: lang === 'zh' ? '其他' : 'Other', name_en: 'Other', items: others });
+}
 ---
 
 <Base
@@ -40,11 +53,40 @@ const cName = categoryI18n(category, lang).name;
     <p>{t(lang, 'toolsCount')} · {list.length} {t(lang, 'toolsCount')}</p>
   </div>
 
-  <div class="tools-grid">
-    {list.map((tool) => {
-      const ti = toolI18n(tool, lang);
-      const search = [ti.name, ti.desc, tool.name_en || '', tool.desc_en || '', ...ti.keywords].join(' ').replace(/\s+/g, ' ').trim().toLowerCase();
-      return <ToolCard lang={lang} slug={tool.slug} name={ti.name} desc={ti.desc} category={category.slug} search={search} />;
-    })}
-  </div>
+  {grouped ? (
+    <div class="cat-layout">
+      <div class="cat-main">
+        {grouped.map((g) => (
+          <section class="cat-section" id={`sub-${g.slug}`}>
+            <h2 class="cat-section-title">{lang === 'zh' ? g.name : (g.name_en || g.name)}</h2>
+            <div class="tools-grid">
+              {g.items.map((tool) => {
+                const ti = toolI18n(tool, lang);
+                const search = [ti.name, ti.desc, tool.name_en || '', tool.desc_en || '', ...ti.keywords].join(' ').replace(/\s+/g, ' ').trim().toLowerCase();
+                return <ToolCard lang={lang} slug={tool.slug} name={ti.name} desc={ti.desc} category={category.slug} search={search} />;
+              })}
+            </div>
+          </section>
+        ))}
+      </div>
+      <aside class="cat-subnav" aria-label={lang === 'zh' ? '小类导航' : 'Subcategories'}>
+        <div class="cat-subnav-inner">
+          <div class="cat-subnav-title">{lang === 'zh' ? '小类' : 'Sub'}</div>
+          <ul>
+            {grouped.map((g) => (
+              <li><a href={`#sub-${g.slug}`}>{lang === 'zh' ? g.name : (g.name_en || g.name)} <span class="cat-subnav-count">{g.items.length}</span></a></li>
+            ))}
+          </ul>
+        </div>
+      </aside>
+    </div>
+  ) : (
+    <div class="tools-grid">
+      {list.map((tool) => {
+        const ti = toolI18n(tool, lang);
+        const search = [ti.name, ti.desc, tool.name_en || '', tool.desc_en || '', ...ti.keywords].join(' ').replace(/\s+/g, ' ').trim().toLowerCase();
+        return <ToolCard lang={lang} slug={tool.slug} name={ti.name} desc={ti.desc} category={category.slug} search={search} />;
+      })}
+    </div>
+  )}
 </Base>

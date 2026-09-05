@@ -639,3 +639,37 @@ button.primary:hover { opacity: .9; }
 @media print {
   .aside-content, .search-container, .site-footer { display: none; }
 }
+
+/* 分类页：子分类（小类）布局——左侧内容按小类分组，右侧 sticky 小类导航（对齐懒人工具箱） */
+.cat-layout { display: grid; grid-template-columns: minmax(0, 1fr) 200px; gap: 24px; align-items: start; }
+.cat-main { min-width: 0; }
+.cat-section { margin-bottom: 28px; scroll-margin-top: 80px; }
+.cat-section-title {
+  font-size: 16px; font-weight: 600; color: var(--text-color);
+  margin: 6px 0 12px; padding: 0 0 8px;
+  border-bottom: 1px solid var(--border-color);
+}
+.cat-subnav {
+  position: sticky; top: 80px;
+  background: var(--card-bg, #fff);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 12px;
+  max-height: calc(100vh - 100px);
+  overflow-y: auto;
+}
+.cat-subnav-title { font-size: 13px; font-weight: 600; color: var(--text-sub); margin-bottom: 8px; }
+.cat-subnav ul { list-style: none; padding: 0; margin: 0; }
+.cat-subnav li { margin-bottom: 4px; }
+.cat-subnav a {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 7px 10px; border-radius: 6px;
+  color: var(--text-color); text-decoration: none; font-size: 14px;
+  transition: background .15s;
+}
+.cat-subnav a:hover { background: rgba(0,0,0,.04); }
+.cat-subnav-count { font-size: 12px; color: var(--text-sub); }
+@media (max-width: 900px) {
+  .cat-layout { grid-template-columns: 1fr; }
+  .cat-subnav { position: static; max-height: none; }
+}

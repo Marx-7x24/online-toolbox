@@ -1,174 +1,226 @@
 ---
-// 微信聊天模拟器：纯前端构造对话（头像/昵称/左右气泡/时间），Canvas 导出 PNG
+// 微信聊天对话模板：内置多类搞笑/土味/表白/怼人对话文案，一键复制完整对话
 ---
 <div class="pane">
   <div>
-    <div class="field-label"><span>对方昵称</span></div>
-    <input type="text" id="wc-other-name" value="小美" style="width:100%;padding:7px;border:1px solid var(--border-color);border-radius:6px;box-sizing:border-box">
-    <div style="display:flex;gap:8px;align-items:center;margin-top:8px">
-      <input type="color" id="wc-other-color" value="#10AEFF" style="width:42px;height:32px;border:1px solid var(--border-color);border-radius:6px">
-      <input type="file" id="wc-other-avatar" accept="image/*">
-    </div>
+    <div class="field-label"><span>分类</span></div>
+    <select id="wct-cat" style="width:100%;padding:7px;border:1px solid var(--border-color);border-radius:6px;box-sizing:border-box;background:#fff;font-size:14px"></select>
 
-    <div class="field-label" style="margin-top:14px"><span>我的昵称</span></div>
-    <input type="text" id="wc-me-name" value="我" style="width:100%;padding:7px;border:1px solid var(--border-color);border-radius:6px;box-sizing:border-box">
-    <div style="display:flex;gap:8px;align-items:center;margin-top:8px">
-      <input type="color" id="wc-me-color" value="#07C160" style="width:42px;height:32px;border:1px solid var(--border-color);border-radius:6px">
-      <input type="file" id="wc-me-avatar" accept="image/*">
-    </div>
+    <div class="field-label" style="margin-top:12px"><span>模板</span></div>
+    <select id="wct-tpl" size="10" style="width:100%;padding:6px;border:1px solid var(--border-color);border-radius:6px;box-sizing:border-box;background:#fff;font-size:14px"></select>
 
-    <div class="field-label" style="margin-top:16px"><span>消息内容</span></div>
-    <textarea id="wc-text" placeholder="输入一条消息…" style="width:100%;height:64px;padding:8px;border:1px solid var(--border-color);border-radius:6px;box-sizing:border-box;font-size:14px;resize:vertical"></textarea>
-    <div style="display:flex;gap:14px;align-items:center;margin-top:8px">
-      <label><input type="radio" name="wc-side" value="other" checked> 对方</label>
-      <label><input type="radio" name="wc-side" value="me"> 我</label>
-    </div>
-    <div class="field-label" style="margin-top:8px"><span>时间（可选，如 14:30）</span></div>
-    <input type="text" id="wc-time" placeholder="留空则不显示" style="width:100%;padding:7px;border:1px solid var(--border-color);border-radius:6px;box-sizing:border-box">
-    <div class="btn-row" style="margin-top:10px">
-      <button id="wc-add" class="primary">添加消息</button>
-      <button id="wc-undo">撤销</button>
-      <button id="wc-clear">清空</button>
+    <div class="field-label" style="margin-top:12px"><span>自定义昵称（仅预览显示，不影响复制内容）</span></div>
+    <div style="display:flex;gap:8px">
+      <input type="text" id="wct-other" placeholder="对方昵称" style="flex:1;padding:7px;border:1px solid var(--border-color);border-radius:6px">
+      <input type="text" id="wct-me" placeholder="我的昵称" value="我" style="flex:1;padding:7px;border:1px solid var(--border-color);border-radius:6px">
     </div>
   </div>
   <div>
-    <div class="field-label"><span>预览</span></div>
-    <div id="wc-screen" style="max-width:320px;margin:0 auto;background:#ededed;border-radius:14px;overflow:hidden;box-shadow:0 4px 18px rgba(0,0,0,.12)">
-      <div id="wc-header" style="background:#ededed;padding:10px 12px;font-size:15px;font-weight:600;text-align:center;color:#111;border-bottom:1px solid #d9d9d9"></div>
-      <div id="wc-chat" style="padding:12px 10px;min-height:300px;display:flex;flex-direction:column;gap:12px"></div>
+    <div class="field-label"><span>对话预览</span></div>
+    <div id="wct-preview" style="background:#ededed;border-radius:10px;padding:14px 12px;min-height:260px;max-height:460px;overflow-y:auto;display:flex;flex-direction:column;gap:10px"></div>
+    <div class="btn-row" style="margin-top:10px;justify-content:flex-end">
+      <button id="wct-copy">复制为可粘贴格式</button>
+      <button id="wct-copy-sim" class="primary">复制为模拟器格式</button>
     </div>
-    <div class="btn-row" style="justify-content:center">
-      <button id="wc-export" class="primary">导出 PNG</button>
-    </div>
-    <p class="msg" id="wc-msg"></p>
+    <p class="msg" id="wct-msg"></p>
   </div>
 </div>
 
-<style>
-  .wc-row { display:flex; gap:8px; align-items:flex-start; }
-  .wc-row.me { flex-direction:row-reverse; }
-  .wc-avatar { width:38px;height:38px;border-radius:6px;flex-shrink:0;object-fit:cover;display:flex;align-items:center;justify-content:center;color:#fff;font-size:15px;font-weight:600; }
-  .wc-bubble { max-width:210px;padding:8px 11px;border-radius:6px;font-size:15px;line-height:1.45;word-break:break-word;white-space:pre-wrap;box-shadow:0 1px 1px rgba(0,0,0,.04); }
-  .wc-row.other .wc-bubble { background:#fff; }
-  .wc-row.me .wc-bubble { background:#95EC69; }
-  .wc-time { text-align:center;font-size:12px;color:#9aa0a6; }
-</style>
-
 <script>
-  const $ = (id) => document.getElementById(id);
-  let msgs = [];
-  const avatars = { me:null, other:null };
-  const AV = { me:()=>$('wc-me-color').value, other:()=>$('wc-other-color').value };
-  const NM = { me:()=>$('wc-me-name').value||'我', other:()=>$('wc-other-name').value||'对方' };
+const $ = (id) => document.getElementById(id);
 
-  function readAvatar(side, input){
-    const f = input.files[0]; if(!f) return;
-    const r = new FileReader();
-    r.onload = () => { avatars[side] = r.result; render(); };
-    r.readAsDataURL(f);
-  }
-  $('wc-other-avatar').addEventListener('change', e=>readAvatar('other', e.target));
-  $('wc-me-avatar').addEventListener('change', e=>readAvatar('me', e.target));
+// 内置对话模板（分类 → 多条）。side: other=对方/左, me=我/右
+const DATA = {
+  '搞笑': [
+    { title: '我有个大胆的想法', lines: [
+      {side:'other', text:'在吗？'},
+      {side:'me', text:'在'},
+      {side:'other', text:'我有个大胆的想法'},
+      {side:'me', text:'爱过'},
+      {side:'other', text:'??? 我还没说啥呢'},
+      {side:'me', text:'不重要，结果都一样'}
+    ]},
+    { title: '你听我解释', lines: [
+      {side:'other', text:'你听我解释'},
+      {side:'me', text:'我不听我不听'},
+      {side:'other', text:'真的，你听一下'},
+      {side:'me', text:'行，你说'},
+      {side:'other', text:'其实我……'},
+      {side:'me', text:'算了，我不想听了'}
+    ]},
+    { title: '你是不是喜欢我', lines: [
+      {side:'other', text:'你是不是喜欢我？'},
+      {side:'me', text:'你想多了'},
+      {side:'other', text:'那你为什么偷看我朋友圈三年？'},
+      {side:'me', text:'……那是手滑'},
+      {side:'other', text:'手滑三年？'},
+      {side:'me', text:'手滑成习惯了'}
+    ]},
+  ],
+  '土味': [
+    { title: '你是魔鬼吗', lines: [
+      {side:'other', text:'你是魔鬼吗？'},
+      {side:'me', text:'不是'},
+      {side:'other', text:'那为什么你一出现，我的心就被你偷走了？'},
+      {side:'me', text:'……'},
+      {side:'other', text:'做我女朋友好吗？'},
+      {side:'me', text:'好……'},
+    ]},
+    { title: '猜猜我的心', lines: [
+      {side:'other', text:'猜猜我的心在哪边？'},
+      {side:'me', text:'左边？'},
+      {side:'other', text:'错，在你那边'},
+      {side:'me', text:'……'},
+    ]},
+    { title: '你是我的菜', lines: [
+      {side:'other', text:'你是哪里人？'},
+      {side:'me', text:'广东人'},
+      {side:'other', text:'怪不得，你是我的菜啊'},
+      {side:'me', text:'？'},
+    ]},
+  ],
+  '表白': [
+    { title: '从什么时候开始', lines: [
+      {side:'other', text:'在吗？'},
+      {side:'me', text:'在'},
+      {side:'other', text:'我想了很久，决定告诉你'},
+      {side:'me', text:'嗯'},
+      {side:'other', text:'我喜欢你，从第一次见面开始'},
+      {side:'me', text:'我……我也是'},
+    ]},
+    { title: '要不要在一起', lines: [
+      {side:'other', text:'你明天有空吗？'},
+      {side:'me', text:'有啊'},
+      {side:'other', text:'那出来一下呗'},
+      {side:'me', text:'去哪？'},
+      {side:'other', text:'民政局'},
+      {side:'me', text:'？？？'},
+      {side:'other', text:'带身份证'},
+    ]},
+  ],
+  '怼人': [
+    { title: '关你什么事', lines: [
+      {side:'other', text:'你最近是不是又胖了？'},
+      {side:'me', text:'关你什么事？'},
+      {side:'other', text:'关心你啊'},
+      {side:'me', text:'那你可以不关心'},
+      {side:'other', text:'……'},
+    ]},
+    { title: '谢谢你的好意', lines: [
+      {side:'other', text:'我跟你说个事'},
+      {side:'me', text:'不想听'},
+      {side:'other', text:'就一句话'},
+      {side:'me', text:'那就一句'},
+      {side:'other', text:'你最近变了'},
+      {side:'me', text:'我变了也轮不到你来评价'},
+    ]},
+  ],
+  '职场': [
+    { title: '老板突然找你', lines: [
+      {side:'other', text:'来我办公室一趟'},
+      {side:'me', text:'好的'},
+      {side:'other', text:'最近表现不错'},
+      {side:'me', text:'谢谢老板'},
+      {side:'other', text:'下个月调岗'},
+      {side:'me', text:'……调哪里？'},
+      {side:'other', text:'调动一下你摸鱼的心态'},
+    ]},
+    { title: '同事甩锅', lines: [
+      {side:'other', text:'那个方案你做了吗？'},
+      {side:'me', text:'不是让你做吗？'},
+      {side:'other', text:'我看群里你说接了呀'},
+      {side:'me', text:'我说的是"接"你下班，不是接活'},
+    ]},
+  ],
+  '家庭': [
+    { title: '妈，我不想相亲', lines: [
+      {side:'other', text:'宝贝，周末有个不错的男孩子要不要见见？'},
+      {side:'me', text:'妈，我真的不需要'},
+      {side:'other', text:'你都多大了'},
+      {side:'me', text:'多大了也是您女儿啊'},
+      {side:'other', text:'……就见一面'},
+      {side:'me', text:'那见面可以，我要带闺蜜'},
+    ]},
+    { title: '爸，我手机呢', lines: [
+      {side:'other', text:'爸我手机呢？'},
+      {side:'me', text:'在我这'},
+      {side:'other', text:'干嘛拿我手机？'},
+      {side:'me', text:'你天天就知道玩手机，帮你收一下'},
+      {side:'other', text:'……'},
+    ]},
+  ],
+};
 
-  function avatarHtml(side){
-    const c = AV[side](); const n = NM[side]();
-    if (avatars[side]) return `<img class="wc-avatar" src="${avatars[side]}">`;
-    return `<div class="wc-avatar" style="background:${c}">${n.slice(0,1)}</div>`;
-  }
-  function render(){
-    $('wc-header').textContent = NM.other();
-    const box = $('wc-chat');
-    if (!msgs.length){ box.innerHTML = '<div style="color:#9aa0a6;font-size:13px;text-align:center;margin:auto">添加消息开始模拟对话</div>'; return; }
-    box.innerHTML = msgs.map(m=>{
-      const time = m.time ? `<div class="wc-time">${m.time.replace(/</g,'&lt;')}</div>` : '';
-      return time + `<div class="wc-row ${m.side}">${avatarHtml(m.side)}<div class="wc-bubble">${m.text.replace(/</g,'&lt;')}</div></div>`;
-    }).join('');
-    box.scrollTop = box.scrollHeight;
-  }
-  function add(){
-    const text = $('wc-text').value.trim(); if(!text){ $('wc-msg').textContent='请输入消息内容'; $('wc-msg').className='msg err'; return; }
-    const side = document.querySelector('input[name=wc-side]:checked').value;
-    const time = $('wc-time').value.trim();
-    msgs.push({ side, text, time });
-    $('wc-text').value=''; $('wc-time').value='';
-    render(); $('wc-msg').textContent='已添加'; $('wc-msg').className='msg ok';
-  }
-  $('wc-add').addEventListener('click', add);
-  $('wc-text').addEventListener('keydown', e=>{ if(e.key==='Enter'&&(e.ctrlKey||e.metaKey)) add(); });
-  $('wc-undo').addEventListener('click', ()=>{ msgs.pop(); render(); });
-  $('wc-clear').addEventListener('click', ()=>{ if(msgs.length&&confirm('清空全部消息？')){ msgs=[]; render(); } });
+const catSel = $('wct-cat');
+const tplSel = $('wct-tpl');
+const prevBox = $('wct-preview');
+const msg = $('wct-msg');
 
-  // ---- Canvas 导出 ----
-  function wrapText(ctx, text, maxW){
-    const lines=[]; let line='';
-    for (const ch of text){
-      if (ch==='\n'){ lines.push(line); line=''; continue; }
-      const test = line + ch;
-      if (ctx.measureText(test).width > maxW && line){ lines.push(line); line = ch; }
-      else line = test;
-    }
-    if (line) lines.push(line);
-    return lines;
-  }
-  function drawAvatar(ctx, side, x, y, size){
-    ctx.save();
-    ctx.beginPath(); ctx.roundRect(x, y, size, size, 6); ctx.clip();
-    if (avatars[side]){
-      const img = new Image(); img.src = avatars[side];
-      ctx.drawImage(img, x, y, size, size);
-    } else {
-      ctx.fillStyle = AV[side](); ctx.fillRect(x, y, size, size);
-      ctx.fillStyle = '#fff'; ctx.font = '600 16px sans-serif'; ctx.textBaseline='middle'; ctx.textAlign='center';
-      ctx.fillText(NM[side]().slice(0,1), x+size/2, y+size/2);
-    }
-    ctx.restore();
-  }
-  $('wc-export').addEventListener('click', () => {
-    if (!msgs.length){ $('wc-msg').textContent='请先添加消息'; $('wc-msg').className='msg err'; return; }
-    const W=375, pad=10, av=38, gap=12, bubbleMax=210, fs=15, bw=10, bh=8;
-    const cnv = document.createElement('canvas'); const ctx = cnv.getContext('2d');
-    ctx.font = `${fs}px "PingFang SC","Microsoft YaHei",sans-serif`;
-    // 先量高度
-    let total = 54 + 14; // header + top
-    const layout = msgs.map(m=>{
-      const lines = wrapText(ctx, m.text, bubbleMax);
-      const h = lines.length*fs*1.45 + bh*2;
-      const itemH = Math.max(h, av) + (m.time?18:0) + gap;
-      return { m, lines, h, itemH };
-    });
-    total += layout.reduce((s,x)=>s+x.itemH, 0);
-    cnv.width = W; cnv.height = Math.max(total, 360);
-    // 背景
-    ctx.fillStyle = '#ededed'; ctx.fillRect(0,0,W,cnv.height);
-    // header
-    ctx.fillStyle = '#ededed'; ctx.fillRect(0,0,W,54);
-    ctx.fillStyle = '#111'; ctx.font = '600 16px "PingFang SC",sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
-    ctx.fillText(NM.other()(), W/2, 27);
-    ctx.strokeStyle = '#d9d9d9'; ctx.beginPath(); ctx.moveTo(0,54); ctx.lineTo(W,54); ctx.stroke();
-    // 消息
-    let y = 54 + 14;
-    ctx.textAlign='left'; ctx.textBaseline='alphabetic';
-    layout.forEach(({m,lines,h,itemH})=>{
-      let yy = y;
-      if (m.time){ ctx.fillStyle='#9aa0a6'; ctx.font='12px sans-serif'; ctx.textAlign='center'; ctx.fillText(m.time, W/2, yy+10); ctx.textAlign='left'; yy += 18; }
-      const rowH = Math.max(h, av);
-      const ax = (m.side==='me') ? W-pad-av : pad;
-      drawAvatar(ctx, m.side, ax, yy, av);
-      const bx = (m.side==='me') ? W-pad-av-gap-bubbleMax : pad+av+gap;
-      // 气泡背景
-      ctx.fillStyle = (m.side==='me') ? '#95EC69' : '#fff';
-      const by = yy + (rowH-h)/2;
-      ctx.save(); ctx.shadowColor='rgba(0,0,0,.04)'; ctx.shadowBlur=1; ctx.shadowOffsetY=1;
-      ctx.beginPath(); ctx.roundRect(bx, by, bubbleMax, h, 6); ctx.fill(); ctx.restore();
-      // 文本
-      ctx.fillStyle = '#111'; ctx.font = `${fs}px "PingFang SC","Microsoft YaHei",sans-serif`;
-      lines.forEach((ln,i)=> ctx.fillText(ln, bx+bw, by+bh + fs*1.45*(i+1) - fs*0.3));
-      y += itemH;
-    });
-    cnv.toBlob(b=>{
-      const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download='wechat-chat.png'; a.click();
-      $('wc-msg').textContent='已导出 wechat-chat.png'; $('wc-msg').className='msg ok';
-    });
+// 填充分类
+Object.keys(DATA).forEach(c => {
+  const o = document.createElement('option'); o.value = c; o.textContent = c + ' (' + DATA[c].length + ')'; catSel.appendChild(o);
+});
+
+function fillTpls(cat){
+  tplSel.innerHTML = '';
+  DATA[cat].forEach((t, i) => {
+    const o = document.createElement('option'); o.value = i; o.textContent = t.title; tplSel.appendChild(o);
   });
+  tplSel.selectedIndex = 0;
   render();
+}
+catSel.addEventListener('change', () => fillTpls(catSel.value));
+tplSel.addEventListener('change', render);
+['wct-other','wct-me'].forEach(id => $(id).addEventListener('input', render));
+
+function esc(s){ return s.replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
+
+function render(){
+  const cat = catSel.value; const idx = +tplSel.value;
+  const t = (DATA[cat]||[])[idx];
+  if (!t){ prevBox.innerHTML = '<div style="color:#9aa0a6;font-size:13px;text-align:center;margin:auto">选择一个模板</div>'; return; }
+  const other = $('wct-other').value.trim();
+  const me = $('wct-me').value.trim() || '我';
+  prevBox.innerHTML = t.lines.map(m => {
+    const isMe = m.side === 'me';
+    return `<div style="display:flex;justify-content:${isMe?'flex-end':'flex-start'}"><div style="max-width:78%;padding:8px 11px;border-radius:6px;font-size:14px;line-height:1.45;word-break:break-word;white-space:pre-wrap;background:${isMe?'#95EC69':'#fff'};box-shadow:0 1px 1px rgba(0,0,0,.04)">${esc(m.text)}</div></div>`;
+  }).join('');
+}
+
+function getLines(){
+  const cat = catSel.value; const idx = +tplSel.value;
+  return ((DATA[cat]||[])[idx] || {lines:[]}).lines;
+}
+
+function copy(text, okMsg){
+  if (navigator.clipboard && window.isSecureContext){
+    navigator.clipboard.writeText(text).then(
+      () => { msg.textContent = okMsg; msg.className = 'msg ok'; },
+      () => fallback(text, okMsg)
+    );
+  } else fallback(text, okMsg);
+}
+function fallback(text, okMsg){
+  const ta = document.createElement('textarea'); ta.value = text; ta.style.position='fixed'; ta.style.opacity='0'; document.body.appendChild(ta); ta.select();
+  try { document.execCommand('copy'); msg.textContent = okMsg; msg.className='msg ok'; }
+  catch(e){ msg.textContent='复制失败，请手动选择'; msg.className='msg err'; }
+  document.body.removeChild(ta);
+}
+
+$('wct-copy').addEventListener('click', () => {
+  const lines = getLines(); if (!lines.length){ msg.textContent='请选择模板'; msg.className='msg err'; return; }
+  // 对方：... 我：... 的可读格式
+  const text = lines.map(m => (m.side === 'me' ? '我：' : '对方：') + m.text).join('\n');
+  copy(text, '已复制（含「我/对方」前缀的纯文本）');
+});
+
+$('wct-copy-sim').addEventListener('click', () => {
+  const lines = getLines(); if (!lines.length){ msg.textContent='请选择模板'; msg.className='msg err'; return; }
+  // 与本工具「添加消息」面板的单行格式对齐：「对方: 文本」或「我: 文本」，每行一条。
+  const text = lines.map(m => (m.side === 'me' ? '我: ' : '对方: ') + m.text).join('\n');
+  copy(text, '已复制（与单聊模拟器兼容的格式，逐行粘贴）');
+});
+
+// 初始化
+fillTpls(catSel.value || Object.keys(DATA)[0]);
 </script>

@@ -1,0 +1,122 @@
+---
+// 微信支付宝收款码合并：上传两张二维码图片，左右合并+标签，导出 PNG
+---
+<div class="pane">
+  <div>
+    <div class="field-label"><span>微信收款码</span></div>
+    <input type="file" id="wqa-wx" accept="image/*">
+    <div id="wqa-wx-pre" style="margin-top:6px;min-height:80px;border:1px dashed var(--border-color);border-radius:6px;display:flex;align-items:center;justify-content:center;color:var(--text-sub);font-size:12px">未选择</div>
+
+    <div class="field-label" style="margin-top:12px"><span>支付宝收款码</span></div>
+    <input type="file" id="wqa-ali" accept="image/*">
+    <div id="wqa-ali-pre" style="margin-top:6px;min-height:80px;border:1px dashed var(--border-color);border-radius:6px;display:flex;align-items:center;justify-content:center;color:var(--text-sub);font-size:12px">未选择</div>
+
+    <div class="field-label" style="margin-top:14px"><span>合并标题</span></div>
+    <input type="text" id="wqa-title" value="扫码付款" style="width:100%;padding:7px;border:1px solid var(--border-color);border-radius:6px;box-sizing:border-box">
+
+    <div class="field-label" style="margin-top:12px"><span>副标题/联系方式（可选）</span></div>
+    <input type="text" id="wqa-sub" placeholder="如：长按识别二维码 或 备注信息" style="width:100%;padding:7px;border:1px solid var(--border-color);border-radius:6px;box-sizing:border-box">
+
+    <div class="field-label" style="margin-top:12px"><span>底色</span></div>
+    <select id="wqa-bg" style="width:100%;padding:7px;border:1px solid var(--border-color);border-radius:6px;background:#fff">
+      <option value="#ffffff">白色</option>
+      <option value="#f6f6f6">浅灰</option>
+      <option value="#fff8e1">米黄</option>
+      <option value="#e8f5e9">浅绿</option>
+    </select>
+
+    <div class="btn-row" style="margin-top:14px">
+      <button id="wqa-export" class="primary">导出合并图 PNG</button>
+    </div>
+    <p class="msg" id="wqa-msg"></p>
+  </div>
+  <div>
+    <div class="field-label"><span>预览</span></div>
+    <div id="wqa-screen" style="background:#fff;border-radius:10px;padding:24px 20px;display:flex;flex-direction:column;align-items:center;box-shadow:0 1px 6px rgba(0,0,0,.08)">
+      <div id="wqa-t" style="font-size:18px;font-weight:600;color:#111">扫码付款</div>
+      <div id="wqa-s" style="font-size:12px;color:#888;margin-top:4px"></div>
+      <div style="display:flex;gap:18px;margin-top:20px">
+        <div style="text-align:center">
+          <div id="wqa-wx-img" style="width:180px;height:180px;background:#f5f5f5;border-radius:6px;display:flex;align-items:center;justify-content:center;color:#bbb;font-size:12px">微信码</div>
+          <div style="margin-top:8px;font-size:13px;color:#07C160;font-weight:600">微信收款</div>
+        </div>
+        <div style="text-align:center">
+          <div id="wqa-ali-img" style="width:180px;height:180px;background:#f5f5f5;border-radius:6px;display:flex;align-items:center;justify-content:center;color:#bbb;font-size:12px">支付宝码</div>
+          <div style="margin-top:8px;font-size:13px;color:#1677ff;font-weight:600">支付宝收款</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+let wxImg = null, aliImg = null;
+
+function readImg(input, cb){
+  const f = input.files[0]; if (!f) return;
+  const r = new FileReader(); r.onload = () => cb(r.result); r.readAsDataURL(f);
+}
+
+$('wqa-wx').addEventListener('change', e => {
+  readImg(e.target, src => {
+    wxImg = src;
+    $('wqa-wx-pre').innerHTML = `<img src="${src}" style="max-width:100%;max-height:120px;border-radius:4px">`;
+    $('wqa-wx-img').innerHTML = `<img src="${src}" style="width:100%;height:100%;object-fit:contain;border-radius:6px">`;
+  });
+});
+$('wqa-ali').addEventListener('change', e => {
+  readImg(e.target, src => {
+    aliImg = src;
+    $('wqa-ali-pre').innerHTML = `<img src="${src}" style="max-width:100%;max-height:120px;border-radius:4px">`;
+    $('wqa-ali-img').innerHTML = `<img src="${src}" style="width:100%;height:100%;object-fit:contain;border-radius:6px">`;
+  });
+});
+$('wqa-title').addEventListener('input', e => $('wqa-t').textContent = e.target.value || '扫码付款');
+$('wqa-sub').addEventListener('input', e => $('wqa-s').textContent = e.target.value || '');
+$('wqa-bg').addEventListener('change', e => $('wqa-screen').style.background = e.target.value);
+
+$('wqa-export').addEventListener('click', () => {
+  if (!wxImg || !aliImg){ $('wqa-msg').textContent='请先上传两张二维码图片'; $('wqa-msg').className='msg err'; return; }
+  const title = $('wqa-title').value || '扫码付款';
+  const sub = $('wqa-sub').value || '';
+  const bg = $('wqa-bg').value || '#ffffff';
+  const cell = 280, gap = 40, pad = 40, labelH = 36, titleFs = 26, subFs = 14;
+  const W = pad*2 + cell*2 + gap;
+  // 量高度
+  const cnv = document.createElement('canvas'); const ctx = cnv.getContext('2d');
+  ctx.font = `600 ${titleFs}px "PingFang SC","Microsoft YaHei",sans-serif`;
+  const titleH = 30;
+  const subH = sub ? 20 : 0;
+  const H = pad*2 + titleH + (subH?10:0) + subH + 24 + cell + labelH;
+  cnv.width = W; cnv.height = H;
+  // 背景
+  ctx.fillStyle = bg; ctx.fillRect(0,0,W,H);
+  // 标题
+  ctx.fillStyle = '#111'; ctx.textAlign='center'; ctx.textBaseline='top';
+  ctx.font = `600 ${titleFs}px "PingFang SC","Microsoft YaHei",sans-serif`;
+  ctx.fillText(title, W/2, pad);
+  if (sub){
+    ctx.fillStyle = '#888'; ctx.font = `${subFs}px "PingFang SC","Microsoft YaHei",sans-serif`;
+    ctx.fillText(sub, W/2, pad + titleH + 6);
+  }
+  // 两张图
+  const startY = pad + titleH + (subH?10:0) + subH + 24;
+  const img1 = new Image(); img1.src = wxImg;
+  ctx.fillStyle = '#fff';
+  ctx.beginPath(); ctx.roundRect(pad-8, startY-8, cell+16, cell+16, 8); ctx.fill();
+  ctx.drawImage(img1, pad, startY, cell, cell);
+  const img2 = new Image(); img2.src = aliImg;
+  ctx.beginPath(); ctx.roundRect(pad+cell+gap-8, startY-8, cell+16, cell+16, 8); ctx.fill();
+  ctx.drawImage(img2, pad+cell+gap, startY, cell, cell);
+  // 标签
+  ctx.font = `600 16px "PingFang SC",sans-serif`; ctx.textBaseline='top';
+  ctx.fillStyle = '#07C160'; ctx.fillText('微信收款', pad + cell/2, startY + cell + 12);
+  ctx.fillStyle = '#1677ff'; ctx.fillText('支付宝收款', pad+cell+gap + cell/2, startY + cell + 12);
+
+  cnv.toBlob(b => {
+    const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download='wechat-alipay-pay-merge.png'; a.click();
+    $('wqa-msg').textContent='已导出合并图'; $('wqa-msg').className='msg ok';
+  });
+});
+</script>

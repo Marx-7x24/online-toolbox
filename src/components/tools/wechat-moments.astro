@@ -1,0 +1,236 @@
+---
+// 朋友圈模拟生成器：自定义正文、图片(最多9)、点赞与评论，导出朋友圈截图 PNG
+---
+<div class="pane">
+  <div>
+    <div class="field-label"><span>作者昵称</span></div>
+    <input type="text" id="wmom-name" value="小美" style="width:100%;padding:7px;border:1px solid var(--border-color);border-radius:6px;box-sizing:border-box">
+    <div style="display:flex;gap:8px;align-items:center;margin-top:8px">
+      <input type="color" id="wmom-color" value="#10AEFF" style="width:42px;height:32px;border:1px solid var(--border-color);border-radius:6px">
+      <input type="file" id="wmom-avatar" accept="image/*">
+    </div>
+
+    <div class="field-label" style="margin-top:14px"><span>正文</span></div>
+    <textarea id="wmom-text" placeholder="这一刻的想法…" style="width:100%;height:70px;padding:8px;border:1px solid var(--border-color);border-radius:6px;box-sizing:border-box;font-size:14px;resize:vertical"></textarea>
+
+    <div class="field-label" style="margin-top:14px"><span>图片（最多 9 张，可多选）</span></div>
+    <input type="file" id="wmom-imgs" accept="image/*" multiple>
+    <div id="wmom-img-count" style="font-size:12px;color:var(--text-sub);margin-top:4px"></div>
+
+    <div class="field-label" style="margin-top:14px"><span>点赞好友（昵称，逗号分隔）</span></div>
+    <input type="text" id="wmom-likes" placeholder="如：王芳, 李雷, 韩梅梅" style="width:100%;padding:7px;border:1px solid var(--border-color);border-radius:6px;box-sizing:border-box">
+
+    <div class="field-label" style="margin-top:14px"><span>评论（每行「昵称: 评论」，例：王芳/好看!）</span></div>
+    <textarea id="wmom-comments" placeholder="王芳: 好看！" style="width:100%;height:60px;padding:8px;border:1px solid var(--border-color);border-radius:6px;box-sizing:border-box;font-size:14px;resize:vertical"></textarea>
+
+    <div class="field-label" style="margin-top:14px"><span>发布时间</span></div>
+    <input type="text" id="wmom-time" value="刚刚" style="width:100%;padding:7px;border:1px solid var(--border-color);border-radius:6px;box-sizing:border-box">
+  </div>
+  <div>
+    <div class="field-label"><span>预览</span></div>
+    <div id="wmom-screen" style="max-width:360px;margin:0 auto;background:#111;border-radius:10px;overflow:hidden;padding:12px">
+      <div id="wmom-card" style="background:#1f1f1f;border-radius:8px;padding:12px;color:#e8e8e8"></div>
+    </div>
+    <div class="btn-row" style="justify-content:center">
+      <button id="wmom-export" class="primary">导出 PNG</button>
+    </div>
+    <p class="msg" id="wmom-msg"></p>
+  </div>
+</div>
+
+<style>
+  .wmom-head { display:flex; gap:10px; align-items:flex-start; margin-bottom:8px; }
+  .wmom-avatar { width:42px;height:42px;border-radius:6px;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:#fff;font-size:15px;font-weight:600; }
+  .wmom-meta { flex:1; min-width:0; }
+  .wmom-name { font-size:15px; color:#e8e8e8; font-weight:600; }
+  .wmom-text { font-size:15px; color:#e8e8e8; line-height:1.5; word-break:break-word; white-space:pre-wrap; margin:6px 0 8px; }
+  .wmom-grid { display:grid; gap:4px; margin-bottom:8px; }
+  .wmom-grid.n1 { grid-template-columns: 1fr; max-width:220px; }
+  .wmom-grid.n2, .wmom-grid.n3, .wmom-grid.n4 { grid-template-columns: repeat(2, 1fr); max-width:220px; }
+  .wmom-grid.n5, .wmom-grid.n6, .wmom-grid.n7, .wmom-grid.n8, .wmom-grid.n9 { grid-template-columns: repeat(3, 1fr); max-width:240px; }
+  .wmom-grid img { width:100%; aspect-ratio:1; object-fit:cover; border-radius:4px; display:block; background:#333; }
+  .wmom-bar { display:flex; align-items:center; gap:6px; padding:6px 8px; background:#2c2c2c; border-radius:5px; margin-top:6px; font-size:12px; color:#b3b3b3; }
+  .wmom-bar svg { width:14px; height:14px; fill:#b3b3b3; }
+  .wmom-comments { background:#2c2c2c; border-radius:5px; padding:6px 8px; margin-top:4px; font-size:13px; color:#e8e8e8; line-height:1.5; }
+  .wmom-comments .wmom-cname { color:#7aa9ff; font-weight:600; }
+  .wmom-time { font-size:12px; color:#888; margin-top:6px; }
+</style>
+
+<script>
+const $ = (id) => document.getElementById(id);
+let avatar = null; let images = [];
+
+function escapeHtml(s){ return s.replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
+
+$('wmom-avatar').addEventListener('change', e => {
+  const f = e.target.files[0]; if (!f) return;
+  const r = new FileReader(); r.onload = () => { avatar = r.result; render(); };
+  r.readAsDataURL(f);
+});
+$('wmom-imgs').addEventListener('change', e => {
+  const files = Array.from(e.target.files).slice(0, 9);
+  $('wmom-img-count').textContent = '已选择 ' + files.length + ' 张';
+  Promise.all(files.map(f => new Promise(res => {
+    const r = new FileReader(); r.onload = () => res(r.result); r.readAsDataURL(f);
+  }))).then(arr => { images = arr; render(); });
+});
+['wmom-name','wmom-color','wmom-text','wmom-likes','wmom-comments','wmom-time'].forEach(id => $(id).addEventListener('input', render));
+
+function render(){
+  const name = $('wmom-name').value || '我';
+  const color = $('wmom-color').value;
+  const text = $('wmom-text').value.trim();
+  const likes = $('wmom-likes').value.trim();
+  const comments = $('wmom-comments').value.trim();
+  const time = $('wmom-time').value.trim() || '刚刚';
+  const ava = avatar || '';
+  const avaHtml = ava ? `<img class="wmom-avatar" src="${ava}" style="object-fit:cover">` : `<div class="wmom-avatar" style="background:${color}">${escapeHtml(name.slice(0,1))}</div>`;
+  const imgCount = Math.min(images.length, 9);
+  const gridHtml = imgCount ? `<div class="wmom-grid n${imgCount}">${images.slice(0,9).map(s => `<img src="${s}">`).join('')}</div>` : '';
+  const likeHtml = likes ? `<div class="wmom-bar"><svg viewBox="0 0 24 24"><path d="M12 21s-7-4.35-9.5-9C1 8 3 4 6.5 4c2 0 3.5 1.2 5.5 3 2-1.8 3.5-3 5.5-3C21 4 23 8 21.5 12 19 16.65 12 21 12 21z"/></svg><span>${escapeHtml(likes.split(/[,，]/).filter(Boolean).join(', '))}</span></div>` : '';
+  const cmtHtml = comments ? `<div class="wmom-comments">${comments.split('\n').filter(Boolean).map(line => {
+    const m = line.match(/^([^:：]+)[：:](.*)$/);
+    if (m) return `<div><span class="wmom-cname">${escapeHtml(m[1].trim())}</span>: ${escapeHtml(m[2].trim())}</div>`;
+    return `<div>${escapeHtml(line)}</div>`;
+  }).join('')}</div>` : '';
+  $('wmom-card').innerHTML = `
+    <div class="wmom-head">${avaHtml}<div class="wmom-meta"><div class="wmom-name">${escapeHtml(name)}</div></div></div>
+    ${text ? `<div class="wmom-text">${escapeHtml(text)}</div>` : ''}
+    ${gridHtml}
+    ${likeHtml}
+    ${cmtHtml}
+    <div class="wmom-time">${escapeHtml(time)}</div>
+  `;
+}
+
+// ---- Canvas 导出 ----
+function wrapText(ctx, text, maxW){
+  const lines=[]; let line='';
+  for (const ch of text){
+    if (ch==='\n'){ lines.push(line); line=''; continue; }
+    const test = line + ch;
+    if (ctx.measureText(test).width > maxW && line){ lines.push(line); line = ch; }
+    else line = test;
+  }
+  if (line) lines.push(line);
+  return lines;
+}
+function drawAv(ctx, x, y, size, color, name, ava){
+  ctx.save();
+  ctx.beginPath(); ctx.roundRect(x, y, size, size, 6); ctx.clip();
+  if (ava){ const img = new Image(); img.src = ava; ctx.drawImage(img, x, y, size, size); }
+  else { ctx.fillStyle = color; ctx.fillRect(x, y, size, size); ctx.fillStyle='#fff'; ctx.font='600 18px sans-serif'; ctx.textBaseline='middle'; ctx.textAlign='center'; ctx.fillText((name||'?').slice(0,1), x+size/2, y+size/2); }
+  ctx.restore();
+}
+
+$('wmom-export').addEventListener('click', () => {
+  const name = $('wmom-name').value || '我';
+  const color = $('wmom-color').value;
+  const text = $('wmom-text').value.trim();
+  const likes = $('wmom-likes').value.trim();
+  const comments = $('wmom-comments').value.trim();
+  const time = $('wmom-time').value.trim() || '刚刚';
+  const W = 375, pad = 14, av = 42;
+  const cnv = document.createElement('canvas'); const ctx = cnv.getContext('2d');
+  ctx.fillStyle = '#111'; ctx.fillRect(0,0,W,100);
+  const cardX = pad, cardW = W - pad*2;
+  ctx.fillStyle = '#1f1f1f';
+  // 先画一个高一点的卡片，画完再 resize
+  let y = pad;
+  // 头部
+  y += av + 8;
+  // 文字
+  ctx.font = '15px "PingFang SC","Microsoft YaHei",sans-serif';
+  const textLines = text ? wrapText(ctx, text, cardW) : [];
+  y += textLines.length * 15 * 1.5 + (textLines.length ? 8 : 0);
+  // 图片
+  const n = Math.min(images.length, 9);
+  let imgH = 0;
+  if (n){
+    const cols = n===1?1:(n===2||n===4?2:3);
+    const gap = 4;
+    const maxW = cols===1 ? 200 : (cols===2 ? 220 : 220);
+    const cell = Math.min((maxW - gap*(cols-1)) / cols, 110);
+    const rows = Math.ceil(n / cols);
+    imgH = rows * cell + (rows-1)*gap + 8;
+    y += imgH;
+  }
+  // 点赞
+  const likeLines = likes ? wrapText(ctx, '♥ ' + likes.split(/[,，]/).filter(Boolean).join(', '), cardW - 28) : [];
+  y += likeLines.length ? likeLines.length*16*1.4 + 8 : 0;
+  // 评论
+  const cmtList = comments ? comments.split('\n').filter(Boolean) : [];
+  y += cmtList.length ? cmtList.length*16*1.5 + 8 : 0;
+  // 时间
+  y += 14 + pad;
+  const cardH = y;
+  cnv.height = cardH + pad;
+  // 重新画背景
+  ctx.fillStyle = '#111'; ctx.fillRect(0,0,W,cnv.height);
+  ctx.fillStyle = '#1f1f1f'; ctx.beginPath(); ctx.roundRect(cardX, pad, cardW, cardH-pad, 8); ctx.fill();
+  // 头部
+  let yy = pad + 4;
+  drawAv(ctx, cardX+4, yy, av, color, name, avatar);
+  ctx.fillStyle = '#e8e8e8'; ctx.font = '600 15px "PingFang SC",sans-serif'; ctx.textBaseline='top'; ctx.textAlign='left';
+  ctx.fillText(name, cardX + av + 12, yy + 4);
+  yy += av + 8;
+  // 文字
+  if (textLines.length){
+    ctx.fillStyle = '#e8e8e8'; ctx.font = '15px "PingFang SC","Microsoft YaHei",sans-serif'; ctx.textBaseline='top';
+    textLines.forEach((ln,i) => ctx.fillText(ln, cardX+4, yy + i*15*1.5));
+    yy += textLines.length * 15 * 1.5 + 8;
+  }
+  // 图片
+  if (n){
+    const cols = n===1?1:(n===2||n===4?2:3);
+    const gap = 4;
+    const startX = cardX + 4;
+    const cell = (cardW - 8 - gap*(cols-1)) / cols;
+    images.slice(0,n).forEach((src, i) => {
+      const r = Math.floor(i/cols), c = i%cols;
+      const ix = startX + c*(cell+gap), iy = yy + r*(cell+gap);
+      const img = new Image(); img.src = src;
+      ctx.save(); ctx.beginPath(); ctx.roundRect(ix, iy, cell, cell, 4); ctx.clip();
+      ctx.drawImage(img, ix, iy, cell, cell); ctx.restore();
+    });
+    yy += imgH;
+  }
+  // 点赞
+  if (likeLines.length){
+    ctx.fillStyle = '#2c2c2c'; const boxH = likeLines.length*16*1.4 + 8;
+    ctx.beginPath(); ctx.roundRect(cardX+4, yy, cardW-8, boxH, 5); ctx.fill();
+    ctx.fillStyle = '#b3b3b3'; ctx.font = '12px sans-serif'; ctx.textBaseline='top';
+    likeLines.forEach((ln,i) => ctx.fillText(ln, cardX+12, yy + 6 + i*16*1.4));
+    yy += boxH + 4;
+  }
+  // 评论
+  if (cmtList.length){
+    const lineH = 16*1.5;
+    const boxH = cmtList.length*lineH + 8;
+    ctx.fillStyle = '#2c2c2c'; ctx.beginPath(); ctx.roundRect(cardX+4, yy, cardW-8, boxH, 5); ctx.fill();
+    ctx.font = '13px "PingFang SC",sans-serif'; ctx.textBaseline='top';
+    cmtList.forEach((line, i) => {
+      const m = line.match(/^([^:：]+)[：:](.*)$/);
+      const ly = yy + 6 + i*lineH;
+      if (m){
+        ctx.fillStyle = '#7aa9ff'; ctx.fillText(m[1].trim(), cardX+12, ly);
+        const w = ctx.measureText(m[1].trim()).width;
+        ctx.fillStyle = '#e8e8e8'; ctx.fillText(': ' + m[2].trim(), cardX+12+w+2, ly);
+      } else {
+        ctx.fillStyle = '#e8e8e8'; ctx.fillText(line, cardX+12, ly);
+      }
+    });
+    yy += boxH + 4;
+  }
+  // 时间
+  ctx.fillStyle = '#888'; ctx.font = '12px sans-serif'; ctx.textBaseline='top';
+  ctx.fillText(time, cardX+4, yy);
+
+  cnv.toBlob(b => {
+    const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download='wechat-moments.png'; a.click();
+    $('wmom-msg').textContent='已导出 wechat-moments.png'; $('wmom-msg').className='msg ok';
+  });
+});
+
+render();
+</script>

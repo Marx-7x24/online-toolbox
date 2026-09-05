@@ -1,0 +1,226 @@
+---
+// 专业微信聊天模拟器：自定义聊天背景、语音消息气泡、系统提示、时间分割线，导出高清 PNG
+---
+<div class="pane">
+  <div>
+    <div class="field-label"><span>对方昵称</span></div>
+    <input type="text" id="wp-other-name" value="小美" style="width:100%;padding:7px;border:1px solid var(--border-color);border-radius:6px;box-sizing:border-box">
+    <div style="display:flex;gap:8px;align-items:center;margin-top:8px">
+      <input type="color" id="wp-other-color" value="#10AEFF" style="width:42px;height:32px;border:1px solid var(--border-color);border-radius:6px">
+      <input type="file" id="wp-other-avatar" accept="image/*">
+    </div>
+
+    <div class="field-label" style="margin-top:14px"><span>我的昵称</span></div>
+    <input type="text" id="wp-me-name" value="我" style="width:100%;padding:7px;border:1px solid var(--border-color);border-radius:6px;box-sizing:border-box">
+    <div style="display:flex;gap:8px;align-items:center;margin-top:8px">
+      <input type="color" id="wp-me-color" value="#07C160" style="width:42px;height:32px;border:1px solid var(--border-color);border-radius:6px">
+      <input type="file" id="wp-me-avatar" accept="image/*">
+    </div>
+
+    <div class="field-label" style="margin-top:14px"><span>聊天背景（可选）</span></div>
+    <input type="file" id="wp-bg" accept="image/*">
+
+    <div class="field-label" style="margin-top:14px"><span>消息类型</span></div>
+    <select id="wp-type" style="width:100%;padding:7px;border:1px solid var(--border-color);border-radius:6px;background:#fff">
+      <option value="text">文本消息</option>
+      <option value="voice">语音消息</option>
+      <option value="system">系统提示（居中）</option>
+      <option value="divider">时间分割线</option>
+    </select>
+
+    <div class="field-label" style="margin-top:14px"><span>内容（语音填秒数如 5″，分割线填文字如"昨天"）</span></div>
+    <textarea id="wp-text" placeholder="输入消息内容…" style="width:100%;height:60px;padding:8px;border:1px solid var(--border-color);border-radius:6px;box-sizing:border-box;font-size:14px;resize:vertical"></textarea>
+
+    <div style="display:flex;gap:14px;align-items:center;margin-top:8px">
+      <label><input type="radio" name="wp-side" value="other" checked> 对方</label>
+      <label><input type="radio" name="wp-side" value="me"> 我</label>
+    </div>
+    <input type="text" id="wp-time" placeholder="时间（可选）" style="width:100%;margin-top:8px;padding:7px;border:1px solid var(--border-color);border-radius:6px;box-sizing:border-box">
+    <div class="btn-row" style="margin-top:10px">
+      <button id="wp-add" class="primary">添加</button>
+      <button id="wp-undo">撤销</button>
+      <button id="wp-clear">清空</button>
+    </div>
+  </div>
+  <div>
+    <div class="field-label"><span>预览</span></div>
+    <div id="wp-screen" style="max-width:360px;margin:0 auto;background:#ededed;border-radius:14px;overflow:hidden;box-shadow:0 4px 18px rgba(0,0,0,.12)">
+      <div id="wp-header" style="background:rgba(237,237,237,.92);padding:10px 12px;font-size:15px;font-weight:600;text-align:center;color:#111;border-bottom:1px solid #d9d9d9"></div>
+      <div id="wp-chat" style="padding:14px 10px;min-height:320px;display:flex;flex-direction:column;gap:12px"></div>
+    </div>
+    <div class="btn-row" style="justify-content:center">
+      <button id="wp-export" class="primary">导出高清 PNG</button>
+    </div>
+    <p class="msg" id="wp-msg"></p>
+  </div>
+</div>
+
+<style>
+  .wp-row { display:flex; gap:8px; align-items:flex-start; }
+  .wp-row.me { flex-direction:row-reverse; }
+  .wp-avatar { width:38px;height:38px;border-radius:6px;flex-shrink:0;object-fit:cover;display:flex; align-items:center;justify-content:center;color:#fff;font-size:15px;font-weight:600; }
+  .wp-bubble { max-width:230px;padding:9px 12px;border-radius:6px;font-size:15px;line-height:1.45;word-break:break-word;white-space:pre-wrap;box-shadow:0 1px 1px rgba(0,0,0,.04); }
+  .wp-row.other .wp-bubble { background:#fff; }
+  .wp-row.me .wp-bubble { background:#95EC69; }
+  .wp-voice { display:flex; align-items:center; gap:8px; min-width:80px; }
+  .wp-voice .wp-icon { width:18px; height:18px; opacity:.7; }
+  .wp-time { text-align:center; font-size:12px; color:#9aa0a6; }
+  .wp-system { text-align:center; background:#cdcdcd; color:#fff; font-size:12px; padding:3px 9px; border-radius:4px; align-self:center; max-width:80%; }
+  .wp-divider { text-align:center; color:#9aa0a6; font-size:12px; padding:2px 10px; align-self:center; background:rgba(0,0,0,.06); border-radius:4px; }
+</style>
+
+<script>
+const $ = (id) => document.getElementById(id);
+let msgs = [];
+const avatars = { me:null, other:null };
+let bgImg = null;
+const AV = { me:()=>$('wp-me-color').value, other:()=>$('wp-other-color').value };
+const NM = { me:()=>$('wp-me-name').value||'我', other:()=>$('wp-other-name').value||'对方' };
+
+function escapeHtml(s){ return s.replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
+
+function readAvatar(side, input){
+  const f = input.files[0]; if (!f) return;
+  const r = new FileReader(); r.onload = () => { avatars[side] = r.result; render(); };
+  r.readAsDataURL(f);
+}
+$('wp-other-avatar').addEventListener('change', e => readAvatar('other', e.target));
+$('wp-me-avatar').addEventListener('change', e => readAvatar('me', e.target));
+$('wp-bg').addEventListener('change', e => {
+  const f = e.target.files[0]; if (!f) return;
+  const r = new FileReader(); r.onload = () => { bgImg = r.result; render(); };
+  r.readAsDataURL(f);
+});
+
+function avatarHtml(side){
+  const c = AV[side](); const n = NM[side]();
+  return avatars[side] ? `<img class="wp-avatar" src="${avatars[side]}">` : `<div class="wp-avatar" style="background:${c}">${escapeHtml(n.slice(0,1))}</div>`;
+}
+
+function render(){
+  $('wp-header').textContent = NM.other();
+  const box = $('wp-chat');
+  if (!msgs.length){ box.innerHTML = '<div style="color:#9aa0a6;font-size:13px;text-align:center;margin:auto">添加消息开始模拟对话</div>'; return; }
+  if (bgImg) box.style.background = `url(${bgImg}) center/cover`;
+  else box.style.background = 'transparent';
+  box.innerHTML = msgs.map(m => {
+    if (m.type === 'system') return `<div class="wp-system">${escapeHtml(m.text)}</div>`;
+    if (m.type === 'divider') return `<div class="wp-divider">${escapeHtml(m.text || '')}</div>`;
+    if (m.type === 'voice'){
+      const time = m.time ? `<div class="wp-time">${escapeHtml(m.time)}</div>` : '';
+      return time + `<div class="wp-row ${m.side}">${avatarHtml(m.side)}<div class="wp-bubble"><div class="wp-voice"><svg class="wp-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3a4.5 4.5 0 0 0-2.5-4v8a4.5 4.5 0 0 0 2.5-4z"/></svg><span>语音 ${escapeHtml(m.text || '0″')}</span></div></div></div>`;
+    }
+    const time = m.time ? `<div class="wp-time">${escapeHtml(m.time)}</div>` : '';
+    return time + `<div class="wp-row ${m.side}">${avatarHtml(m.side)}<div class="wp-bubble">${escapeHtml(m.text)}</div></div>`;
+  }).join('');
+  box.scrollTop = box.scrollHeight;
+}
+
+function add(){
+  const text = $('wp-text').value.trim();
+  const type = $('wp-type').value;
+  if (type !== 'divider' && !text){ $('wp-msg').textContent='请输入内容'; $('wp-msg').className='msg err'; return; }
+  const side = document.querySelector('input[name=wp-side]:checked').value;
+  const time = $('wp-time').value.trim();
+  msgs.push({ type, side, text, time });
+  $('wp-text').value=''; $('wp-time').value='';
+  render(); $('wp-msg').textContent='已添加'; $('wp-msg').className='msg ok';
+}
+$('wp-add').addEventListener('click', add);
+$('wp-text').addEventListener('keydown', e => { if (e.key==='Enter' && (e.ctrlKey||e.metaKey)) add(); });
+$('wp-undo').addEventListener('click', () => { msgs.pop(); render(); });
+$('wp-clear').addEventListener('click', () => { if (msgs.length && confirm('清空全部？')) { msgs=[]; render(); } });
+
+// ---- Canvas 高清导出 ----
+function wrapText(ctx, text, maxW){
+  const lines=[]; let line='';
+  for (const ch of text){
+    if (ch==='\n'){ lines.push(line); line=''; continue; }
+    const test = line + ch;
+    if (ctx.measureText(test).width > maxW && line){ lines.push(line); line = ch; }
+    else line = test;
+  }
+  if (line) lines.push(line);
+  return lines;
+}
+function drawAv(ctx, side, x, y, size){
+  ctx.save();
+  ctx.beginPath(); ctx.roundRect(x, y, size, size, 6); ctx.clip();
+  if (avatars[side]){ const img = new Image(); img.src = avatars[side]; ctx.drawImage(img, x, y, size, size); }
+  else { ctx.fillStyle = AV[side](); ctx.fillRect(x, y, size, size); ctx.fillStyle='#fff'; ctx.font='600 18px sans-serif'; ctx.textBaseline='middle'; ctx.textAlign='center'; ctx.fillText(NM[side]().slice(0,1), x+size/2, y+size/2); }
+  ctx.restore();
+}
+$('wp-export').addEventListener('click', () => {
+  if (!msgs.length){ $('wp-msg').textContent='请先添加消息'; $('wp-msg').className='msg err'; return; }
+  const W=480, pad=12, av=44, gap=12, fs=16, bw=11, bh=9, maxBub=260;
+  const cnv = document.createElement('canvas'); const ctx = cnv.getContext('2d');
+  ctx.font = `${fs}px "PingFang SC","Microsoft YaHei",sans-serif`;
+  const items = msgs.map(m => {
+    if (m.type === 'system' || m.type === 'divider') return { m, kind: m.type, h: 26, itemH: 30 };
+    const lines = wrapText(ctx, m.type === 'voice' ? `语音 ${m.text || '0″'}` : m.text, maxBub);
+    const h = lines.length*fs*1.45 + bh*2;
+    return { m, kind:'bubble', lines, h, itemH: Math.max(h, av) + (m.time?22:0) + gap };
+  });
+  let total = 64 + 16 + items.reduce((s,x)=>s+x.itemH,0);
+  cnv.width = W; cnv.height = Math.max(total, 420);
+  // 背景
+  if (bgImg){
+    const img = new Image(); img.src = bgImg;
+    ctx.drawImage(img, 0, 0, W, cnv.height);
+  } else {
+    ctx.fillStyle = '#ededed'; ctx.fillRect(0,0,W,cnv.height);
+  }
+  // header
+  ctx.fillStyle = 'rgba(237,237,237,.92)'; ctx.fillRect(0,0,W,64);
+  ctx.fillStyle = '#111'; ctx.font = '600 18px "PingFang SC",sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText(NM.other()(), W/2, 32);
+  ctx.strokeStyle = '#d9d9d9'; ctx.beginPath(); ctx.moveTo(0,64); ctx.lineTo(W,64); ctx.stroke();
+  let y = 64 + 16;
+  ctx.textAlign='left'; ctx.textBaseline='alphabetic';
+  items.forEach(({m, kind, h, lines}) => {
+    let yy = y;
+    if (m.time && kind === 'bubble'){ ctx.fillStyle='#9aa0a6'; ctx.font='13px sans-serif'; ctx.textAlign='center'; ctx.fillText(m.time, W/2, yy+12); ctx.textAlign='left'; yy += 22; }
+    if (kind === 'system'){
+      ctx.font='13px sans-serif'; const w = ctx.measureText(m.text).width + 24;
+      ctx.fillStyle='#cdcdcd'; const rx = (W-w)/2;
+      ctx.beginPath(); ctx.roundRect(rx, yy, w, 22, 11); ctx.fill();
+      ctx.fillStyle='#fff'; ctx.textBaseline='middle'; ctx.textAlign='center'; ctx.fillText(m.text, W/2, yy+11);
+      ctx.textBaseline='alphabetic'; ctx.textAlign='left';
+    } else if (kind === 'divider'){
+      ctx.font='13px sans-serif'; const w = ctx.measureText(m.text || '').width + 24;
+      ctx.fillStyle='rgba(0,0,0,.06)'; const rx = (W-w)/2;
+      ctx.beginPath(); ctx.roundRect(rx, yy, w, 20, 4); ctx.fill();
+      ctx.fillStyle='#9aa0a6'; ctx.textBaseline='middle'; ctx.textAlign='center'; ctx.fillText(m.text || '', W/2, yy+10);
+      ctx.textBaseline='alphabetic'; ctx.textAlign='left';
+    } else {
+      const rowH = Math.max(h, av);
+      const isMe = m.side === 'me';
+      const ax = isMe ? W-pad-av : pad;
+      drawAv(ctx, m.side, ax, yy, av);
+      const bx = isMe ? W-pad-av-gap-maxBub : pad+av+gap;
+      if (m.type === 'voice'){
+        ctx.fillStyle = isMe ? '#95EC69' : '#fff';
+        const vw = 100, vh = 38;
+        ctx.save(); ctx.shadowColor='rgba(0,0,0,.04)'; ctx.shadowBlur=1; ctx.shadowOffsetY=1;
+        ctx.beginPath(); ctx.roundRect(bx, yy + (rowH-vh)/2, vw, vh, 6); ctx.fill(); ctx.restore();
+        ctx.fillStyle = '#111'; ctx.font = `${fs}px sans-serif`;
+        ctx.fillText('▶ 语音 ' + (m.text || '0″'), bx+12, yy + (rowH)/2 + fs*0.35);
+      } else {
+        ctx.fillStyle = isMe ? '#95EC69' : '#fff';
+        const by = yy + (rowH-h)/2;
+        ctx.save(); ctx.shadowColor='rgba(0,0,0,.04)'; ctx.shadowBlur=1; ctx.shadowOffsetY=1;
+        ctx.beginPath(); ctx.roundRect(bx, by, maxBub, h, 6); ctx.fill(); ctx.restore();
+        ctx.fillStyle = '#111'; ctx.font = `${fs}px "PingFang SC","Microsoft YaHei",sans-serif`;
+        lines.forEach((ln,i) => ctx.fillText(ln, bx+bw, by+bh + fs*1.45*(i+1) - fs*0.3));
+      }
+    }
+    y += (kind==='system'||kind==='divider') ? 30 : items.find(x=>x.m===m).itemH;
+  });
+  cnv.toBlob(b => {
+    const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download='wechat-pro.png'; a.click();
+    $('wp-msg').textContent='已导出 wechat-pro.png (HD)'; $('wp-msg').className='msg ok';
+  });
+});
+
+render();
+</script>

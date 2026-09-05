@@ -1,0 +1,201 @@
+---
+// 微信零钱模拟器：自定义零钱/零钱通余额与交易流水，生成钱包截图导出 PNG
+---
+<div class="pane">
+  <div>
+    <div class="field-label"><span>零钱余额（元）</span></div>
+    <input type="number" id="ww-change" value="8888.88" step="0.01" style="width:100%;padding:7px;border:1px solid var(--border-color);border-radius:6px;box-sizing:border-box">
+
+    <div class="field-label" style="margin-top:12px"><span>零钱通余额（元）</span></div>
+    <input type="number" id="ww-pass" value="12800.00" step="0.01" style="width:100%;padding:7px;border:1px solid var(--border-color);border-radius:6px;box-sizing:border-box">
+
+    <div class="field-label" style="margin-top:14px"><span>交易流水</span></div>
+    <div style="font-size:12px;color:var(--text-sub);margin-bottom:6px">每行一笔，格式：图标关键字 + 金额（正=收入/负=支出），例：<code>收+100</code>、<code>转-50</code></div>
+    <textarea id="ww-tx" rows="8" style="width:100%;padding:8px;border:1px solid var(--border-color);border-radius:6px;box-sizing:border-box;font-size:13px;line-height:1.7;resize:vertical">收+888.88
+转-200.00
+红包-66.66
+退款+18.00
+充值+500.00</textarea>
+
+    <div class="field-label" style="margin-top:12px"><span>状态栏时间</span></div>
+    <input type="text" id="ww-time" value="14:30" style="width:100%;padding:7px;border:1px solid var(--border-color);border-radius:6px;box-sizing:border-box">
+  </div>
+  <div>
+    <div class="field-label"><span>预览</span></div>
+    <div id="ww-screen" style="max-width:340px;margin:0 auto;background:#ededed;border-radius:14px;overflow:hidden;box-shadow:0 4px 18px rgba(0,0,0,.12);min-height:420px">
+      <div id="ww-header" style="background:#ededed;padding:10px 12px;font-size:14px;text-align:center;color:#111;border-bottom:1px solid #d9d9d9;display:flex;justify-content:space-between;align-items:center"><span>‹</span><strong style="font-size:15px">零钱</strong><span style="visibility:hidden">·</span></div>
+      <div id="ww-body" style="padding:0 14px 16px"></div>
+    </div>
+    <div class="btn-row" style="justify-content:center">
+      <button id="ww-export" class="primary">导出 PNG</button>
+    </div>
+    <p class="msg" id="ww-msg"></p>
+  </div>
+</div>
+
+<style>
+  .ww-total { padding:18px 14px; }
+  .ww-total-label { font-size:13px; color:#888; }
+  .ww-total-num { font-size:32px; font-weight:600; color:#111; margin-top:4px; letter-spacing:0.5px; }
+  .ww-total-num small { font-size:18px; font-weight:400; }
+  .ww-cards { display:flex; gap:10px; margin:6px 14px 14px; }
+  .ww-card { flex:1; padding:12px; background:#fff; border-radius:8px; box-shadow:0 1px 3px rgba(0,0,0,.06); }
+  .ww-card-label { font-size:13px; color:#888; }
+  .ww-card-num { font-size:18px; color:#111; font-weight:600; margin-top:4px; }
+  .ww-card-sub { font-size:12px; color:#888; margin-top:2px; }
+  .ww-section-title { font-size:14px; color:#111; font-weight:600; padding:10px 0 8px; }
+  .ww-tx { background:#fff; border-radius:8px; overflow:hidden; box-shadow:0 1px 3px rgba(0,0,0,.06); }
+  .ww-tx-item { display:flex; align-items:center; padding:12px; border-bottom:1px solid #f0f0f0; }
+  .ww-tx-item:last-child { border-bottom:0; }
+  .ww-tx-icon { width:34px; height:34px; border-radius:50%; background:#f0f0f0; display:flex; align-items:center; justify-content:center; margin-right:12px; font-size:14px; color:#888; }
+  .ww-tx-icon.in { background:#e9f7ee; color:#07C160; }
+  .ww-tx-icon.out { background:#fdecec; color:#e64340; }
+  .ww-tx-name { flex:1; font-size:14px; color:#111; }
+  .ww-tx-time { font-size:12px; color:#888; }
+  .ww-tx-amt { font-size:15px; font-weight:600; }
+  .ww-tx-amt.in { color:#07C160; }
+  .ww-tx-amt.out { color:#111; }
+</style>
+
+<script>
+const $ = (id) => document.getElementById(id);
+
+const ICON_MAP = [
+  [/^收|退|充值|转入/, '收', 'in'],
+  [/^转|发|红包|支出|付款|消费|提现/, '转', 'out'],
+  [/^理|收益|利息|基金|理财/, '理', 'in'],
+];
+function classify(text){
+  for (const [re, ic, dir] of ICON_MAP){ if (re.test(text)) return { icon: ic, dir }; }
+  return { icon: '·', dir: 'out' };
+}
+
+function parseTx(s){
+  const lines = s.split('\n').map(l => l.trim()).filter(Boolean);
+  return lines.map((line, i) => {
+    const m = line.match(/^(.+?)([+\-])([\d.]+)$/);
+    if (!m) return null;
+    const name = m[1].trim(); const sign = m[2]; const amt = +m[3];
+    const cls = classify(name);
+    return {
+      name, icon: cls.icon, dir: sign === '+' ? 'in' : 'out',
+      amount: (sign === '+' ? '+' : '-') + amt.toFixed(2),
+      time: ['今天 14:30','今天 13:21','昨天 22:08','昨天 09:45','前天 18:33'][i] || '今天 ' + (12 + (i%10)) + ':00'
+    };
+  }).filter(Boolean);
+}
+
+function render(){
+  const ch = +$('ww-change').value || 0;
+  const pass = +$('ww-pass').value || 0;
+  const total = ch + pass;
+  const list = parseTx($('ww-tx').value);
+  $('ww-body').innerHTML = `
+    <div class="ww-total">
+      <div class="ww-total-label">总资产（元）</div>
+      <div class="ww-total-num"><small>¥</small>${total.toFixed(2)}</div>
+    </div>
+    <div class="ww-cards">
+      <div class="ww-card">
+        <div class="ww-card-label">零钱</div>
+        <div class="ww-card-num">¥${ch.toFixed(2)}</div>
+        <div class="ww-card-sub">可用余额</div>
+      </div>
+      <div class="ww-card">
+        <div class="ww-card-label">零钱通</div>
+        <div class="ww-card-num">¥${pass.toFixed(2)}</div>
+        <div class="ww-card-sub">可收益 · 可支付</div>
+      </div>
+    </div>
+    <div class="ww-section-title">交易记录</div>
+    <div class="ww-tx">
+      ${list.map(it => `
+        <div class="ww-tx-item">
+          <div class="ww-tx-icon ${it.dir}">${it.icon}</div>
+          <div style="flex:1">
+            <div class="ww-tx-name">${it.name}</div>
+            <div class="ww-tx-time">${it.time}</div>
+          </div>
+          <div class="ww-tx-amt ${it.dir}">${it.amount}</div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+['ww-change','ww-pass','ww-tx','ww-time'].forEach(id => $(id).addEventListener('input', render));
+
+// ---- Canvas 导出 ----
+$('ww-export').addEventListener('click', () => {
+  const ch = +$('ww-change').value || 0;
+  const pass = +$('ww-pass').value || 0;
+  const total = ch + pass;
+  const list = parseTx($('ww-tx').value);
+  const time = $('ww-time').value || '14:30';
+  const W = 375, cnv = document.createElement('canvas');
+  const ctx = cnv.getContext('2d');
+  ctx.font = '14px "PingFang SC","Microsoft YaHei",sans-serif';
+  // 量高
+  let y = 44 + 18 + 36 + 18 + 80 + 36 + 36 + list.length*58;
+  cnv.width = W; cnv.height = Math.max(y, 420);
+  ctx.fillStyle = '#ededed'; ctx.fillRect(0,0,W,cnv.height);
+  // header
+  ctx.fillStyle = '#ededed'; ctx.fillRect(0,0,W,44);
+  ctx.fillStyle = '#111'; ctx.font = '600 16px "PingFang SC",sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText('零钱', W/2, 22);
+  ctx.strokeStyle = '#d9d9d9'; ctx.beginPath(); ctx.moveTo(0,44); ctx.lineTo(W,44); ctx.stroke();
+  // status bar text
+  ctx.fillStyle = '#111'; ctx.font = '12px sans-serif'; ctx.textAlign='left'; ctx.textBaseline='top';
+  ctx.fillText(time, 14, 6);
+  // 总资产
+  let py = 44 + 18;
+  ctx.fillStyle = '#888'; ctx.font = '13px "PingFang SC",sans-serif'; ctx.textBaseline='top'; ctx.textAlign='left';
+  ctx.fillText('总资产（元）', 18, py); py += 18;
+  ctx.fillStyle = '#111'; ctx.font = '600 30px "PingFang SC",sans-serif';
+  ctx.fillText('¥' + total.toFixed(2), 18, py); py += 36 + 18;
+  // cards
+  const cardY = py, cardH = 70;
+  ctx.fillStyle = '#fff';
+  ctx.beginPath(); ctx.roundRect(18, cardY, (W-50)/2, cardH, 8); ctx.fill();
+  ctx.beginPath(); ctx.roundRect(18+(W-50)/2+14, cardY, (W-50)/2, cardH, 8); ctx.fill();
+  ctx.fillStyle = '#888'; ctx.font = '13px "PingFang SC",sans-serif'; ctx.textBaseline='top';
+  ctx.fillText('零钱', 28, cardY+12);
+  ctx.fillText('零钱通', 18+(W-50)/2+24, cardY+12);
+  ctx.fillStyle = '#111'; ctx.font = '600 17px "PingFang SC",sans-serif';
+  ctx.fillText('¥' + ch.toFixed(2), 28, cardY+32);
+  ctx.fillText('¥' + pass.toFixed(2), 18+(W-50)/2+24, cardY+32);
+  ctx.fillStyle = '#888'; ctx.font = '12px "PingFang SC",sans-serif';
+  ctx.fillText('可用余额', 28, cardY+54);
+  ctx.fillText('可收益 · 可支付', 18+(W-50)/2+24, cardY+54);
+  py = cardY + cardH + 14;
+  // section title
+  ctx.fillStyle = '#111'; ctx.font = '600 14px "PingFang SC",sans-serif';
+  ctx.fillText('交易记录', 18, py); py += 22;
+  // tx list
+  const listY = py, itemH = 58;
+  ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.roundRect(18, listY, W-36, itemH*list.length, 8); ctx.fill();
+  list.forEach((it, i) => {
+    const iy = listY + i*itemH;
+    ctx.fillStyle = it.dir === 'in' ? '#e9f7ee' : '#fdecec';
+    ctx.beginPath(); ctx.arc(40, iy+itemH/2, 16, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = it.dir === 'in' ? '#07C160' : '#e64340'; ctx.font='600 13px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(it.icon, 40, iy+itemH/2+1);
+    ctx.fillStyle = '#111'; ctx.font = '14px "PingFang SC",sans-serif'; ctx.textAlign='left'; ctx.textBaseline='top';
+    ctx.fillText(it.name, 68, iy+12);
+    ctx.fillStyle = '#888'; ctx.font = '12px "PingFang SC",sans-serif';
+    ctx.fillText(it.time, 68, iy+34);
+    ctx.fillStyle = it.dir === 'in' ? '#07C160' : '#111'; ctx.font = '600 15px "PingFang SC",sans-serif'; ctx.textAlign='right';
+    ctx.fillText(it.amount, W-28, iy+22);
+    if (i < list.length - 1){
+      ctx.strokeStyle = '#f0f0f0'; ctx.beginPath(); ctx.moveTo(68, iy+itemH); ctx.lineTo(W-28, iy+itemH); ctx.stroke();
+    }
+    ctx.textAlign='left';
+  });
+  cnv.toBlob(b => {
+    const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download='wechat-wallet.png'; a.click();
+    $('ww-msg').textContent='已导出 wechat-wallet.png'; $('ww-msg').className='msg ok';
+  });
+});
+
+render();
+</script>
