@@ -1,0 +1,45 @@
+---
+// 我的 IP：通过公开只读接口获取本机公网 IP 与归属地（纯前端，无自建后端）
+---
+<div style="max-width:520px">
+  <table class="result-table" style="width:100%"><tbody>
+    <tr><th>公网 IP</th><td id="ip-addr">查询中…</td></tr>
+    <tr><th>城市</th><td id="ip-city">—</td></tr>
+    <tr><th>地区</th><td id="ip-region">—</td></tr>
+    <tr><th>国家</th><td id="ip-country">—</td></tr>
+    <tr><th>运营商</th><td id="ip-org">—</td></tr>
+    <tr><th>时区</th><td id="ip-tz">—</td></tr>
+  </tbody></table>
+  <p class="msg" id="ip-msg"></p>
+  <p style="color:var(--text-hint);font-size:12px">数据来自第三方公开只读接口（ipapi.co），仅用于展示你的网络出口信息，不收集、不上传。</p>
+</div>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  async function load(){
+    try {
+      const r = await fetch('https://ipapi.co/json/', { headers:{} });
+      if (!r.ok) throw new Error('http '+r.status);
+      const d = await r.json();
+      $('ip-addr').textContent = d.ip || '—';
+      $('ip-city').textContent = d.city || '—';
+      $('ip-region').textContent = d.region || '—';
+      $('ip-country').textContent = d.country_name || '—';
+      $('ip-org').textContent = d.org || '—';
+      $('ip-tz').textContent = d.timezone || '—';
+      $('ip-msg').textContent = '已获取'; $('ip-msg').className='msg ok';
+    } catch (e) {
+      // 回退：仅取 IP
+      try {
+        const r2 = await fetch('https://api.ipify.org?format=json');
+        const d2 = await r2.json();
+        $('ip-addr').textContent = d2.ip || '—';
+        $('ip-msg').textContent = '仅获取到 IP（归属地接口不可用）'; $('ip-msg').className='msg';
+      } catch(e2){
+        $('ip-addr').textContent = '获取失败';
+        $('ip-msg').textContent = '网络受限，无法获取公网 IP（可能处于离线/代理环境）'; $('ip-msg').className='msg err';
+      }
+    }
+  }
+  load();
+</script>

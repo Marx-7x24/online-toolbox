@@ -1,0 +1,63 @@
+---
+// 退休金估算：基于现行基本养老保险公式的简化测算（仅估算，非官方结果）
+---
+<div class="pane">
+  <div>
+    <div class="field-label"><span>参保身份</span></div>
+    <select id="rc-type" style="width:100%;padding:8px;border:1px solid var(--border-color);border-radius:6px">
+      <option value="m">男性职工</option>
+      <option value="f1">女性干部/管理技术岗</option>
+      <option value="f2">女性工人</option>
+    </select>
+    <div class="field-label" style="margin-top:12px"><span>出生年份</span></div>
+    <input type="number" id="rc-birth" value="1985" min="1940" max="2010" style="width:100%;padding:8px;border:1px solid var(--border-color);border-radius:6px;box-sizing:border-box">
+    <div class="field-label" style="margin-top:12px"><span>当前月工资（缴费基数参考）</span></div>
+    <input type="number" id="rc-salary" value="8000" min="0" style="width:100%;padding:8px;border:1px solid var(--border-color);border-radius:6px;box-sizing:border-box">
+    <div class="field-label" style="margin-top:12px"><span>当地上年度社平工资</span></div>
+    <input type="number" id="rc-avg" value="7000" min="0" style="width:100%;padding:8px;border:1px solid var(--border-color);border-radius:6px;box-sizing:border-box">
+    <div class="field-label" style="margin-top:12px"><span>累计缴费年限（年）</span></div>
+    <input type="number" id="rc-years" value="20" min="0" max="45" style="width:100%;padding:8px;border:1px solid var(--border-color);border-radius:6px;box-sizing:border-box">
+    <div class="field-label" style="margin-top:12px"><span>个人账户余额（元，可选）</span></div>
+    <input type="number" id="rc-bal" placeholder="留空按 8%×工资×12×年限估算" style="width:100%;padding:8px;border:1px solid var(--border-color);border-radius:6px;box-sizing:border-box">
+    <div class="btn-row" style="margin-top:12px">
+      <button id="rc-run" class="primary">测算</button>
+    </div>
+  </div>
+  <div>
+    <div class="field-label"><span>估算结果</span></div>
+    <table class="result-table"><tbody>
+      <tr><th>法定退休年龄</th><td id="rc-age">—</td></tr>
+      <tr><th>预计退休年份</th><td id="rc-year">—</td></tr>
+      <tr><th>基础养老金/月</th><td id="rc-base">—</td></tr>
+      <tr><th>个人账户养老金/月</th><td id="rc-per">—</td></tr>
+      <tr><th>估算合计/月</th><td id="rc-total">—</td></tr>
+    </tbody></table>
+    <p class="msg" id="rc-msg"></p>
+    <p style="color:var(--text-hint);font-size:12px">依据 2024 年起实施的渐进式延迟退休政策，此处退休年龄按"男60/女干部55/女工人50"的基准近似，未纳入逐年延迟月数；公式为简化模型，实际以社保经办机构核算为准。</p>
+  </div>
+</div>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  const BASE = { m:60, f1:55, f2:50 };
+  $('rc-run').addEventListener('click', () => {
+    const type = $('rc-type').value;
+    const birth = +$('rc-birth').value, salary = +$('rc-salary').value, avg = +$('rc-avg').value;
+    const years = +$('rc-years').value;
+    if (!birth || salary<=0 || avg<=0 || years<=0){ $('rc-msg').textContent='请填写完整且有效的参数'; $('rc-msg').className='msg err'; return; }
+    const age = BASE[type];
+    const retireYear = birth + age;
+    const curYear = new Date().getFullYear();
+    const idx = Math.min(Math.max(salary/avg, 0.6), 3); // 缴费指数 0.6~3
+    const base = (avg*(1+idx))/2 * years * 0.01;
+    let bal = $('rc-bal').value === '' ? (salary*0.08*12*years) : +$('rc-bal').value;
+    const per = bal / 139;
+    const total = base + per;
+    $('rc-age').textContent = age + ' 岁';
+    $('rc-year').textContent = (retireYear>curYear ? retireYear+' 年（距今年 '+(retireYear-curYear)+' 年）' : '已到/临近退休年龄');
+    $('rc-base').textContent = '¥ ' + base.toFixed(0);
+    $('rc-per').textContent = '¥ ' + per.toFixed(0);
+    $('rc-total').textContent = '¥ ' + total.toFixed(0);
+    $('rc-msg').textContent = '估算完成（仅供参考）'; $('rc-msg').className='msg ok';
+  });
+</script>

@@ -1,0 +1,96 @@
+---
+// 批量重命名：对任意文件按规则改名并逐个下载（浏览器本地，不上传）
+---
+<div class="pane">
+  <div>
+    <div class="field-label"><span>选择多个文件</span></div>
+    <input type="file" id="rb-files" multiple>
+    <div id="rb-list" class="rb-list"></div>
+  </div>
+  <div>
+    <div class="field-label"><span>命名规则</span></div>
+    <select id="rb-rule" style="width:100%;padding:6px;border:1px solid var(--border-color);border-radius:6px">
+      <option value="prefix">加前缀</option>
+      <option value="suffix">加后缀（扩展名前）</option>
+      <option value="number">加序号（001/002...）</option>
+      <option value="replace">替换关键字</option>
+      <option value="upper">全部大写</option>
+      <option value="lower">全部小写</option>
+    </select>
+    <div class="field-label" style="margin-top:14px"><span id="rb-extra-label">前缀文本</span></div>
+    <input type="text" id="rb-extra" value="文件_" style="width:100%;padding:6px;border:1px solid var(--border-color);border-radius:6px;box-sizing:border-box">
+    <div id="rb-extra2" style="display:none;margin-top:6px">
+      <input type="text" id="rb-extra2-input" placeholder="替换为" style="width:100%;padding:6px;border:1px solid var(--border-color);border-radius:6px;box-sizing:border-box">
+    </div>
+  </div>
+</div>
+<div class="btn-row">
+  <button id="rb-run" class="primary">预览新名称</button>
+  <button id="rb-dl">下载全部（逐个）</button>
+  <button id="rb-reset">重置</button>
+  <span id="rb-msg" class="msg"></span>
+</div>
+
+<style>
+  .rb-list { margin-top:10px; border:1px dashed var(--border-color); border-radius:8px; padding:8px; min-height:80px; background:#fafafa; max-height:300px; overflow:auto; font-size:13px; }
+  .rb-list .row { padding:4px 8px; border-bottom:1px solid var(--border-color); display:flex; gap:8px; align-items:center; }
+  .rb-list .row:last-child { border-bottom:0; }
+  .rb-list .old { color:#888; flex:1; word-break:break-all; }
+  .rb-list .new { color:var(--primary-color); font-weight:600; flex:1; word-break:break-all; }
+</style>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  let files = [];
+
+  $('rb-rule').addEventListener('change', updateForm);
+  function updateForm() {
+    const r = $('rb-rule').value;
+    const labels = { prefix:'前缀文本', suffix:'后缀文本', number:'起始序号', replace:'要替换的关键字', upper:'（无需参数）', lower:'（无需参数）' };
+    $('rb-extra-label').textContent = labels[r];
+    $('rb-extra2').style.display = (r === 'replace') ? 'block' : 'none';
+    $('rb-extra').disabled = (r === 'upper' || r === 'lower');
+    if (r === 'number') $('rb-extra').value = $('rb-extra').value || '001';
+  }
+  updateForm();
+
+  $('rb-files').addEventListener('change', e => { files = Array.from(e.target.files); renderPreview(); });
+
+  function ext(name) { const m = name.match(/\.[^.]+$/); return m ? m[0] : ''; }
+  function base(name) { const e = ext(name); return e ? name.slice(0, -e.length) : name; }
+
+  function computeNewName(oldName, idx) {
+    const b = base(oldName), e = ext(oldName), r = $('rb-rule').value, v = $('rb-extra').value;
+    if (r === 'prefix') return `${v}${b}${e}`;
+    if (r === 'suffix') return `${b}${v}${e}`;
+    if (r === 'number') { const start = Number(v) || 1; return `${b}_${String(start+idx).padStart(3,'0')}${e}`; }
+    if (r === 'replace') return `${b.split(v).join($('rb-extra2-input').value)}${e}`;
+    if (r === 'upper') return `${b.toUpperCase()}${e}`;
+    if (r === 'lower') return `${b.toLowerCase()}${e}`;
+    return oldName;
+  }
+
+  function renderPreview() {
+    const html = files.map((f,i) => `<div class="row"><span class="old">${f.name}</span><span>→</span><span class="new">${computeNewName(f.name,i)}</span></div>`).join('');
+    $('rb-list').innerHTML = html || '<div style="color:#999;padding:8px">尚未选择文件</div>';
+  }
+
+  $('rb-run').addEventListener('click', () => {
+    if (!files.length) { $('rb-msg').textContent='请先选择文件'; $('rb-msg').className='msg err'; return; }
+    renderPreview();
+    $('rb-msg').textContent=`已预览 ${files.length} 个新名称`; $('rb-msg').className='msg ok';
+  });
+
+  $('rb-dl').addEventListener('click', async () => {
+    if (!files.length) return;
+    for (let i=0;i<files.length;i++){
+      const blob = new Blob([await files[i].arrayBuffer()], { type: files[i].type || 'application/octet-stream' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob); a.download = computeNewName(files[i].name, i); a.click();
+      await new Promise(r => setTimeout(r, 200));
+    }
+    $('rb-msg').textContent=`已逐个下载 ${files.length} 个文件`; $('rb-msg').className='msg ok';
+  });
+
+  $('rb-reset').addEventListener('click', () => { files=[]; $('rb-files').value=''; $('rb-list').innerHTML=''; $('rb-msg').textContent=''; });
+</script>

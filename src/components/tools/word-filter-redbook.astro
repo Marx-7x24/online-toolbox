@@ -1,0 +1,52 @@
+---
+// 小红书违禁词过滤：检测/高亮平台限流词，可一键净化文本（内置演示词表 + 自定义）
+---
+<div class="pane">
+  <div>
+    <div class="field-label"><span>待检测文本</span></div>
+    <textarea id="wf-in" placeholder="粘贴要发布的内容…" style="width:100%;height:240px;padding:10px;border:1px solid var(--border-color);border-radius:8px;box-sizing:border-box;resize:vertical;font-size:14px"></textarea>
+    <div class="field-label" style="margin-top:12px"><span>自定义补充词（每行一个）</span></div>
+    <textarea id="wf-custom" placeholder="选填，每行一个词" style="width:100%;height:70px;padding:10px;border:1px solid var(--border-color);border-radius:8px;box-sizing:border-box;font-size:13px"></textarea>
+    <div class="btn-row" style="margin-top:12px">
+      <button id="wf-run" class="primary">检测</button>
+      <button id="wf-clean">复制净化文本</button>
+      <button id="wf-clear">清空</button>
+    </div>
+  </div>
+  <div>
+    <div class="field-label"><span>检测结果（命中词高亮）</span></div>
+    <div id="wf-out" style="border:1px solid var(--border-color);border-radius:8px;padding:10px;min-height:240px;max-height:340px;overflow:auto;font-size:14px;line-height:1.7;background:#fff"></div>
+    <p class="msg" id="wf-msg"></p>
+  </div>
+</div>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  const BUILTIN = ['微信','薇信','VX','vx','加微','微信号','公众号','私聊','私信我','引流','兼职','刷单','返利','最','第一','国家级','世界级','顶级','万能','100%','免费领取','点击链接','下单','代购','招代理','秒杀','史低','立即购买','限时','抢购','特价','优惠券','领红包'];
+  function list(){
+    const s = new Set(BUILTIN);
+    $('wf-custom').value.split('\n').map(x=>x.trim()).filter(Boolean).forEach(w=>s.add(w));
+    return Array.from(s).sort((a,b)=>b.length-a.length);
+  }
+  function escapeHtml(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+  $('wf-run').addEventListener('click', () => {
+    const text = $('wf-in').value;
+    if (!text){ $('wf-out').innerHTML=''; $('wf-msg').textContent=''; return; }
+    const words = list(); let count=0;
+    let html = escapeHtml(text);
+    words.forEach(w => {
+      const re = new RegExp(w.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'), 'g');
+      html = html.replace(re, (m)=>{ count++; return '<mark style="background:#ffe08a;color:#7a4b00;padding:0 2px;border-radius:3px">'+m+'</mark>'; });
+    });
+    $('wf-out').innerHTML = html;
+    $('wf-msg').textContent = count ? `共命中 ${count} 处，建议修改后再发布` : '未发现明显违禁词（演示词表，非官方完整清单）';
+    $('wf-msg').className = count ? 'msg err' : 'msg ok';
+  });
+  $('wf-clean').addEventListener('click', () => {
+    const text = $('wf-in').value; if(!text) return;
+    const words = list(); let out = text;
+    words.forEach(w => { out = out.split(w).join(''); });
+    navigator.clipboard.writeText(out).then(()=>{ $('wf-msg').textContent='已复制净化后文本（移除命中词）'; $('wf-msg').className='msg ok'; });
+  });
+  $('wf-clear').addEventListener('click', () => { $('wf-in').value=''; $('wf-custom').value=''; $('wf-out').innerHTML=''; $('wf-msg').textContent=''; });
+</script>

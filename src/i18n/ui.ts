@@ -22,6 +22,7 @@ export const UI: Record<Lang, Record<string, string>> = {
     aboutTitle: '关于在线工具箱',
     aboutIntro: '我们致力于提供一站式、即开即用的在线工具，覆盖办公、学习、生活与开发场景。',
     searchPlaceholder: '搜索工具...',
+    allTools: '全部工具',
     recentTools: '最近使用',
     recentEmpty: '暂无最近使用',
     recentPageTitle: '最近使用',

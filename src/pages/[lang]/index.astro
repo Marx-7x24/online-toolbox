@@ -37,25 +37,37 @@ const { lang } = Astro.props;
     },
   }} />
 
-  {/* 分类区块：懒人式 h2 带主色竖条 + tools-grid */}
-  {categories.map((c) => {
-    const list = getToolsByCategory(c.slug);
-    if (!list.length) return null;
-    const cName = categoryI18n(c, lang).name;
-    return (
-      <section id={`cat-${c.slug}`} class="home-section">
-        <h2>
-          <a href={`/${lang}/category/${c.slug}/`} class="more">{cName}</a>
-          <span class="home-section__count">{list.length} {t(lang, 'toolsCount')}</span>
-        </h2>
-        <div class="tools-grid">
-          {list.map((tool) => {
-            const ti = toolI18n(tool, lang);
-            const search = [ti.name, ti.desc, tool.name_en || '', tool.desc_en || '', ...ti.keywords].join(' ').replace(/\s+/g, ' ').trim().toLowerCase();
-            return <ToolCard lang={lang} slug={tool.slug} name={ti.name} desc={ti.desc} category={c.slug} search={search} />;
-          })}
-        </div>
-      </section>
-    );
-  })}
+  {/* 首页页签：全部工具 / 最近使用（参考懒人工具箱，最近使用在右侧主区展示，不在左侧平铺） */}
+  <div class="home-tabs">
+    <button type="button" class="home-tab is-active" data-tab="all">{t(lang, 'allTools')}</button>
+    <button type="button" class="home-tab" data-tab="recent">{t(lang, 'recentTools')}</button>
+  </div>
+
+  <div class="home-tab-panel" data-panel="all">
+    {/* 分类区块：懒人式 h2 带主色竖条 + tools-grid */}
+    {categories.map((c) => {
+      const list = getToolsByCategory(c.slug);
+      if (!list.length) return null;
+      const cName = categoryI18n(c, lang).name;
+      return (
+        <section id={`cat-${c.slug}`} class="home-section">
+          <h2>
+            <a href={`/${lang}/category/${c.slug}/`} class="more">{cName}</a>
+            <span class="home-section__count">{list.length} {t(lang, 'toolsCount')}</span>
+          </h2>
+          <div class="tools-grid">
+            {list.map((tool) => {
+              const ti = toolI18n(tool, lang);
+              const search = [ti.name, ti.desc, tool.name_en || '', tool.desc_en || '', ...ti.keywords].join(' ').replace(/\s+/g, ' ').trim().toLowerCase();
+              return <ToolCard lang={lang} slug={tool.slug} name={ti.name} desc={ti.desc} category={c.slug} search={search} />;
+            })}
+          </div>
+        </section>
+      );
+    })}
+  </div>
+
+  <div class="home-tab-panel is-hidden" data-panel="recent">
+    <div class="home-recent-panel" data-lang={lang}></div>
+  </div>
 </Base>

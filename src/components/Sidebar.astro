@@ -32,17 +32,13 @@ const { lang, active = 'home' } = Astro.props;
       <span class="nav-label">{t(lang, 'home')}</span>
     </a>
 
-    <!-- 最近使用 -->
+    <!-- 最近使用（页签：点击在右侧主区展示，不在左侧平铺） -->
     <a href={`/${lang}/recent/`} class={`nav-item ${active === 'recent' ? 'active' : ''}`} data-nav-id="recent">
       <span class="nav-icon">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
       </span>
       <span class="nav-label">{t(lang, 'recentTools')}</span>
     </a>
-    <!-- 最近使用列表（JS 渲染） -->
-    <div class="sidebar-recent" data-lang={lang}>
-      <div class="sidebar-recent-empty">{t(lang, 'recentEmpty')}</div>
-    </div>
 
     <div class="nav-divider"></div>
 

@@ -1,0 +1,68 @@
+---
+// 文字绕圆圈：生成环形排列文字的 SVG，可下载
+---
+<div class="pane">
+  <div>
+    <div class="field-label"><span>文字内容</span></div>
+    <input type="text" id="lc-text" value="在线工具箱 ONLINE TOOLBOX " style="width:100%;padding:8px;border:1px solid var(--border-color);border-radius:6px;box-sizing:border-box">
+    <div class="field-label" style="margin-top:12px"><span>半径</span></div>
+    <input type="range" id="lc-r" min="40" max="180" value="140" style="width:100%">
+    <div class="field-label" style="margin-top:12px"><span>字号</span></div>
+    <input type="range" id="lc-fs" min="10" max="48" value="22" style="width:100%">
+    <div class="field-label" style="margin-top:12px"><span>文字颜色</span></div>
+    <input type="color" id="lc-color" value="#3e2eff" style="width:60px;height:34px;border:1px solid var(--border-color);border-radius:6px">
+    <div class="field-label" style="margin-top:12px"><span>方向</span></div>
+    <select id="lc-dir" style="width:100%;padding:8px;border:1px solid var(--border-color);border-radius:6px">
+      <option value="cw">顺时针</option>
+      <option value="ccw">逆时针</option>
+    </select>
+    <div class="btn-row" style="margin-top:12px">
+      <button id="lc-dl" class="primary">下载 SVG</button>
+    </div>
+  </div>
+  <div>
+    <div class="field-label"><span>预览</span></div>
+    <div id="lc-preview" style="display:flex;align-items:center;justify-content:center;background:#fafafa;border:1px solid var(--border-color);border-radius:10px;min-height:320px"></div>
+  </div>
+</div>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  const SVGNS = 'http://www.w3.org/2000/svg';
+  function render(){
+    const text = $('lc-text').value || ' ';
+    const r = +$('lc-r').value, fs = +$('lc-fs').value, color = $('lc-color').value;
+    const size = (r+fs+10)*2, c = r+fs+10;
+    const pathD = `M ${c},${c} m -${r},0 a ${r},${r} 0 1,1 ${r*2},0 a ${r},${r} 0 1,1 -${r*2},0`;
+    const dir = $('lc-dir').value;
+    const svg = document.createElementNS(SVGNS, 'svg');
+    svg.setAttribute('xmlns', SVGNS);
+    svg.setAttribute('viewBox', `0 0 ${size} ${size}`);
+    svg.setAttribute('width', '300'); svg.setAttribute('height', '300');
+    const defs = document.createElementNS(SVGNS, 'defs');
+    const path = document.createElementNS(SVGNS, 'path');
+    path.setAttribute('id', 'lcPath'); path.setAttribute('d', pathD); path.setAttribute('fill','none');
+    defs.appendChild(path); svg.appendChild(defs);
+    const txt = document.createElementNS(SVGNS, 'text');
+    txt.setAttribute('fill', color); txt.setAttribute('font-size', fs); txt.setAttribute('font-family','sans-serif');
+    txt.setAttribute('font-weight','600');
+    const tp = document.createElementNS(SVGNS, 'textPath');
+    tp.setAttribute('href', '#lcPath'); tp.setAttributeNS('http://www.w3.org/1999/xlink','href','#lcPath');
+    tp.setAttribute('startOffset','0%');
+    if (dir==='ccw'){ tp.setAttribute('side','right'); }
+    tp.textContent = text;
+    txt.appendChild(tp); svg.appendChild(txt);
+    const box = $('lc-preview'); box.innerHTML=''; box.appendChild(svg);
+    svg.dataset.raw = new XMLSerializer().serializeToString(svg);
+  }
+  ['lc-text','lc-r','lc-fs','lc-color','lc-dir'].forEach(id => $(id).addEventListener('input', render));
+  render();
+  $('lc-dl').addEventListener('click', () => {
+    const svg = $('lc-preview').querySelector('svg');
+    if (!svg) return;
+    const data = new XMLSerializer().serializeToString(svg);
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([data], { type:'image/svg+xml' }));
+    a.download = 'letter-circle.svg'; a.click();
+  });
+</script>

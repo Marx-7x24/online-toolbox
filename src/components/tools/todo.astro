@@ -1,0 +1,56 @@
+---
+// 待办清单：localStorage 本地保存，支持增删、完成态、清空
+---
+<div>
+  <div style="display:flex;gap:8px;margin-bottom:12px">
+    <input type="text" id="td-in" placeholder="添加一项待办，回车确认…" style="flex:1;padding:9px 12px;border:1px solid var(--border-color);border-radius:8px;box-sizing:border-box;font-size:14px">
+    <button id="td-add" class="primary">添加</button>
+  </div>
+  <div id="td-list" style="display:flex;flex-direction:column;gap:6px;min-height:60px"></div>
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px">
+    <span id="td-stat" style="font-size:13px;color:var(--text-sub)"></span>
+    <button id="td-clear">清空全部</button>
+  </div>
+</div>
+
+<style>
+  #td-list .item { display:flex; align-items:center; gap:10px; padding:9px 12px; border:1px solid var(--border-color); border-radius:8px; background:#fff; }
+  #td-list .item.done .txt { text-decoration:line-through; color:var(--text-hint); }
+  #td-list .txt { flex:1; font-size:14px; word-break:break-all; }
+  #td-list .del { cursor:pointer; color:var(--text-hint); border:0; background:none; font-size:16px; }
+  #td-list .del:hover { color:#d92c2c; }
+  #td-list .empty { color:var(--text-hint); font-size:13px; padding:14px; text-align:center; }
+</style>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  const KEY = 'todoList';
+  let items = [];
+  try { items = JSON.parse(localStorage.getItem(KEY) || '[]'); } catch(e){ items = []; }
+  if (!Array.isArray(items)) items = [];
+
+  function save(){ try { localStorage.setItem(KEY, JSON.stringify(items)); } catch(e){} render(); }
+  function render(){
+    const box = $('td-list');
+    if (!items.length){ box.innerHTML = '<div class="empty">还没有待办，添加一条吧</div>'; }
+    else {
+      box.innerHTML = items.map((it,i)=>`<div class="item ${it.done?'done':''}">
+        <input type="checkbox" data-i="${i}" ${it.done?'checked':''}>
+        <span class="txt">${it.text.replace(/</g,'&lt;')}</span>
+        <button class="del" data-i="${i}" title="删除">✕</button>
+      </div>`).join('');
+      box.querySelectorAll('input[type=checkbox]').forEach(cb=>cb.addEventListener('change', e=>{ items[+e.target.dataset.i].done = e.target.checked; save(); }));
+      box.querySelectorAll('.del').forEach(b=>b.addEventListener('click', e=>{ items.splice(+e.target.dataset.i,1); save(); }));
+    }
+    const left = items.filter(i=>!i.done).length;
+    $('td-stat').textContent = `${left} 项待办 / 共 ${items.length} 项`;
+  }
+  function add(){
+    const v = $('td-in').value.trim(); if(!v) return;
+    items.push({ text:v, done:false }); $('td-in').value=''; save();
+  }
+  $('td-add').addEventListener('click', add);
+  $('td-in').addEventListener('keydown', e=>{ if(e.key==='Enter') add(); });
+  $('td-clear').addEventListener('click', ()=>{ if(items.length && confirm('确定清空全部待办？')){ items=[]; save(); } });
+  render();
+</script>

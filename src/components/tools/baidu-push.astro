@@ -1,0 +1,59 @@
+---
+// 百度收录推送（主动推送）：生成百度站长平台 API 地址与 curl 命令，可一键复制
+// 说明：浏览器直接 POST 通常会被跨域(CORS)拦截，因此本工具以"生成命令"为主，复制后在服务器/本地终端执行。
+---
+<div class="pane">
+  <div>
+    <div class="field-label"><span>站点域名（在百度站长平台验证过的）</span></div>
+    <input type="text" id="bp-site" placeholder="https://www.example.com" style="width:100%;padding:8px;border:1px solid var(--border-color);border-radius:6px;box-sizing:border-box">
+    <div class="field-label" style="margin-top:12px"><span>准入 Token</span></div>
+    <input type="text" id="bp-token" placeholder="站长平台获取的 token" style="width:100%;padding:8px;border:1px solid var(--border-color);border-radius:6px;box-sizing:border-box">
+    <div class="field-label" style="margin-top:12px"><span>待推送链接（每行一个）</span></div>
+    <textarea id="bp-urls" placeholder="https://www.example.com/a&#10;https://www.example.com/b" style="width:100%;height:120px;padding:8px;border:1px solid var(--border-color);border-radius:6px;box-sizing:border-box;font-size:13px;resize:vertical"></textarea>
+    <div class="btn-row" style="margin-top:10px">
+      <button id="bp-gen" class="primary">生成推送命令</button>
+      <button id="bp-try">尝试直接推送</button>
+    </div>
+  </div>
+  <div>
+    <div class="field-label"><span>API 地址</span></div>
+    <input type="text" id="bp-api" readonly style="width:100%;padding:8px;border:1px solid var(--border-color);border-radius:6px;box-sizing:border-box;font-size:12px;background:#fafafa">
+    <div class="field-label" style="margin-top:12px"><span>curl 命令</span></div>
+    <textarea id="bp-curl" readonly style="width:100%;height:160px;padding:8px;border:1px solid var(--border-color);border-radius:6px;box-sizing:border-box;font-family:ui-monospace,monospace;font-size:12px;background:#0f172a;color:#e2e8f0"></textarea>
+    <div class="btn-row">
+      <button id="bp-copy">复制 curl</button>
+    </div>
+    <p class="msg" id="bp-msg"></p>
+    <p style="color:var(--text-hint);font-size:12px">单次最多 2000 条，配额见百度站长平台。Token 仅用于拼接命令，不会在本页保存或上传。</p>
+  </div>
+</div>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  function gen(){
+    const site = $('bp-site').value.trim().replace(/\/$/,'');
+    const token = $('bp-token').value.trim();
+    const urls = $('bp-urls').value.split('\n').map(s=>s.trim()).filter(Boolean);
+    if (!site || !token){ $('bp-msg').textContent='请填写站点域名与 Token'; $('bp-msg').className='msg err'; return; }
+    const api = `http://data.www.baidu.com/api/urls?site=${encodeURIComponent(site)}&token=${encodeURIComponent(token)}`;
+    $('bp-api').value = api;
+    const body = urls.join('\\n');
+    const curl = `curl -X POST '${api}' \\\n  -H 'Content-Type: text/plain' \\\n  --data-binary '${body}'`;
+    $('bp-curl').value = curl;
+    $('bp-msg').textContent = `已生成（${urls.length} 条链接）`; $('bp-msg').className='msg ok';
+  }
+  $('bp-gen').addEventListener('click', gen);
+  $('bp-copy').addEventListener('click', ()=>{ if(!$('bp-curl').value) return; navigator.clipboard.writeText($('bp-curl').value); $('bp-msg').textContent='curl 已复制'; });
+  $('bp-try').addEventListener('click', async ()=>{
+    const api = $('bp-api').value; if(!api){ gen(); }
+    const urls = $('bp-urls').value.split('\n').map(s=>s.trim()).filter(Boolean);
+    if (!api){ return; }
+    try {
+      const res = await fetch(api, { method:'POST', headers:{'Content-Type':'text/plain'}, body: urls.join('\n') });
+      const txt = await res.text();
+      $('bp-msg').textContent = '推送返回：' + txt; $('bp-msg').className='msg ok';
+    } catch(e){
+      $('bp-msg').textContent = '浏览器直接推送被跨域(CORS)拦截——请复制 curl 到服务器/本地终端执行。'; $('bp-msg').className='msg err';
+    }
+  });
+</script>

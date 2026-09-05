@@ -233,26 +233,36 @@ const switchUrl = Astro.url.pathname.replace(`/${lang}/`, `/${otherLang}/`) || `
         try { localStorage.setItem(RECENT_KEY, JSON.stringify(recent)); } catch (e) {}
       }
 
-      function renderRecent() {
-        const container = document.querySelector('.sidebar-recent');
-        if (!container) return;
-        const lang = container.dataset.lang || 'zh';
+      function renderHomeRecent() {
+        const panel = document.querySelector('.home-recent-panel');
+        if (!panel) return;
+        const lang = panel.dataset.lang || 'zh';
         const items = resolveItems(readRecent(), lang);
         if (!items.length) {
-          container.innerHTML = '<div class="sidebar-recent-empty">' + escapeHtml(I18N.emptySidebar) + '</div>';
+          panel.innerHTML = '<div class="recent-empty">' +
+            '<div class="recent-empty__icon">' + EMPTY_SVG + '</div>' +
+            '<p>' + escapeHtml(I18N.emptyPage) + '</p>' +
+            '<a class="recent-empty__cta" href="/' + lang + '/">' + escapeHtml(I18N.emptyCta) + '</a>' +
+            '</div>';
           return;
         }
-        let html = items.slice(0, SIDEBAR_RECENT).map(function (item) {
-          return '<a href="/' + lang + '/tools/' + escapeHtml(item.slug) + '/" class="nav-item nav-item--recent">' +
-            '<span class="nav-icon">' + CLOCK_SVG + '</span>' +
-            '<span class="nav-label">' + escapeHtml(item.name) + '</span>' +
-            '</a>';
-        }).join('');
-        if (items.length > SIDEBAR_RECENT) {
-          html += '<a href="/' + lang + '/recent/" class="nav-item nav-item--recent nav-item--viewall">' +
-            '<span class="nav-label">' + escapeHtml(I18N.viewAll) + '</span></a>';
-        }
-        container.innerHTML = html;
+        panel.innerHTML = '<div class="tools-grid">' + items.map(function (item) { return cardHtml(item, lang); }).join('') + '</div>';
+      }
+
+      // 首页页签：全部工具 / 最近使用。点"最近使用"在右侧主区展示，不在左侧平铺。
+      function setupHomeTabs() {
+        const tabs = document.querySelectorAll('.home-tab');
+        if (!tabs.length) return;
+        tabs.forEach(function (tab) {
+          tab.addEventListener('click', function () {
+            const which = tab.getAttribute('data-tab');
+            tabs.forEach(function (t) { t.classList.toggle('is-active', t === tab); });
+            document.querySelectorAll('.home-tab-panel').forEach(function (p) {
+              p.classList.toggle('is-hidden', p.getAttribute('data-panel') !== which);
+            });
+            if (which === 'recent') renderHomeRecent();
+          });
+        });
       }
 
       function renderRecentPage() {

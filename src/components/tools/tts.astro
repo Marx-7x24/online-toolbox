@@ -1,0 +1,55 @@
+---
+// 文字转语音：浏览器原生 SpeechSynthesis（Web Speech API），本地合成不上传
+---
+<div class="pane">
+  <div>
+    <div class="field-label"><span>朗读文本</span></div>
+    <textarea id="tts-text" placeholder="输入要朗读的文字…" style="width:100%;height:200px;padding:10px;border:1px solid var(--border-color);border-radius:8px;box-sizing:border-box;font-size:14px;resize:vertical"></textarea>
+    <div class="field-label" style="margin-top:12px"><span>语音</span></div>
+    <select id="tts-voice" style="width:100%;padding:8px;border:1px solid var(--border-color);border-radius:6px"></select>
+    <div style="display:flex;gap:14px;align-items:center;margin-top:12px">
+      <label>语速 <input type="range" id="tts-rate" min="0.5" max="2" step="0.1" value="1" style="width:90px"></label>
+      <label>音调 <input type="range" id="tts-pitch" min="0" max="2" step="0.1" value="1" style="width:90px"></label>
+    </div>
+    <div class="btn-row" style="margin-top:12px">
+      <button id="tts-play" class="primary">朗读</button>
+      <button id="tts-stop">停止</button>
+    </div>
+    <p class="msg" id="tts-msg"></p>
+  </div>
+  <div>
+    <div class="field-label"><span>说明</span></div>
+    <p style="color:var(--text-sub);font-size:13px;line-height:1.7">
+      基于浏览器内置的语音合成引擎，中文是否可用取决于系统已安装的语音包（Windows/macOS/Android 通常自带中文语音）。<br>
+      朗读完全在本地完成，文字不会上传到任何服务器。
+    </p>
+  </div>
+</div>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  function loadVoices(){
+    const vs = speechSynthesis.getVoices();
+    const sel = $('tts-voice'); sel.innerHTML='';
+    if (!vs.length){ sel.innerHTML='<option>（系统未提供语音）</option>'; return; }
+    vs.forEach((v,i)=>{ const o=document.createElement('option'); o.value=i; o.textContent=`${v.name}（${v.lang}）`; if(/zh|cmn|Chinese/i.test(v.lang)||/Chinese|中文|普通话/.test(v.name)) o.selected=true; sel.appendChild(o); });
+  }
+  if ('speechSynthesis' in window){
+    loadVoices();
+    speechSynthesis.onvoiceschanged = loadVoices;
+    $('tts-play').addEventListener('click', ()=>{
+      const text = $('tts-text').value.trim(); if(!text){ $('tts-msg').textContent='请输入文本'; $('tts-msg').className='msg err'; return; }
+      speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(text);
+      const vs = speechSynthesis.getVoices(); const vi = +$('tts-voice').value;
+      if (vs[vi]) u.voice = vs[vi];
+      u.rate = +$('tts-rate').value; u.pitch = +$('tts-pitch').value;
+      speechSynthesis.speak(u);
+      $('tts-msg').textContent='朗读中…'; $('tts-msg').className='msg ok';
+      u.onend = ()=>{ $('tts-msg').textContent='朗读结束'; };
+    });
+    $('tts-stop').addEventListener('click', ()=>{ speechSynthesis.cancel(); $('tts-msg').textContent='已停止'; });
+  } else {
+    $('tts-msg').textContent='当前浏览器不支持语音合成'; $('tts-msg').className='msg err';
+  }
+</script>

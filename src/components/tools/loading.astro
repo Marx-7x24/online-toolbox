@@ -1,0 +1,62 @@
+---
+// Loading 动画生成：选择样式/颜色/尺寸，实时预览并复制 CSS
+---
+<div class="pane">
+  <div>
+    <div class="field-label"><span>样式</span></div>
+    <select id="ld-type" style="width:100%;padding:8px;border:1px solid var(--border-color);border-radius:6px">
+      <option value="spinner">旋转圆环 (spinner)</option>
+      <option value="ring">细环 (ring)</option>
+      <option value="dots">跳动圆点 (dots)</option>
+      <option value="bars">伸缩条 (bars)</option>
+    </select>
+    <div class="field-label" style="margin-top:12px"><span>颜色</span></div>
+    <input type="color" id="ld-color" value="#3e2eff" style="width:60px;height:34px;border:1px solid var(--border-color);border-radius:6px">
+    <div class="field-label" style="margin-top:12px"><span>尺寸</span></div>
+    <input type="range" id="ld-size" min="20" max="80" value="40" style="width:100%">
+    <div class="btn-row" style="margin-top:12px">
+      <button id="ld-copy" class="primary">复制 CSS</button>
+    </div>
+  </div>
+  <div>
+    <div class="field-label"><span>预览</span></div>
+    <div id="ld-preview" style="display:flex;align-items:center;justify-content:center;min-height:160px;background:#fafafa;border:1px solid var(--border-color);border-radius:10px"></div>
+    <div class="field-label" style="margin-top:12px"><span>CSS 代码</span></div>
+    <textarea id="ld-css" readonly style="width:100%;height:150px;padding:10px;border:1px solid var(--border-color);border-radius:8px;box-sizing:border-box;font-family:ui-monospace,monospace;font-size:12px"></textarea>
+  </div>
+</div>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  function gen(){
+    const c = $('ld-color').value, s = +$('ld-size').value, t = $('ld-type').value;
+    let html='', css='';
+    if (t==='spinner'){
+      css = `.loader{width:${s}px;height:${s}px;border:${Math.round(s/8)}px solid #e5e5e5;border-top-color:${c};border-radius:50%;animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}`;
+      html = `<div class="loader"></div>`;
+    } else if (t==='ring'){
+      css = `.loader{width:${s}px;height:${s}px;border:${Math.round(s/10)}px solid ${c};border-right-color:transparent;border-radius:50%;animation:spin 1.1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}`;
+      html = `<div class="loader"></div>`;
+    } else if (t==='dots'){
+      css = `.loader{display:flex;gap:${Math.round(s/6)}px}
+.loader i{width:${Math.round(s/3)}px;height:${Math.round(s/3)}px;background:${c};border-radius:50%;animation:bounce 1s infinite alternate}
+.loader i:nth-child(2){animation-delay:.2s}.loader i:nth-child(3){animation-delay:.4s}
+@keyframes bounce{to{transform:translateY(-${Math.round(s/3)}px)}}`;
+      html = `<div class="loader"><i></i><i></i><i></i></div>`;
+    } else {
+      css = `.loader{display:flex;gap:${Math.round(s/10)}px;align-items:center}
+.loader i{width:${Math.round(s/8)}px;height:${s}px;background:${c};animation:stretch 1s infinite ease-in-out}
+.loader i:nth-child(2){animation-delay:.1s}.loader i:nth-child(3){animation-delay:.2s}.loader i:nth-child(4){animation-delay:.3s}
+@keyframes stretch{0%,100%{transform:scaleY(.4)}50%{transform:scaleY(1)}}`;
+      html = `<div class="loader"><i></i><i></i><i></i><i></i></div>`;
+    }
+    const prev = $('ld-preview');
+    prev.innerHTML = `<style>${css}</style>` + html;
+    $('ld-css').value = css;
+  }
+  ['ld-type','ld-color','ld-size'].forEach(id=>$(id).addEventListener('input', gen));
+  $('ld-copy').addEventListener('click', ()=>{ navigator.clipboard.writeText($('ld-css').value).then(()=>{ $('ld-css').focus(); }); });
+  gen();
+</script>

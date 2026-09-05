@@ -1,0 +1,67 @@
+---
+// 查看网页源代码：尝试 fetch（受 CORS 限制），失败时提供浏览器原生 view-source 打开
+---
+<div class="pane">
+  <div>
+    <div class="field-label"><span>网址</span></div>
+    <input type="text" id="vs-url" placeholder="https://example.com" style="width:100%;padding:8px;border:1px solid var(--border-color);border-radius:6px;box-sizing:border-box">
+    <div class="btn-row" style="margin-top:10px">
+      <button id="vs-fetch" class="primary">获取源码</button>
+      <button id="vs-native">用浏览器原生 view-source 打开</button>
+      <button id="vs-clear">清空</button>
+    </div>
+    <p id="vs-msg" class="msg"></p>
+  </div>
+  <div>
+    <div class="field-label"><span>源码（只读）</span></div>
+    <textarea id="vs-out" readonly style="width:100%;height:360px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;padding:10px;border:1px solid var(--border-color);border-radius:8px;box-sizing:border-box;background:#0f172a;color:#e2e8f0;white-space:pre;overflow:auto"></textarea>
+    <div class="btn-row">
+      <button id="vs-copy">复制源码</button>
+      <button id="vs-download">下载 .html</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  function norm(u){ if(!/^https?:\/\//i.test(u)) u='https://'+u; return u; }
+
+  $('vs-fetch').addEventListener('click', async () => {
+    const url = norm($('vs-url').value.trim());
+    if (!url) { $('vs-msg').textContent='请输入网址'; $('vs-msg').className='msg err'; return; }
+    $('vs-msg').textContent='请求中…'; $('vs-msg').className='msg';
+    try {
+      const ctrl = new AbortController();
+      const t = setTimeout(()=>ctrl.abort(), 12000);
+      const res = await fetch(url, { signal: ctrl.signal, mode: 'cors' });
+      clearTimeout(t);
+      const txt = await res.text();
+      $('vs-out').value = txt;
+      $('vs-msg').textContent = `成功获取 ${txt.length} 字符（状态码 ${res.status}）`; $('vs-msg').className='msg ok';
+    } catch (e) {
+      $('vs-out').value = '';
+      $('vs-msg').textContent = '跨域(CORS)被拦截或网络失败：浏览器无法直接读取该站源码。可点"用浏览器原生 view-source 打开"在新标签查看。';
+      $('vs-msg').className='msg err';
+    }
+  });
+
+  $('vs-native').addEventListener('click', () => {
+    const url = norm($('vs-url').value.trim());
+    if (!url) { $('vs-msg').textContent='请输入网址'; $('vs-msg').className='msg err'; return; }
+    window.open('view-source:' + url, '_blank');
+  });
+
+  $('vs-copy').addEventListener('click', () => {
+    if (!$('vs-out').value) return;
+    navigator.clipboard.writeText($('vs-out').value).then(()=>{ $('vs-msg').textContent='已复制'; $('vs-msg').className='msg ok'; });
+  });
+
+  $('vs-download').addEventListener('click', () => {
+    const txt = $('vs-out').value; if (!txt) return;
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([txt], { type:'text/html' }));
+    a.download = 'source.html'; a.click();
+  });
+
+  $('vs-clear').addEventListener('click', () => { $('vs-out').value=''; $('vs-url').value=''; $('vs-msg').textContent=''; });
+</script>

@@ -1,0 +1,57 @@
+---
+// LED 文字：霓虹滚动文字效果（纯前端 CSS 动画）
+---
+<div class="pane">
+  <div>
+    <div class="field-label"><span>文字内容</span></div>
+    <input type="text" id="led-text" value="欢迎光临 ★ 在线工具箱 ★" style="width:100%;padding:8px;border:1px solid var(--border-color);border-radius:6px;box-sizing:border-box">
+    <div class="field-label" style="margin-top:12px"><span>文字颜色</span></div>
+    <input type="color" id="led-color" value="#ff3b3b" style="width:60px;height:34px;border:1px solid var(--border-color);border-radius:6px">
+    <div class="field-label" style="margin-top:12px"><span>滚动速度（越小越快）</span></div>
+    <input type="range" id="led-speed" min="4" max="30" value="12" style="width:100%">
+    <div class="field-label" style="margin-top:12px"><span>字号</span></div>
+    <input type="range" id="led-size" min="20" max="64" value="36" style="width:100%">
+    <div class="btn-row" style="margin-top:12px">
+      <button id="led-toggle" class="primary">暂停 / 播放</button>
+    </div>
+  </div>
+  <div>
+    <div class="field-label"><span>预览</span></div>
+    <div id="led-screen" style="background:#0a0a0a;border-radius:10px;overflow:hidden;min-height:120px;display:flex;align-items:center;position:relative">
+      <div id="led-track" style="white-space:nowrap;will-change:transform;padding:14px 0"></div>
+    </div>
+  </div>
+</div>
+
+<style>
+  #led-track { font-family:"DIN","PingFang SC",sans-serif; font-weight:700; text-shadow:0 0 6px currentColor,0 0 12px currentColor; }
+</style>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  let animId = null, paused=false, start=0, offset=0;
+  function build(){
+    const text = $('led-text').value || ' ';
+    const color = $('led-color').value;
+    const size = +$('led-size').value;
+    const track = $('led-track');
+    track.textContent = text + '　'.repeat(4) + text;
+    track.style.color = color; track.style.fontSize = size+'px';
+    const screenW = $('led-screen').clientWidth || 320;
+    const total = track.scrollWidth/2;
+    const dur = (+$('led-speed').value) * 1000 * (total/screenW) / 40; // 粗略速度
+    const dist = total;
+    cancelAnimationFrame(animId);
+    function step(t){
+      if (!start) start = t;
+      const p = ((t-start)/dur) % 1;
+      track.style.transform = `translateX(${-p*dist}px)`;
+      animId = requestAnimationFrame(step);
+    }
+    start = 0;
+    if (!paused) animId = requestAnimationFrame(step);
+  }
+  ['led-text','led-color','led-speed','led-size'].forEach(id=>$(id).addEventListener('input', ()=>{ paused=false; build(); }));
+  $('led-toggle').addEventListener('click', ()=>{ paused=!paused; if(!paused) build(); else cancelAnimationFrame(animId); });
+  build();
+</script>

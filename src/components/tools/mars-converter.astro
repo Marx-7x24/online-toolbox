@@ -1,0 +1,63 @@
+---
+// 火星坐标转换：WGS-84(GPS) / GCJ-02(国测局/高德) / BD-09(百度) 互转（纯前端算法）
+---
+<div class="pane">
+  <div>
+    <div class="field-label"><span>经度 (lng)</span></div>
+    <input type="text" id="mc-lng" value="116.404" style="width:100%;padding:8px;border:1px solid var(--border-color);border-radius:6px;box-sizing:border-box">
+    <div class="field-label" style="margin-top:12px"><span>纬度 (lat)</span></div>
+    <input type="text" id="mc-lat" value="39.915" style="width:100%;padding:8px;border:1px solid var(--border-color);border-radius:6px;box-sizing:border-box">
+    <div class="field-label" style="margin-top:12px"><span>当前坐标所用体系</span></div>
+    <select id="mc-from" style="width:100%;padding:8px;border:1px solid var(--border-color);border-radius:6px">
+      <option value="wgs84">WGS-84（GPS / 原始经纬度）</option>
+      <option value="gcj02">GCJ-02（高德 / 腾讯 / 国测局）</option>
+      <option value="bd09">BD-09（百度）</option>
+    </select>
+    <div class="btn-row" style="margin-top:12px">
+      <button id="mc-run" class="primary">转换</button>
+      <button id="mc-swap">交换经纬度</button>
+    </div>
+  </div>
+  <div>
+    <div class="field-label"><span>转换结果</span></div>
+    <table class="result-table"><tbody>
+      <tr><th>WGS-84 (GPS)</th><td id="mc-wgs">—</td></tr>
+      <tr><th>GCJ-02 (高德)</th><td id="mc-gcj">—</td></tr>
+      <tr><th>BD-09 (百度)</th><td id="mc-bd">—</td></tr>
+    </tbody></table>
+    <p class="msg" id="mc-msg"></p>
+    <p style="color:var(--text-hint);font-size:12px">说明：GCJ-02 为中国法定加密偏移，转换公式为近似实现，与官方存在米级误差，仅供开发调试参考。</p>
+  </div>
+</div>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  const a = 6378245.0, ee = 0.00669342162296594323, pi = Math.PI, x_pi = pi*3000/180;
+  const outOfChina = (lng, lat) => (lng<72.004||lng>137.8347)||(lat<0.8293||lat>55.8271);
+  function tLat(x,y){let r=-100+2*x+3*y+0.2*y*y+0.1*x*y+0.2*Math.sqrt(Math.abs(x));r+=(20*Math.sin(6*x*pi)+20*Math.sin(2*x*pi))*2/3;r+=(20*Math.sin(y*pi)+40*Math.sin(y/3*pi))*2/3;r+=(160*Math.sin(y/12*pi)+320*Math.sin(y*pi/30))*2/3;return r;}
+  function tLng(x,y){let r=300+x+2*y+0.1*x*x+0.1*x*y+0.1*Math.sqrt(Math.abs(x));r+=(20*Math.sin(6*x*pi)+20*Math.sin(2*x*pi))*2/3;r+=(20*Math.sin(x*pi)+40*Math.sin(x/3*pi))*2/3;r+=(150*Math.sin(x/12*pi)+300*Math.sin(x/30*pi))*2/3;return r;}
+  function wgsToGcj(lng,lat){if(outOfChina(lng,lat))return[lng,lat];let dLat=tLat(lng-105,lat-35),dLng=tLng(lng-105,lat-35);const rl=lat/180*pi;let m=Math.sin(rl);m=1-ee*m*m;const sm=Math.sqrt(m);dLat=(dLat*180)/((a*(1-ee))/(m*sm)*pi);dLng=(dLng*180)/(a/sm*Math.cos(rl)*pi);return[lng+dLng,lat+dLat];}
+  function gcjToWgs(lng,lat){if(outOfChina(lng,lat))return[lng,lat];const[g1,g2]=wgsToGcj(lng,lat);return[lng*2-g1,lat*2-g2];}
+  function gcjToBd(lng,lat){const z=Math.sqrt(lng*lng+lat*lat)+0.00002*Math.sin(lat*x_pi);const th=Math.atan2(lat,lng)+0.000003*Math.cos(lng*x_pi);return[z*Math.cos(th)+0.0065,z*Math.sin(th)+0.006];}
+  function bdToGcj(lng,lat){const x=lng-0.0065,y=lat-0.006;const z=Math.sqrt(x*x+y*y)-0.00002*Math.sin(y*x_pi);const th=Math.atan2(y,x)-0.000003*Math.cos(x*x_pi);return[z*Math.cos(th),z*Math.sin(th)];}
+
+  function convert(lng, lat, from){
+    let w,g,b;
+    if (from==='wgs84'){ w=[lng,lat]; g=wgsToGcj(lng,lat); b=gcjToBd(g[0],g[1]); }
+    else if (from==='gcj02'){ g=[lng,lat]; w=gcjToWgs(lng,lat); b=gcjToBd(lng,lat); }
+    else { b=[lng,lat]; g=bdToGcj(lng,lat); w=gcjToWgs(g[0],g[1]); }
+    return { w, g, b };
+  }
+  const fmt = (p) => `${p[0].toFixed(6)}, ${p[1].toFixed(6)}`;
+
+  $('mc-run').addEventListener('click', () => {
+    const lng = parseFloat($('mc-lng').value), lat = parseFloat($('mc-lat').value);
+    if (isNaN(lng)||isNaN(lat)) { $('mc-msg').textContent='请输入合法的经度纬度'; $('mc-msg').className='msg err'; return; }
+    const r = convert(lng, lat, $('mc-from').value);
+    $('mc-wgs').textContent = fmt(r.w);
+    $('mc-gcj').textContent = fmt(r.g);
+    $('mc-bd').textContent = fmt(r.b);
+    $('mc-msg').textContent='转换完成'; $('mc-msg').className='msg ok';
+  });
+  $('mc-swap').addEventListener('click', () => { const l=$('mc-lng').value; $('mc-lng').value=$('mc-lat').value; $('mc-lat').value=l; });
+</script>
