@@ -25,14 +25,28 @@
 
     <div class="field-label" style="margin-top:14px"><span>发布时间</span></div>
     <input type="text" id="wmom-time" value="刚刚" style="width:100%;padding:7px;border:1px solid var(--border-color);border-radius:6px;box-sizing:border-box">
+
+    <div class="field-label" style="margin-top:14px"><span>手机时间</span></div>
+    <input type="text" id="wmom-sb-time" value="14:30" style="width:100%;padding:7px;border:1px solid var(--border-color);border-radius:6px;box-sizing:border-box">
+    <div class="field-label" style="margin-top:12px"><span>信号强度</span></div>
+    <select id="wmom-sb-signal" style="width:100%;padding:7px;border:1px solid var(--border-color);border-radius:6px;background:#fff">
+      <option value="1">1 格</option><option value="2">2 格</option><option value="3">3 格</option><option value="4" selected>4 格</option>
+    </select>
+    <div class="field-label" style="margin-top:12px"><span>手机网络</span></div>
+    <select id="wmom-sb-net" style="width:100%;padding:7px;border:1px solid var(--border-color);border-radius:6px;background:#fff">
+      <option value="5G" selected>5G</option><option value="4G">4G</option>
+    </select>
+    <div class="field-label" style="margin-top:12px"><span>剩余电量</span></div>
+    <input type="range" id="wmom-sb-bat" min="0" max="100" value="80" style="width:100%">
   </div>
   <div>
     <div class="field-label"><span>预览</span></div>
-    <div id="wmom-screen" style="max-width:360px;margin:0 auto;background:#111;border-radius:10px;overflow:hidden;padding:12px">
-      <div id="wmom-card" style="background:#1f1f1f;border-radius:8px;padding:12px;color:#e8e8e8"></div>
+    <div id="wmom-screen" style="max-width:360px;margin:0 auto;background:#111;border-radius:10px;overflow:hidden;padding:0">
+      <div class="sb-statusbar"><span class="sb-time">14:30</span><span class="sb-right"><span class="sb-signal"></span><span class="sb-net">5G</span><span class="sb-battery"><i></i></span></span></div>
+      <div id="wmom-card" style="background:#1f1f1f;border-radius:0;padding:12px;color:#e8e8e8"></div>
     </div>
     <div class="btn-row" style="justify-content:center">
-      <button id="wmom-export" class="primary">导出 PNG</button>
+      <button id="wmom-export" class="primary">生成截图</button>
     </div>
     <p class="msg" id="wmom-msg"></p>
   </div>
@@ -57,6 +71,7 @@
 </style>
 
 <script>
+import { bindStatusBar } from '../../scripts/statusbar.js';
 const $ = (id) => document.getElementById(id);
 let avatar = null; let images = [];
 
@@ -233,4 +248,5 @@ $('wmom-export').addEventListener('click', () => {
 });
 
 render();
+bindStatusBar('wmom');
 </script>

@@ -1,0 +1,151 @@
+---
+// 朋友圈九宫格生成器：上传图片自动切 3×3（可调行列）九宫格，实时预览，打包 ZIP 下载。纯前端，无依赖。
+---
+<div class="pane">
+  <div>
+    <div class="field-label"><span>上传图片</span></div>
+    <input type="file" id="ng-file" accept="image/*">
+    <div id="ng-info" style="font-size:12px;color:var(--text-sub);margin-top:6px"></div>
+
+    <div class="field-label" style="margin-top:14px"><span>切割行列</span></div>
+    <div style="display:flex;gap:14px;align-items:center">
+      <label style="font-size:14px">行 <input type="number" id="ng-rows" min="1" max="6" value="3" style="width:56px;padding:6px;border:1px solid var(--border-color);border-radius:6px"></label>
+      <label style="font-size:14px">列 <input type="number" id="ng-cols" min="1" max="6" value="3" style="width:56px;padding:6px;border:1px solid var(--border-color);border-radius:6px"></label>
+    </div>
+
+    <div class="btn-row" style="margin-top:16px">
+      <button id="ng-zip" class="primary">打包 ZIP 下载</button>
+      <button id="ng-clear">清空</button>
+    </div>
+    <p class="msg" id="ng-msg"></p>
+  </div>
+  <div>
+    <div class="field-label"><span>预览（编号 1-9）</span></div>
+    <div id="ng-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:4px;max-width:360px;margin:0 auto;background:#ededed;padding:4px;border-radius:10px"></div>
+  </div>
+</div>
+
+<style>
+  .ng-cell { position:relative; aspect-ratio:1; overflow:hidden; border-radius:4px; background:#ddd; }
+  .ng-cell img { width:100%; height:100%; object-fit:cover; display:block; }
+  .ng-cell span { position:absolute; top:4px; left:6px; font-size:13px; color:#fff; text-shadow:0 1px 2px rgba(0,0,0,.7); font-weight:600; }
+</style>
+
+<script>
+const $ = (id) => document.getElementById(id);
+let imgEl = null, srcUrl = null;
+
+$('ng-file').addEventListener('change', e => {
+  const f = e.target.files[0]; if (!f) return;
+  const url = URL.createObjectURL(f);
+  const img = new Image();
+  img.onload = () => { imgEl = img; srcUrl = url; $('ng-info').textContent = '已加载 ' + img.width + '×' + img.height; render(); };
+  img.src = url;
+});
+
+function slice(rows, cols){
+  if (!imgEl) return [];
+  const cellW = Math.floor(imgEl.width / cols);
+  const cellH = Math.floor(imgEl.height / rows);
+  const cells = [];
+  for (let r = 0; r < rows; r++){
+    for (let c = 0; c < cols; c++){
+      const cnv = document.createElement('canvas');
+      cnv.width = cellW; cnv.height = cellH;
+      const ctx = cnv.getContext('2d');
+      ctx.drawImage(imgEl, c*cellW, r*cellH, cellW, cellH, 0, 0, cellW, cellH);
+      cells.push({ idx: r*cols + c + 1, canvas: cnv });
+    }
+  }
+  return cells;
+}
+
+function render(){
+  const rows = Math.max(1, Math.min(6, +$('ng-rows').value || 3));
+  const cols = Math.max(1, Math.min(6, +$('ng-cols').value || 3));
+  const grid = $('ng-grid');
+  grid.style.gridTemplateColumns = 'repeat(' + cols + ',1fr)';
+  if (!imgEl){ grid.innerHTML = '<div style="color:#9aa0a6;font-size:13px;text-align:center;grid-column:1/-1;padding:30px">上传图片后自动切割</div>'; return; }
+  const cells = slice(rows, cols);
+  grid.innerHTML = cells.map(cell => `<div class="ng-cell"><img src="${cell.canvas.toDataURL('image/png')}"><span>${cell.idx}</span></div>`).join('');
+}
+
+['ng-rows','ng-cols'].forEach(id => $(id).addEventListener('input', render));
+
+// ---- 纯前端 store 模式 ZIP 编码（PNG 已压缩，store 无损，免依赖）----
+function crc32(buf){
+  let c = ~0;
+  for (let i = 0; i < buf.length; i++){
+    c ^= buf[i];
+    for (let k = 0; k < 8; k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+  }
+  return (~c) >>> 0;
+}
+async function makeZip(files){
+  const enc = new TextEncoder();
+  const localParts = [];
+  const centralParts = [];
+  let offset = 0;
+  for (const f of files){
+    const data = new Uint8Array(await f.blob.arrayBuffer());
+    const name = enc.encode(f.name);
+    const crc = crc32(data);
+    const lh = new DataView(new ArrayBuffer(30));
+    lh.setUint32(0, 0x04034b50, true);
+    lh.setUint16(4, 20, true); lh.setUint16(6, 0, true); lh.setUint16(8, 0, true);
+    lh.setUint16(10, 0, true); lh.setUint16(12, 0, true);
+    lh.setUint32(14, crc, true);
+    lh.setUint32(18, data.length, true); lh.setUint32(22, data.length, true);
+    lh.setUint16(26, name.length, true); lh.setUint16(28, 0, true);
+    const lhB = new Uint8Array(lh.buffer);
+    localParts.push(lhB, name, data);
+    const ch = new DataView(new ArrayBuffer(46));
+    ch.setUint32(0, 0x02014b50, true);
+    ch.setUint16(4, 20, true); ch.setUint16(6, 20, true); ch.setUint16(8, 0, true);
+    ch.setUint16(10, 0, true); ch.setUint16(12, 0, true); ch.setUint16(14, 0, true);
+    ch.setUint32(16, crc, true);
+    ch.setUint32(20, data.length, true); ch.setUint32(24, data.length, true);
+    ch.setUint16(28, name.length, true); ch.setUint16(30, 0, true); ch.setUint16(32, 0, true);
+    ch.setUint16(34, 0, true); ch.setUint16(36, 0, true); ch.setUint32(38, 0, true);
+    ch.setUint32(42, offset, true);
+    centralParts.push(new Uint8Array(ch.buffer));
+    offset += lhB.length + name.length + data.length;
+  }
+  const cdBytes = concat(centralParts);
+  const eo = new DataView(new ArrayBuffer(22));
+  eo.setUint32(0, 0x06054b50, true);
+  eo.setUint16(4, 0, true); eo.setUint16(6, 0, true);
+  eo.setUint16(8, files.length, true); eo.setUint16(10, files.length, true);
+  eo.setUint32(12, cdBytes.length, true); eo.setUint32(16, offset, true); eo.setUint16(20, 0, true);
+  return new Blob([...localParts, cdBytes, new Uint8Array(eo.buffer)], { type: 'application/zip' });
+}
+function concat(chunks){
+  let len = 0; chunks.forEach(c => len += c.length);
+  const out = new Uint8Array(len); let p = 0;
+  chunks.forEach(c => { out.set(c, p); p += c.length; });
+  return out;
+}
+
+$('ng-zip').addEventListener('click', async () => {
+  const rows = Math.max(1, Math.min(6, +$('ng-rows').value || 3));
+  const cols = Math.max(1, Math.min(6, +$('ng-cols').value || 3));
+  const cells = slice(rows, cols);
+  if (!cells.length){ $('ng-msg').textContent='请先上传图片'; $('ng-msg').className='msg err'; return; }
+  $('ng-msg').textContent='打包中…'; $('ng-msg').className='msg';
+  try {
+    const files = await Promise.all(cells.map(cell => new Promise(res => cell.canvas.toBlob(b => res({ name: 'grid_' + cell.idx + '.png', blob: b }), 'image/png'))));
+    const zip = await makeZip(files);
+    const a = document.createElement('a'); a.href = URL.createObjectURL(zip); a.download = 'nine-grid.zip'; a.click();
+    $('ng-msg').textContent = '已打包 ' + cells.length + ' 张切片（nine-grid.zip）'; $('ng-msg').className = 'msg ok';
+  } catch (e){
+    $('ng-msg').textContent = '打包失败：' + (e.message || e); $('ng-msg').className = 'msg err';
+  }
+});
+
+$('ng-clear').addEventListener('click', () => {
+  imgEl = null; if (srcUrl) URL.revokeObjectURL(srcUrl); srcUrl = null;
+  $('ng-file').value = ''; $('ng-info').textContent = ''; render();
+});
+
+render();
+</script>

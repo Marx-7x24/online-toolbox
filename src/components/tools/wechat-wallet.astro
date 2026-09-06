@@ -17,18 +17,28 @@
 退款+18.00
 充值+500.00</textarea>
 
-    <div class="field-label" style="margin-top:12px"><span>状态栏时间</span></div>
-    <input type="text" id="ww-time" value="14:30" style="width:100%;padding:7px;border:1px solid var(--border-color);border-radius:6px;box-sizing:border-box">
+    <div class="field-label" style="margin-top:12px"><span>手机时间</span></div>
+    <input type="text" id="ww-sb-time" value="14:30" style="width:100%;padding:7px;border:1px solid var(--border-color);border-radius:6px;box-sizing:border-box">
+    <div class="field-label" style="margin-top:12px"><span>信号强度</span></div>
+    <select id="ww-sb-signal" style="width:100%;padding:7px;border:1px solid var(--border-color);border-radius:6px;background:#fff">
+      <option value="1">1 格</option><option value="2">2 格</option><option value="3">3 格</option><option value="4" selected>4 格</option>
+    </select>
+    <div class="field-label" style="margin-top:12px"><span>手机网络</span></div>
+    <select id="ww-sb-net" style="width:100%;padding:7px;border:1px solid var(--border-color);border-radius:6px;background:#fff">
+      <option value="5G" selected>5G</option><option value="4G">4G</option>
+    </select>
+    <div class="field-label" style="margin-top:12px"><span>剩余电量</span></div>
+    <input type="range" id="ww-sb-bat" min="0" max="100" value="80" style="width:100%">
   </div>
   <div>
     <div class="field-label"><span>预览</span></div>
     <div id="ww-screen" style="max-width:340px;margin:0 auto;background:#ededed;border-radius:14px;overflow:hidden;box-shadow:0 4px 18px rgba(0,0,0,.12);min-height:420px">
-      <div id="ww-statusbar" style="background:#ededed;padding:4px 12px 2px;font-size:12px;color:#111;display:flex;justify-content:space-between;align-items:center"><span id="ww-clock">14:30</span><span style="opacity:.6">●●● 100%</span></div>
+      <div class="sb-statusbar"><span class="sb-time">14:30</span><span class="sb-right"><span class="sb-signal"></span><span class="sb-net">5G</span><span class="sb-battery"><i></i></span></span></div>
       <div id="ww-header" style="background:#ededed;padding:8px 12px;font-size:14px;text-align:center;color:#111;border-bottom:1px solid #d9d9d9;display:flex;justify-content:space-between;align-items:center"><span>‹</span><strong style="font-size:15px">零钱</strong><span style="visibility:hidden">·</span></div>
       <div id="ww-body" style="padding:0 14px 16px"></div>
     </div>
     <div class="btn-row" style="justify-content:center">
-      <button id="ww-export" class="primary">导出 PNG</button>
+      <button id="ww-export" class="primary">生成微信钱包截图</button>
     </div>
     <p class="msg" id="ww-msg"></p>
   </div>
@@ -59,6 +69,7 @@
 </style>
 
 <script>
+import { bindStatusBar } from '../../scripts/statusbar.js';
 const $ = (id) => document.getElementById(id);
 
 const ICON_MAP = [
@@ -90,9 +101,7 @@ function render(){
   const ch = +$('ww-change').value || 0;
   const pass = +$('ww-pass').value || 0;
   const total = ch + pass;
-  const time = $('ww-time').value || '14:30';
   const list = parseTx($('ww-tx').value);
-  if ($('ww-clock')) $('ww-clock').textContent = time;
   $('ww-body').innerHTML = `
     <div class="ww-total">
       <div class="ww-total-label">总资产（元）</div>
@@ -134,7 +143,7 @@ $('ww-export').addEventListener('click', () => {
   const pass = +$('ww-pass').value || 0;
   const total = ch + pass;
   const list = parseTx($('ww-tx').value);
-  const time = $('ww-time').value || '14:30';
+  const time = $('ww-sb-time').value || '14:30';
   const W = 375, cnv = document.createElement('canvas');
   const ctx = cnv.getContext('2d');
   ctx.font = '14px "PingFang SC","Microsoft YaHei",sans-serif';
@@ -201,4 +210,5 @@ $('ww-export').addEventListener('click', () => {
 });
 
 render();
+bindStatusBar('ww');
 </script>

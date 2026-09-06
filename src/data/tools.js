@@ -1473,6 +1473,17 @@ export const tools = [
     keywords_en: ['wechat wallet', 'balance simulator', 'wallet screenshot'],
   },
   {
+    slug: 'nine-grid',
+    name: '朋友圈九宫格生成',
+    name_en: 'Moments 3×3 Grid',
+    desc: '上传图片自动切 3×3 九宫格，实时预览每个切片，打包 ZIP 一键下载九张切片。',
+    desc_en: 'Upload an image to auto-slice it into a 3×3 grid, preview each tile, and download all nine slices as a ZIP.',
+    category: 'image',
+    subcategory: 'wechat',
+    keywords: ['朋友圈九宫格', '九宫格切图', '图片分割', '朋友圈配图'],
+    keywords_en: ['moments grid', 'image slicer', '9 grid'],
+  },
+  {
     slug: 'wechat-alipay',
     name: '微信支付宝收款码合并',
     name_en: 'WeChat & Alipay Pay QR Merge',

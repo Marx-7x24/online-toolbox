@@ -12,6 +12,19 @@
       <button id="wg-add-member" class="primary">+ 添加成员</button>
     </div>
 
+    <div class="field-label" style="margin-top:16px"><span>手机时间</span></div>
+    <input type="text" id="wg-sb-time" value="14:30" style="width:100%;padding:7px;border:1px solid var(--border-color);border-radius:6px;box-sizing:border-box">
+    <div class="field-label" style="margin-top:12px"><span>信号强度</span></div>
+    <select id="wg-sb-signal" style="width:100%;padding:7px;border:1px solid var(--border-color);border-radius:6px;background:#fff">
+      <option value="1">1 格</option><option value="2">2 格</option><option value="3">3 格</option><option value="4" selected>4 格</option>
+    </select>
+    <div class="field-label" style="margin-top:12px"><span>手机网络</span></div>
+    <select id="wg-sb-net" style="width:100%;padding:7px;border:1px solid var(--border-color);border-radius:6px;background:#fff">
+      <option value="5G" selected>5G</option><option value="4G">4G</option>
+    </select>
+    <div class="field-label" style="margin-top:12px"><span>剩余电量</span></div>
+    <input type="range" id="wg-sb-bat" min="0" max="100" value="80" style="width:100%">
+
     <div class="field-label" style="margin-top:14px"><span>发消息</span></div>
     <div style="display:flex;gap:8px;align-items:center">
       <select id="wg-sender" style="flex:1;padding:7px;border:1px solid var(--border-color);border-radius:6px;background:#fff"></select>
@@ -27,11 +40,12 @@
   <div>
     <div class="field-label"><span>预览</span></div>
     <div id="wg-screen" style="max-width:340px;margin:0 auto;background:#ededed;border-radius:14px;overflow:hidden;box-shadow:0 4px 18px rgba(0,0,0,.12)">
+      <div class="sb-statusbar"><span class="sb-time">14:30</span><span class="sb-right"><span class="sb-signal"></span><span class="sb-net">5G</span><span class="sb-battery"><i></i></span></span></div>
       <div id="wg-header" style="background:#ededed;padding:10px 12px;font-size:15px;font-weight:600;text-align:center;color:#111;border-bottom:1px solid #d9d9d9"></div>
       <div id="wg-chat" style="padding:12px 10px;min-height:300px;display:flex;flex-direction:column;gap:10px"></div>
     </div>
     <div class="btn-row" style="justify-content:center">
-      <button id="wg-export" class="primary">导出 PNG</button>
+      <button id="wg-export" class="primary">生成微信对话截图</button>
     </div>
     <p class="msg" id="wg-msg"></p>
   </div>
@@ -53,6 +67,7 @@
 </style>
 
 <script>
+import { bindStatusBar } from '../../scripts/statusbar.js';
 const $ = (id) => document.getElementById(id);
 let members = [
   { id: 1, name: '老妈', color: '#F08C8C', avatar: null },
@@ -126,6 +141,7 @@ $('wg-add-member').addEventListener('click', () => {
 });
 
 renderMembers(); renderSender(); renderChat();
+bindStatusBar('wg');
 
 // ---- Canvas 导出 ----
 function wrapText(ctx, text, maxW){
