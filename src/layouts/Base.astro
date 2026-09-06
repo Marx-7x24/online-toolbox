@@ -297,6 +297,7 @@ const switchUrl = Astro.url.pathname.replace(`/${lang}/`, `/${otherLang}/`) || `
 
       function renderAll() {
         renderRecentPage();
+        setupHomeTabs();
       }
 
       recordVisit();
