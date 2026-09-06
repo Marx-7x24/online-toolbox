@@ -12,7 +12,9 @@ import { t } from '../../../i18n/ui.ts';
 
 export function getStaticPaths() {
   return ['zh', 'en'].flatMap((lang) =>
-    tools.map((tool) => ({ params: { lang, slug: tool.slug }, props: { lang, tool } }))
+    tools
+      .filter((tool) => !tool.hidden)
+      .map((tool) => ({ params: { lang, slug: tool.slug }, props: { lang, tool } }))
   );
 }
 const { lang, tool } = Astro.props;

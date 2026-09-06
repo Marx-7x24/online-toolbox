@@ -16,17 +16,19 @@ const { title, description, keywords, lang = 'zh', active = 'home' } = Astro.pro
 // 客户端可用的工具索引：侧边栏「最近使用」与 /recent/ 独立页都靠它在浏览器端渲染。
 // 带上 desc 与懒人图标文件名，保证独立页卡片外观与首页完全一致。
 const toolMap = Object.fromEntries(
-  tools.map((tool) => [
-    tool.slug,
-    {
-      name: tool.name,
-      name_en: tool.name_en || tool.name,
-      desc: tool.desc || '',
-      desc_en: tool.desc_en || tool.desc || '',
-      category: tool.category,
-      icon: getToolIcon(tool.slug),
-    },
-  ])
+  tools
+    .filter((tool) => !tool.hidden)
+    .map((tool) => [
+      tool.slug,
+      {
+        name: tool.name,
+        name_en: tool.name_en || tool.name,
+        desc: tool.desc || '',
+        desc_en: tool.desc_en || tool.desc || '',
+        category: tool.category,
+        icon: getToolIcon(tool.slug),
+      },
+    ])
 );
 
 // 客户端渲染「最近使用」需要的文案（随语言切换，避免脚本里硬编码中英三元判断）

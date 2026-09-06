@@ -1359,6 +1359,7 @@ export const tools = [
     desc_en: 'Generate marketing posters from templates (purple / red / tech blue / dark) with custom title, subtitle and hero image.',
     category: 'image',
     subcategory: 'wechat',
+    hidden: true,
     keywords: ['营销图', '海报生成', 'banner'],
     keywords_en: ['marketing card', 'poster maker', 'banner generator'],
   },
@@ -1403,6 +1404,7 @@ export const tools = [
     desc_en: 'Build a realistic one-on-one WeChat conversation with custom names, avatars and left/right bubbles, timestamped, exportable to PNG.',
     category: 'image',
     subcategory: 'wechat',
+    hidden: true,
     keywords: ['微信聊天模拟器', '微信对话生成', '聊天截图', '微信模拟'],
     keywords_en: ['wechat chat simulator', 'wechat conversation', 'chat screenshot', 'fake chat'],
   },
@@ -1414,6 +1416,7 @@ export const tools = [
     desc_en: 'Built-in funny, cringe, confession and roast WeChat chat scripts; one-click copy the whole dialogue to paste into the simulator.',
     category: 'image',
     subcategory: 'wechat',
+    hidden: true,
     keywords: ['微信对话模板', '聊天文案', '搞笑对话', '复制对话'],
     keywords_en: ['wechat chat template', 'chat script', 'funny dialogue', 'copy chat'],
   },
@@ -1425,6 +1428,7 @@ export const tools = [
     desc_en: 'Define multiple group members with avatars and names, build a group conversation and export to PNG.',
     category: 'image',
     subcategory: 'wechat',
+    hidden: true,
     keywords: ['微信群聊', '群聊模拟', '群聊截图', '微信模拟'],
     keywords_en: ['wechat group chat', 'group chat simulator', 'group screenshot', 'fake chat'],
   },
@@ -1436,6 +1440,7 @@ export const tools = [
     desc_en: 'Customize Moments post text, images, likes and comments; generate a realistic Moments screenshot and export PNG.',
     category: 'image',
     subcategory: 'wechat',
+    hidden: true,
     keywords: ['朋友圈模拟', '朋友圈截图', '朋友圈生成', '微信'],
     keywords_en: ['wechat moments', 'moments simulator', 'moments screenshot'],
   },
@@ -1447,6 +1452,7 @@ export const tools = [
     desc_en: 'Advanced chat simulator with custom background, voice-message bubbles, system tips and time dividers; export HD PNG.',
     category: 'image',
     subcategory: 'wechat',
+    hidden: true,
     keywords: ['专业微信模拟', '微信对话', '高清截图', '聊天背景'],
     keywords_en: ['pro wechat simulator', 'wechat chat', 'hd screenshot'],
   },
@@ -1469,6 +1475,7 @@ export const tools = [
     desc_en: 'Set balance and Wealth Pass balance with transaction history; generate a realistic WeChat wallet screenshot and export PNG.',
     category: 'image',
     subcategory: 'wechat',
+    hidden: true,
     keywords: ['微信零钱', '零钱模拟', '钱包截图', '微信钱包'],
     keywords_en: ['wechat wallet', 'balance simulator', 'wallet screenshot'],
   },
@@ -1480,6 +1487,7 @@ export const tools = [
     desc_en: 'Upload an image to auto-slice it into a 3×3 grid, preview each tile, and download all nine slices as a ZIP.',
     category: 'image',
     subcategory: 'wechat',
+    hidden: true,
     keywords: ['朋友圈九宫格', '九宫格切图', '图片分割', '朋友圈配图'],
     keywords_en: ['moments grid', 'image slicer', '9 grid'],
   },
@@ -2591,7 +2599,7 @@ export const tools = [
 ];
 
 export function getToolsByCategory(slug) {
-  return tools.filter((t) => t.category === slug);
+  return tools.filter((t) => t.category === slug && !t.hidden);
 }
 
 export function getCategory(slug) {
