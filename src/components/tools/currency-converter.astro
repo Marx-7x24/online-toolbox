@@ -1,0 +1,94 @@
+---
+// 货币汇率转换器：frankfurter.app（欧洲央行）实时汇率，失败回退内置参考汇率
+---
+<div class="pane">
+  <div>
+    <div class="field-label"><span>金额</span></div>
+    <input type="number" id="cr-amt" value="100" step="any" style="width:100%;padding:9px;border:1px solid var(--border-color);border-radius:6px;box-sizing:border-box;font-size:16px">
+    <div class="field-label" style="margin-top:12px"><span>从</span></div>
+    <select id="cr-from" style="width:100%;padding:9px;border:1px solid var(--border-color);border-radius:6px;background:#fff"></select>
+    <div style="text-align:center;margin:8px 0"><button id="cr-swap">⇅ 交换</button></div>
+    <div class="field-label"><span>到</span></div>
+    <select id="cr-to" style="width:100%;padding:9px;border:1px solid var(--border-color);border-radius:6px;background:#fff"></select>
+    <div style="margin-top:14px;padding:14px;background:rgba(0,0,0,.03);border-radius:8px">
+      <div id="cr-out" style="font-size:22px;font-weight:600;color:var(--primary-color);word-break:break-all">-</div>
+      <div id="cr-rate" style="font-size:12px;color:var(--text-sub);margin-top:4px"></div>
+    </div>
+    <p class="msg" id="cr-msg"></p>
+  </div>
+  <div>
+    <div class="field-label"><span>常用币种行情（1 单位基准币）</span></div>
+    <div id="cr-list" style="font-size:13px;color:var(--text-sub)">加载中…</div>
+    <div style="margin-top:12px;font-size:12px;color:var(--text-sub);line-height:1.7">
+      汇率来源欧洲央行（ECB），工作日更新，不含周末与节假日数据；仅供参考，实际交易以银行/支付机构牌价为准。接口不可用时自动使用内置参考汇率（标注「参考」）。
+    </div>
+  </div>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const CURRENCIES = [
+  ['CNY','人民币 ¥'],['USD','美元 $'],['EUR','欧元 €'],['JPY','日元 ¥'],['GBP','英镑 £'],
+  ['HKD','港币 HK$'],['KRW','韩元 ₩'],['SGD','新加坡元'],['AUD','澳元'],['CAD','加元'],
+  ['CHF','瑞士法郎'],['THB','泰铢'],['MYR','林吉特'],['RUB','俄罗斯卢布'],['NZD','新西兰元'],
+  ['INR','印度卢比'],['TWD','新台币'],['BRL','巴西雷亚尔'],['ZAR','南非兰特'],['SEK','瑞典克朗'],
+];
+// 离线参考汇率（相对 USD，仅供接口失败兜底，2025 年参考值）
+const FALLBACK = { USD:1, CNY:7.12, EUR:0.92, JPY:150.5, GBP:0.79, HKD:7.81, KRW:1370, SGD:1.34, AUD:1.51, CAD:1.36, CHF:0.88, THB:35.8, MYR:4.62, RUB:92, NZD:1.64, INR:83.5, TWD:32.3, BRL:5.5, ZAR:18.3, SEK:10.5 };
+let RATES = null;   // { CNY: 7.12, ... } 相对 USD
+let isLive = false;
+
+function fill(){
+  for (const id of ['cr-from','cr-to']){
+    const sel = $(id);
+    sel.innerHTML = CURRENCIES.map(([c, n]) => `<option value="${c}">${n} (${c})</option>`).join('');
+  }
+  $('cr-from').value = 'USD';
+  $('cr-to').value = 'CNY';
+}
+function rateOf(cur){ return RATES ? RATES[cur] : FALLBACK[cur]; }
+function convert(){
+  const amt = parseFloat($('cr-amt').value);
+  const f = $('cr-from').value, t = $('cr-to').value;
+  if (isNaN(amt) || !rateOf(f) || !rateOf(t)){ $('cr-out').textContent = '-'; return; }
+  const usd = amt / rateOf(f);
+  const out = usd * rateOf(t);
+  $('cr-out').textContent = out.toLocaleString('zh-CN', { maximumFractionDigits: 2 }) + ' ' + t;
+  const r = rateOf(t) / rateOf(f);
+  $('cr-rate').textContent = `1 ${f} = ${r.toFixed(4)} ${t}（${isLive ? '实时' : '参考'}）`;
+}
+async function load(){
+  try {
+    const res = await fetch('https://api.frankfurter.app/latest?from=USD');
+    const data = await res.json();
+    if (data && data.rates){
+      RATES = { USD: 1, ...data.rates };
+      isLive = true;
+      $('cr-msg').textContent = '已连接欧洲央行实时汇率（' + data.date + '）';
+      $('cr-msg').className = 'msg ok';
+    } else throw new Error('bad data');
+  } catch (e){
+    RATES = null;
+    $('cr-msg').textContent = '实时汇率不可用，当前使用内置参考汇率';
+    $('cr-msg').className = 'msg err';
+  }
+  convert();
+  // 行情列表
+  const base = $('cr-from').value;
+  const items = CURRENCIES.filter(([c]) => c !== base).slice(0, 12);
+  $('cr-list').innerHTML = '<table style="width:100%;border-collapse:collapse">' + items.map(([c, n]) => {
+    const v = rateOf(base) ? rateOf(c) / rateOf(base) : null;
+    return `<tr><td style="padding:5px 2px">${n} ${c}</td><td style="padding:5px 2px;text-align:right;font-family:ui-monospace,monospace">${v ? v.toFixed(4) : '-'}</td></tr>`;
+  }).join('') + '</table>';
+}
+['cr-amt','cr-from','cr-to'].forEach(id => $(id).addEventListener('input', () => { convert(); if (id==='cr-from') load(); }));
+$('cr-from').addEventListener('change', () => { convert(); load(); });
+$('cr-to').addEventListener('change', convert);
+$('cr-swap').addEventListener('click', () => {
+  const a = $('cr-from').selectedIndex, b = $('cr-to').selectedIndex;
+  $('cr-from').selectedIndex = b; $('cr-to').selectedIndex = a;
+  convert(); load();
+});
+fill();
+load();
+</script>

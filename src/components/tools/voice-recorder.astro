@@ -1,0 +1,89 @@
+---
+// 在线录音助手：MediaRecorder 录音，暂停/续录/试听/下载，全部本地
+---
+<div class="pane">
+  <div>
+    <div style="text-align:center;padding:16px 0">
+      <div id="vc-time" style="font-size:52px;font-weight:700;color:var(--primary-color);font-variant-numeric:tabular-nums">00:00</div>
+      <div style="font-size:13px;color:var(--text-sub)">录制时长</div>
+    </div>
+    <div class="btn-row" style="justify-content:center">
+      <button id="vc-start" class="primary">● 开始录音</button>
+      <button id="vc-pause">⏸ 暂停</button>
+      <button id="vc-stop">■ 停止</button>
+    </div>
+    <p class="msg" id="vc-msg"></p>
+    <div style="margin-top:10px;font-size:12px;color:var(--text-sub);line-height:1.7">
+      浏览器直接录音（需要麦克风权限），默认输出 webm 格式；录音仅保存在你的浏览器内存中，点停止后可试听与下载，不会上传任何服务器。
+    </div>
+  </div>
+  <div>
+    <div class="field-label"><span>试听</span></div>
+    <audio id="vc-audio" controls style="width:100%;display:none"></audio>
+    <div id="vc-empty" style="padding:30px;text-align:center;color:var(--text-sub);font-size:13px;border:1px dashed var(--border-color);border-radius:8px">还没有录音</div>
+    <div class="btn-row" style="margin-top:10px;justify-content:center">
+      <a id="vc-dl" class="primary" style="display:none;text-decoration:none;padding:8px 18px;border-radius:6px;color:#fff;background:var(--primary-color);cursor:pointer">下载录音</a>
+    </div>
+  </div>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+let stream = null, rec = null, chunks = [];
+let t0 = 0, acc = 0, timer = null, url = null;
+
+function fmt(sec){
+  const m = String(Math.floor(sec / 60)).padStart(2, '0');
+  const s = String(Math.floor(sec % 60)).padStart(2, '0');
+  return m + ':' + s;
+}
+function tick(){
+  $('vc-time').textContent = fmt(acc + (Date.now() - t0) / 1000);
+}
+async function start(){
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    rec = new MediaRecorder(stream);
+    chunks = [];
+    rec.ondataavailable = e => { if (e.data.size) chunks.push(e.data); };
+    rec.onstop = () => {
+      const blob = new Blob(chunks, { type: rec.mimeType || 'audio/webm' });
+      if (url) URL.revokeObjectURL(url);
+      url = URL.createObjectURL(blob);
+      $('vc-audio').src = url;
+      $('vc-audio').style.display = '';
+      $('vc-empty').style.display = 'none';
+      const ext = (rec.mimeType || 'audio/webm').includes('mp4') ? 'm4a' : 'webm';
+      const dl = $('vc-dl');
+      dl.href = url; dl.download = 'recording.' + ext; dl.style.display = '';
+      stream.getTracks().forEach(t => t.stop());
+      stream = null;
+    };
+    rec.start();
+    acc = 0; t0 = Date.now();
+    timer = setInterval(tick, 250);
+    $('vc-msg').textContent = '录音中…'; $('vc-msg').className = 'msg ok';
+  } catch (e){
+    $('vc-msg').textContent = '无法访问麦克风：' + (e.message || e);
+    $('vc-msg').className = 'msg err';
+  }
+}
+$('vc-start').addEventListener('click', () => { if (!rec || rec.state === 'inactive') start(); });
+$('vc-pause').addEventListener('click', () => {
+  if (!rec) return;
+  if (rec.state === 'recording'){
+    rec.pause(); clearInterval(timer); acc += (Date.now() - t0) / 1000;
+    $('vc-msg').textContent = '已暂停'; $('vc-msg').className = 'msg';
+  } else if (rec.state === 'paused'){
+    rec.resume(); t0 = Date.now(); timer = setInterval(tick, 250);
+    $('vc-msg').textContent = '录音中…'; $('vc-msg').className = 'msg ok';
+  }
+});
+$('vc-stop').addEventListener('click', () => {
+  if (rec && rec.state !== 'inactive'){
+    if (rec.state === 'recording'){ clearInterval(timer); acc += (Date.now() - t0) / 1000; }
+    rec.stop();
+    $('vc-msg').textContent = '录音完成'; $('vc-msg').className = 'msg ok';
+  }
+});
+</script>

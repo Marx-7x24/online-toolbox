@@ -1,0 +1,96 @@
+---
+// 多进制转换器：2~36 任意进制互转
+---
+<div class="pane">
+  <div>
+    <div class="field-label"><span>输入数值</span></div>
+    <input type="text" id="bc-in" value="255" style="width:100%;padding:8px;border:1px solid var(--border-color);border-radius:6px;box-sizing:border-box;font-family:ui-monospace,monospace;font-size:16px">
+    <div class="field-label" style="margin-top:12px"><span>输入进制</span></div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <select id="bc-base" style="flex:1;padding:8px;border:1px solid var(--border-color);border-radius:6px;background:#fff">
+      </select>
+      <label style="font-size:13px;color:var(--text-sub);white-space:nowrap"><input type="checkbox" id="bc-custom"> 自定义</label>
+      <input type="number" id="bc-base-n" min="2" max="36" value="16" style="width:70px;padding:7px;border:1px solid var(--border-color);border-radius:6px;display:none">
+    </div>
+    <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
+      <button data-b="2" type="button">二进制</button>
+      <button data-b="8" type="button">八进制</button>
+      <button data-b="10" type="button">十进制</button>
+      <button data-b="16" type="button">十六进制</button>
+    </div>
+    <p class="msg" id="bc-msg"></p>
+  </div>
+  <div>
+    <div class="field-label"><span>转换结果（点按复制）</span></div>
+    <table id="bc-table" style="width:100%;border-collapse:collapse;font-size:14px"></table>
+    <div style="margin-top:12px;font-size:12px;color:var(--text-sub);line-height:1.7">
+      支持 2~36 进制，10 以上的位用 A~Z 表示（不区分大小写）。
+    </div>
+  </div>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const sel = $('bc-base');
+for (let b = 2; b <= 36; b++){
+  const o = document.createElement('option');
+  o.value = b; o.textContent = b + ' 进制' + ({2:'（二进制）',8:'（八进制）',10:'（十进制）',16:'（十六进制）'}[b] || '');
+  sel.appendChild(o);
+}
+sel.value = '10';
+
+const DIGITS = '0123456789abcdefghijklmnopqrstuvwxyz';
+function toBigBase(n, base){
+  if (n === 0n) return '0';
+  const B = BigInt(base);
+  let s = '', neg = n < 0n;
+  if (neg) n = -n;
+  while (n > 0n){ s = DIGITS[Number(n % B)] + s; n = n / B; }
+  return (neg ? '-' : '') + s.toUpperCase();
+}
+function parseIn(str, base){
+  const t = str.trim().toLowerCase().replace(/^[-+]/, '');
+  if (!t) return null;
+  const B = BigInt(base);
+  let n = 0n;
+  for (const ch of t){
+    const d = DIGITS.indexOf(ch);
+    if (d < 0 || d >= base) return null;
+    n = n * B + BigInt(d);
+  }
+  return str.trim().startsWith('-') ? -n : n;
+}
+function copyText(text, el){
+  const done = () => { $('bc-msg').textContent = '已复制 ' + text; $('bc-msg').className = 'msg ok'; setTimeout(() => { $('bc-msg').textContent=''; }, 1500); };
+  if (navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(text).then(done, done);
+  else { const ta = document.createElement('textarea'); ta.value = text; ta.style.position='fixed'; ta.style.opacity='0'; document.body.appendChild(ta); ta.select(); try{ document.execCommand('copy'); }catch(e){} document.body.removeChild(ta); done(); }
+}
+function convert(){
+  const rawBase = $('bc-custom').checked ? parseInt($('bc-base-n').value, 10) : parseInt(sel.value, 10);
+  if (!rawBase || rawBase < 2 || rawBase > 36){ $('bc-msg').textContent = '进制需在 2~36 之间'; $('bc-msg').className = 'msg err'; return; }
+  const n = parseIn($('bc-in').value, rawBase);
+  if (n === null){ $('bc-msg').textContent = '输入含 ' + rawBase + ' 进制以外的字符'; $('bc-msg').className = 'msg err'; return; }
+  $('bc-msg').textContent = ''; $('bc-msg').className = 'msg';
+  const rows = [2, 8, 10, 16, 32, 36].filter(b => b !== rawBase);
+  let html = `<tr style="border-bottom:2px solid var(--border-color)"><td style="padding:7px 4px;font-weight:600">${rawBase} 进制（输入）</td><td style="padding:7px 4px;text-align:right;font-family:ui-monospace,monospace;cursor:pointer" data-copy="${$('bc-in').value.trim()}">${$('bc-in').value.trim()}</td></tr>`;
+  for (const b of rows){
+    const s = toBigBase(n, b);
+    html += `<tr style="border-bottom:1px solid var(--border-color)"><td style="padding:7px 4px;color:var(--text-sub)">${b} 进制</td><td style="padding:7px 4px;text-align:right;font-family:ui-monospace,monospace;cursor:pointer" data-copy="${s}">${s}</td></tr>`;
+  }
+  $('bc-table').innerHTML = html;
+  $('bc-table').querySelectorAll('[data-copy]').forEach(td => td.addEventListener('click', () => copyText(td.dataset.copy)));
+}
+sel.addEventListener('change', convert);
+$('bc-in').addEventListener('input', convert);
+$('bc-custom').addEventListener('change', () => {
+  $('bc-base-n').style.display = $('bc-custom').checked ? '' : 'none';
+  sel.style.display = $('bc-custom').checked ? 'none' : '';
+  convert();
+});
+$('bc-base-n').addEventListener('input', convert);
+document.querySelectorAll('button[data-b]').forEach(btn => btn.addEventListener('click', () => {
+  $('bc-custom').checked = false; $('bc-base-n').style.display='none'; sel.style.display='';
+  sel.value = btn.dataset.b; convert();
+}));
+convert();
+</script>

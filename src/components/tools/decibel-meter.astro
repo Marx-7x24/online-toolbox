@@ -1,0 +1,90 @@
+---
+// 分贝噪音测试仪：getUserMedia + AnalyserNode 实时测量环境噪音
+---
+<div class="pane">
+  <div>
+    <div style="text-align:center;padding:20px 0">
+      <div id="db-val" style="font-size:64px;font-weight:700;color:var(--primary-color);font-variant-numeric:tabular-nums">--</div>
+      <div style="font-size:13px;color:var(--text-sub)">dB SPL（近似值）</div>
+    </div>
+    <div style="height:16px;background:rgba(0,0,0,.06);border-radius:8px;overflow:hidden">
+      <div id="db-bar" style="height:100%;width:0%;background:linear-gradient(90deg,#27ae60,#f1c40f,#e74c3c);border-radius:8px;transition:width .1s"></div>
+    </div>
+    <div class="btn-row" style="margin-top:16px;justify-content:center">
+      <button id="db-start" class="primary">开始测量</button>
+      <button id="db-stop">停止</button>
+    </div>
+    <p class="msg" id="db-msg"></p>
+  </div>
+  <div>
+    <div class="field-label"><span>统计</span></div>
+    <table style="width:100%;border-collapse:collapse;font-size:15px">
+      <tr style="border-bottom:1px solid var(--border-color)"><td style="padding:8px 4px;color:var(--text-sub)">最大值</td><td id="db-max" style="padding:8px 4px;text-align:right;font-weight:600">-</td></tr>
+      <tr style="border-bottom:1px solid var(--border-color)"><td style="padding:8px 4px;color:var(--text-sub)">平均值</td><td id="db-avg" style="padding:8px 4px;text-align:right;font-weight:600">-</td></tr>
+      <tr><td style="padding:8px 4px;color:var(--text-sub)">测量时长</td><td id="db-time" style="padding:8px 4px;text-align:right;font-weight:600">-</td></tr>
+    </table>
+    <div class="field-label" style="margin-top:14px"><span>参考对照</span></div>
+    <div style="font-size:13px;color:var(--text-sub);line-height:1.9">
+      20dB 叶落声｜40dB 图书馆｜60dB 正常交谈<br>
+      70dB 繁忙街道｜85dB 地铁（长期有损听力）<br>
+      100dB 工厂车间｜120dB 飞机起飞（痛阈）
+    </div>
+    <div style="margin-top:10px;font-size:12px;color:var(--text-sub)">数值基于 RMS 声压级估算（麦克风校准因设备而异，仅供相对参考）。音频仅在本地分析，不会上传。</div>
+  </div>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+let stream = null, ctx = null, analyser = null, rafId = null;
+let maxDb = -Infinity, sumDb = 0, n = 0, startTime = 0;
+
+function levelToDb(rms){
+  // 粗略映射：全幅正弦波(1.0) ≈ 100dB SPL
+  const v = Math.max(rms, 1e-8);
+  return 20 * Math.log10(v) + 100;
+}
+function loop(){
+  const buf = new Float32Array(analyser.fftSize);
+  analyser.getFloatTimeDomainData(buf);
+  let sum = 0;
+  for (const x of buf) sum += x * x;
+  const rms = Math.sqrt(sum / buf.length);
+  const db = levelToDb(rms);
+  const now = performance.now();
+  // 平滑
+  maxDb = Math.max(maxDb, db);
+  sumDb += db; n++;
+  $('db-val').textContent = Math.round(db);
+  $('db-bar').style.width = Math.min(100, Math.max(0, (db - 20) / 100 * 100)) + '%';
+  $('db-max').textContent = Math.round(maxDb) + ' dB';
+  $('db-avg').textContent = Math.round(sumDb / n) + ' dB';
+  const sec = Math.floor((now - startTime) / 1000);
+  $('db-time').textContent = Math.floor(sec / 60) + '分' + (sec % 60) + '秒';
+  rafId = requestAnimationFrame(loop);
+}
+async function start(){
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const src = ctx.createMediaStreamSource(stream);
+    analyser = ctx.createAnalyser();
+    analyser.fftSize = 2048;
+    src.connect(analyser);
+    maxDb = -Infinity; sumDb = 0; n = 0; startTime = performance.now();
+    $('db-msg').textContent = '测量中…'; $('db-msg').className = 'msg ok';
+    loop();
+  } catch (e){
+    $('db-msg').textContent = '无法访问麦克风：' + (e.message || e);
+    $('db-msg').className = 'msg err';
+  }
+}
+function stop(){
+  if (rafId) cancelAnimationFrame(rafId);
+  if (stream) stream.getTracks().forEach(t => t.stop());
+  if (ctx) ctx.close();
+  stream = null; ctx = null; rafId = null;
+  $('db-msg').textContent = '已停止'; $('db-msg').className = 'msg';
+}
+$('db-start').addEventListener('click', () => { if (!rafId) start(); });
+$('db-stop').addEventListener('click', stop);
+</script>

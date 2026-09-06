@@ -1,0 +1,78 @@
+---
+// 鞋子尺码换算：男女款 中国/欧码/美码/英码/厘米 互查
+---
+<div class="pane">
+  <div>
+    <div class="field-label"><span>性别款型</span></div>
+    <div style="display:flex;gap:12px">
+      <label style="font-size:15px"><input type="radio" name="ss-sex" value="men" checked> 男款</label>
+      <label style="font-size:15px"><input type="radio" name="ss-sex" value="women"> 女款</label>
+    </div>
+    <div class="field-label" style="margin-top:14px"><span>已知尺码</span></div>
+    <select id="ss-from" style="width:100%;padding:9px;border:1px solid var(--border-color);border-radius:6px;background:#fff">
+      <option value="cn">中国码 (CN)</option>
+      <option value="eu" selected>欧码 (EU)</option>
+      <option value="us">美码 (US)</option>
+      <option value="uk">英码 (UK)</option>
+      <option value="cm">脚长 (cm)</option>
+    </select>
+    <div class="field-label" style="margin-top:12px"><span>尺码 / 脚长</span></div>
+    <input type="number" id="ss-val" value="42" step="0.5" style="width:100%;padding:9px;border:1px solid var(--border-color);border-radius:6px;box-sizing:border-box;font-size:16px">
+    <div style="margin-top:10px;font-size:12px;color:var(--text-sub)">脚长为内长参考（赤脚站立测脚趾到脚跟），不同品牌略有差异。</div>
+  </div>
+  <div>
+    <div class="field-label"><span>对照结果</span></div>
+    <table id="ss-table" style="width:100%;border-collapse:collapse;font-size:15px"></table>
+    <div style="margin-top:12px;font-size:12px;color:var(--text-sub);line-height:1.7">
+      建议以脚长（cm）为准：下午测量（脚会略胀），穿厚袜测运动鞋加 0.5cm。各品牌存在 ±0.5 码偏差，此表为通用对照。
+    </div>
+  </div>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+// 通用对照表：[cm, CN, EU, US, UK]（男女不同）
+const MEN = [
+  [24.0, 39, 39.5, 6.5, 6], [24.5, 40, 40, 7, 6.5], [25.0, 40.5, 40.5, 7.5, 7],
+  [25.4, 41, 41, 8, 7.5], [25.8, 42, 42, 8.5, 8], [26.2, 42.5, 42.5, 9, 8.5],
+  [26.7, 43, 43, 9.5, 9], [27.1, 44, 44, 10, 9.5], [27.5, 44.5, 44.5, 10.5, 10],
+  [27.9, 45, 45, 11, 10.5], [28.3, 46, 46, 11.5, 11], [28.8, 47, 47, 12, 11.5],
+  [29.2, 47.5, 47.5, 12.5, 12], [29.6, 48, 48, 13, 12.5], [30.0, 48.5, 48.5, 13.5, 13],
+];
+const WOMEN = [
+  [22.0, 35, 35.5, 5, 3], [22.5, 36, 36, 5.5, 3.5], [22.9, 36.5, 36.5, 6, 4],
+  [23.3, 37, 37.5, 6.5, 4.5], [23.8, 38, 38, 7, 5], [24.2, 38.5, 38.5, 7.5, 5.5],
+  [24.6, 39, 39, 8, 6], [25.1, 40, 40, 8.5, 6.5], [25.4, 40.5, 40.5, 9, 7],
+  [25.9, 41, 41, 9.5, 7.5], [26.3, 42, 42, 10, 8],
+];
+const COLS = [['cm','脚长 cm'],['cn','中国码 CN'],['eu','欧码 EU'],['us','美码 US'],['uk','英码 UK']];
+const IDX = { cm:0, cn:1, eu:2, us:3, uk:4 };
+
+function nearest(row, v){
+  return row.reduce((best, r) => Math.abs(r[IDX[best.k]] - v) < Math.abs(r[IDX[v.k]] - v) ? best : v);
+}
+function render(){
+  const sex = document.querySelector('input[name=ss-sex]:checked').value;
+  const data = sex === 'men' ? MEN : WOMEN;
+  const from = $('ss-from').value;
+  const v = parseFloat($('ss-val').value);
+  if (isNaN(v)){ $('ss-table').innerHTML = ''; return; }
+  // 找最接近的一行
+  let best = data[0], bestD = Infinity;
+  for (const r of data){
+    const d = Math.abs(r[IDX[from]] - v);
+    if (d < bestD){ bestD = d; best = r; }
+  }
+  let html = '';
+  for (const [k, label] of COLS){
+    const hit = k === from;
+    html += `<tr style="border-bottom:1px solid var(--border-color);${hit?'background:rgba(0,0,0,.04)':''}">
+      <td style="padding:8px 6px;color:var(--text-sub)">${label}</td>
+      <td style="padding:8px 6px;text-align:right;font-weight:600">${best[IDX[k]]}</td></tr>`;
+  }
+  $('ss-table').innerHTML = html;
+}
+document.querySelectorAll('input[name=ss-sex]').forEach(r => r.addEventListener('change', render));
+['ss-from','ss-val'].forEach(id => $(id).addEventListener('input', render));
+render();
+</script>

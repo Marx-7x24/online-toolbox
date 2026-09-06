@@ -1,0 +1,103 @@
+---
+// USER_AGENT 工具：解析当前浏览器 UA + 常见 UA 大全一键复制
+---
+<div class="pane">
+  <div>
+    <div class="field-label"><span>你的 User Agent</span></div>
+    <textarea id="ua-mine" readonly rows="4" style="width:100%;padding:9px;border:1px solid var(--border-color);border-radius:6px;box-sizing:border-box;font-family:ui-monospace,monospace;font-size:12px;resize:vertical"></textarea>
+    <div class="btn-row" style="margin-top:8px">
+      <button id="ua-copy" class="primary">复制我的 UA</button>
+    </div>
+    <div class="field-label" style="margin-top:14px"><span>解析结果</span></div>
+    <table id="ua-parse" style="width:100%;border-collapse:collapse;font-size:14px"></table>
+    <div class="field-label" style="margin-top:14px"><span>解析任意 UA</span></div>
+    <textarea id="ua-in" rows="3" placeholder="粘贴 UA 字符串…" style="width:100%;padding:9px;border:1px solid var(--border-color);border-radius:6px;box-sizing:border-box;font-family:ui-monospace,monospace;font-size:12px;resize:vertical"></textarea>
+    <div id="ua-out" style="margin-top:8px;font-size:13px"></div>
+  </div>
+  <div>
+    <div class="field-label"><span>常用 UA 大全（点按复制）</span></div>
+    <div id="ua-list" style="max-height:460px;overflow-y:auto"></div>
+  </div>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const COMMON = [
+  ['Chrome (Windows)', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36'],
+  ['Chrome (macOS)', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36'],
+  ['Chrome (Android)', 'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Mobile Safari/537.36'],
+  ['Firefox (Windows)', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:127.0) Gecko/20100101 Firefox/127.0'],
+  ['Safari (macOS)', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Safari/605.1.15'],
+  ['Safari (iPhone)', 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1'],
+  ['Edge (Windows)', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 Edg/126.0.0.0'],
+  ['微信内置浏览器 (Android)', 'Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/116.0.0.0 Mobile Safari/537.36 XWEB/1160065 MicroMessenger/8.0.49'],
+  ['百度爬虫', 'Mozilla/5.0 (compatible; Baiduspider/2.0; +http://www.baidu.com/search/spider.html)'],
+  ['Google 爬虫', 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)'],
+  ['Google 移动爬虫', 'Mozilla/5.0 (Linux; Android 6.0.1; Nexus 5X Build/MMB29P) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Mobile Safari/537.36 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)'],
+  ['Bing 爬虫', 'Mozilla/5.0 (compatible; bingbot/2.0; +http://www.bing.com/bingbot.htm)'],
+  ['curl', 'curl/8.4.0'],
+  ['Python Requests', 'python-requests/2.32.0'],
+];
+function parseUA(ua){
+  const r = [];
+  // 浏览器
+  let browser = '未知';
+  if (/Edg\//.test(ua)) browser = 'Edge';
+  else if (/OPR\//.test(ua)) browser = 'Opera';
+  else if (/MicroMessenger\//.test(ua)) browser = '微信内置浏览器';
+  else if (/Chrome\/(\d+)/.test(ua)) browser = 'Chrome ' + (ua.match(/Chrome\/(\d+)/) || [])[1];
+  else if (/Firefox\/(\d+)/.test(ua)) browser = 'Firefox ' + (ua.match(/Firefox\/(\d+)/) || [])[1];
+  else if (/Version\/([\d.]+).*Safari/.test(ua)) browser = 'Safari ' + (ua.match(/Version\/([\d.]+)/) || [])[1];
+  // 系统
+  let os = '未知';
+  if (/Windows NT 10/.test(ua)) os = 'Windows 10/11';
+  else if (/Windows/.test(ua)) os = 'Windows';
+  else if (/Android ([\d.]+)/.test(ua)) os = 'Android ' + ua.match(/Android ([\d.]+)/)[1];
+  else if (/iPhone/.test(ua)) os = 'iOS (iPhone)';
+  else if (/iPad/.test(ua)) os = 'iPadOS';
+  else if (/Mac OS X ([\d_]+)/.test(ua)) os = 'macOS ' + ua.match(/Mac OS X ([\d_]+)/)[1].replace(/_/g,'.');
+  else if (/Linux/.test(ua)) os = 'Linux';
+  // 内核
+  let engine = '未知';
+  if (/AppleWebKit/.test(ua) && /Chrome/.test(ua)) engine = 'Blink (Chromium)';
+  else if (/AppleWebKit/.test(ua)) engine = 'WebKit';
+  else if (/Gecko\//.test(ua)) engine = 'Gecko';
+  // 设备
+  let device = /Mobile|Android.*Mobile|iPhone/.test(ua) ? '移动端' : (/Tablet|iPad/.test(ua) ? '平板' : '桌面端');
+  // 爬虫
+  const bot = /bot|spider|crawl|slurp/i.test(ua);
+  r.push(['浏览器', browser], ['操作系统', os], ['内核', engine], ['设备类型', device]);
+  if (bot) r.push(['类型', '爬虫/机器人 🤖']);
+  return r;
+}
+function renderTable(el, ua){
+  el.innerHTML = '<table style="width:100%;border-collapse:collapse;font-size:14px">' +
+    parseUA(ua).map(([k, v]) => `<tr style="border-bottom:1px solid var(--border-color)"><td style="padding:7px 4px;color:var(--text-sub);width:80px">${k}</td><td style="padding:7px 4px;font-weight:600">${v}</td></tr>`).join('') + '</table>';
+}
+const mine = navigator.userAgent;
+$('ua-mine').value = mine;
+renderTable($('ua-parse'), mine);
+$('ua-in').addEventListener('input', () => {
+  const v = $('ua-in').value.trim();
+  $('ua-out').innerHTML = v ? '' : '';
+  if (v) renderTable($('ua-out'), v); else $('ua-out').innerHTML = '';
+});
+$('ua-copy').addEventListener('click', () => {
+  const done = () => { $('ua-copy').textContent = '已复制 ✓'; setTimeout(() => $('ua-copy').textContent = '复制我的 UA', 1200); };
+  if (navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(mine).then(done, done);
+  else { const ta = document.createElement('textarea'); ta.value = mine; ta.style.position='fixed'; ta.style.opacity='0'; document.body.appendChild(ta); ta.select(); try{document.execCommand('copy');}catch(e){} document.body.removeChild(ta); done(); }
+});
+$('ua-list').innerHTML = COMMON.map(([name, ua]) => `
+  <div style="padding:8px 6px;border-bottom:1px solid var(--border-color)">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+      <span style="font-size:13px;font-weight:600">${name}</span>
+      <button class="ua-copy-btn" style="font-size:12px;padding:2px 10px" data-ua="${ua.replace(/"/g,'&quot;')}">复制</button>
+    </div>
+    <div style="font-size:11px;color:var(--text-sub);font-family:ui-monospace,monospace;word-break:break-all">${ua}</div>
+  </div>`).join('');
+document.querySelectorAll('.ua-copy-btn').forEach(btn => btn.addEventListener('click', () => {
+  const done = () => { btn.textContent = '已复制 ✓'; setTimeout(() => btn.textContent = '复制', 1200); };
+  if (navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(btn.dataset.ua).then(done, done);
+  else { const ta = document.createElement('textarea'); ta.value = btn.dataset.ua; ta.style.position='fixed'; ta.style.opacity='0'; document.body.appendChild(ta); ta.select(); try{document.execCommand('copy');}catch(e){} document.body.removeChild(ta); done(); }
+}));
+</script>

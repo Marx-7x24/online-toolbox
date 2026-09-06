@@ -1,0 +1,69 @@
+---
+// 温度单位换算：摄氏/华氏/开尔文/兰氏（偏移公式，非纯系数）
+---
+<div class="pane">
+  <div>
+    <div class="field-label"><span>数值</span></div>
+    <input type="number" id="tc-val" value="25" step="any" style="width:100%;padding:8px;border:1px solid var(--border-color);border-radius:6px;box-sizing:border-box;font-size:16px">
+    <div class="field-label" style="margin-top:12px"><span>从</span></div>
+    <select id="tc-from" style="width:100%;padding:8px;border:1px solid var(--border-color);border-radius:6px;background:#fff">
+      <option value="c" selected>摄氏度 (°C)</option>
+      <option value="f">华氏度 (°F)</option>
+      <option value="k">开尔文 (K)</option>
+      <option value="r">兰氏度 (°R)</option>
+    </select>
+    <div class="field-label" style="margin-top:12px"><span>到</span></div>
+    <select id="tc-to" style="width:100%;padding:8px;border:1px solid var(--border-color);border-radius:6px;background:#fff">
+      <option value="c">摄氏度 (°C)</option>
+      <option value="f" selected>华氏度 (°F)</option>
+      <option value="k">开尔文 (K)</option>
+      <option value="r">兰氏度 (°R)</option>
+    </select>
+    <div style="margin-top:16px;padding:14px;background:rgba(0,0,0,.03);border-radius:8px">
+      <div id="tc-out" style="font-size:20px;font-weight:600;color:var(--primary-color)">-</div>
+    </div>
+  </div>
+  <div>
+    <div class="field-label"><span>等于以下所有温标</span></div>
+    <table id="tc-table" style="width:100%;border-collapse:collapse;font-size:14px"></table>
+    <div style="margin-top:12px;font-size:12px;color:var(--text-sub);line-height:1.7">
+      参考点：水的冰点 0°C = 32°F = 273.15K；沸点 100°C = 212°F = 373.15K；绝对零度 -273.15°C。
+    </div>
+  </div>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const NAME = { c:'摄氏度 (°C)', f:'华氏度 (°F)', k:'开尔文 (K)', r:'兰氏度 (°R)' };
+// 任意温标 → 摄氏
+function toC(v, u){
+  if (u === 'c') return v;
+  if (u === 'f') return (v - 32) * 5 / 9;
+  if (u === 'k') return v - 273.15;
+  if (u === 'r') return (v - 491.67) * 5 / 9;
+}
+// 摄氏 → 任意温标
+function fromC(c, u){
+  if (u === 'c') return c;
+  if (u === 'f') return c * 9 / 5 + 32;
+  if (u === 'k') return c + 273.15;
+  if (u === 'r') return (c + 273.15) * 9 / 5;
+}
+function fmt(n){ return isFinite(n) ? n.toLocaleString('zh-CN', { maximumFractionDigits: 4 }) : '-'; }
+function convert(){
+  const v = parseFloat($('tc-val').value);
+  if (isNaN(v)){ $('tc-out').textContent = '-'; $('tc-table').innerHTML = ''; return; }
+  const c = toC(v, $('tc-from').value);
+  const out = fromC(c, $('tc-to').value);
+  $('tc-out').textContent = fmt(out) + ' ' + NAME[$('tc-to').value];
+  let html = '';
+  for (const u of ['c','f','k','r']){
+    html += '<tr style="border-bottom:1px solid var(--border-color)"><td style="padding:7px 4px;color:var(--text-sub)">' + NAME[u] + '</td><td style="padding:7px 4px;text-align:right;font-weight:600">' + fmt(fromC(c, u)) + '</td></tr>';
+  }
+  $('tc-table').innerHTML = html;
+}
+['tc-val','tc-from','tc-to'].forEach(id => $(id).addEventListener('input', convert));
+$('tc-from').addEventListener('change', convert);
+$('tc-to').addEventListener('change', convert);
+convert();
+</script>

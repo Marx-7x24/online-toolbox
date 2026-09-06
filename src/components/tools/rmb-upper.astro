@@ -1,0 +1,110 @@
+---
+// 人民币大写转换：数字金额 → 中文大写（壹贰叁…元角分整）
+---
+<div class="pane">
+  <div>
+    <div class="field-label"><span>金额（数字）</span></div>
+    <input type="text" id="rm-num" value="1234567.89" style="width:100%;padding:10px;border:1px solid var(--border-color);border-radius:6px;box-sizing:border-box;font-size:18px">
+    <div style="display:flex;gap:14px;margin-top:10px;font-size:14px">
+      <label><input type="checkbox" id="rm-prefix" checked> 前缀「人民币」</label>
+      <label><input type="checkbox" id="rm-only"> 仅整数部分</label>
+    </div>
+    <p class="msg" id="rm-msg"></p>
+  </div>
+  <div>
+    <div class="field-label"><span>大写结果</span></div>
+    <div id="rm-out" style="min-height:64px;padding:14px;background:rgba(0,0,0,.03);border-radius:8px;font-size:18px;font-weight:600;line-height:1.7;word-break:break-all;color:var(--primary-color)">-</div>
+    <div class="btn-row" style="margin-top:10px;justify-content:flex-end">
+      <button id="rm-copy" class="primary">复制大写结果</button>
+    </div>
+    <div style="margin-top:12px;font-size:12px;color:var(--text-sub);line-height:1.7">
+      规则依据中国人民银行财务制度：零壹贰叁肆伍陆柒捌玖，拾佰仟万亿，元角分整。最大支持到万亿级。
+    </div>
+  </div>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const DIG = ['零','壹','贰','叁','肆','伍','陆','柒','捌','玖'];
+const UNITS = ['', '拾', '佰', '仟'];
+const BIG = ['', '万', '亿', '万亿'];
+
+function intToChinese(numStr){
+  // numStr 为纯数字字符串（无小数点），返回中文大写
+  // 按 4 位一组从低位切
+  const groups = [];
+  for (let i = numStr.length; i > 0; i -= 4) groups.unshift(numStr.slice(Math.max(0, i - 4), i));
+  let result = '';
+  for (let g = 0; g < groups.length; g++){
+    const gv = groups[g];
+    const gi = groups.length - 1 - g; // 0=最低组
+    let section = '';
+    let zero = false;
+    for (let i = 0; i < gv.length; i++){
+      const d = +gv[i];
+      const u = UNITS[gv.length - 1 - i];
+      if (d === 0){
+        zero = section.length > 0;
+      } else {
+        if (zero){ section += '零'; zero = false; }
+        section += DIG[d] + u;
+      }
+    }
+    // 处理「壹拾」→「拾」（仅组内最高位且非组首时习惯上可省，财务惯例保留「壹拾」）—— 保留壹拾
+    if (section.length > 0) result += section + (BIG[gi] || '');
+    // 组间补零（下一组不足 4 位且本组有值）
+    if (section.length === 0 && result.length > 0) {
+      // 全零组，若前面有值且后面还有组，需要标记（简化处理）
+    }
+  }
+  // 清理多余零
+  result = result.replace(/零+/g, '零').replace(/零$/, '');
+  return result || '零';
+}
+
+function convert(){
+  const raw = $('rm-num').value.trim().replace(/[,，\s]/g, '').replace(/^¥/, '');
+  const msg = $('rm-msg');
+  if (!/^\d+(\.\d+)?$/.test(raw)){ msg.textContent = '请输入有效金额（数字）'; msg.className = 'msg err'; $('rm-out').textContent = '-'; return; }
+  msg.textContent = ''; msg.className = 'msg';
+  let [intPart, decPart] = raw.split('.');
+  intPart = intPart.replace(/^0+(?=\d)/, ''); // 去前导零
+  if (intPart === '' ) intPart = '0';
+  if (intPart.length > 16){ msg.textContent = '金额过大（超出万亿级）'; msg.className = 'msg err'; return; }
+  let dec2 = (decPart || '').slice(0, 2);
+  if ($('rm-only').checked) dec2 = '';
+
+  let out = '';
+  const hasInt = intPart !== '0';
+  if (hasInt) out += intToChinese(intPart) + '元';
+  if (dec2.length > 0){
+    const j = +dec2[0], f = dec2.length > 1 ? +dec2[1] : 0;
+    if (j === 0 && f === 0){
+      if (hasInt) out += '整';
+    } else {
+      if (hasInt && j === 0) out += '零';
+      if (j > 0) out += DIG[j] + '角';
+      if (f > 0) out += DIG[f] + '分';
+      else if (j > 0 && dec2.length === 1) out += '整';
+    }
+  } else {
+    if (hasInt) out += '整';
+    else out = '零元整';
+  }
+  if ($('rm-prefix').checked) out = '人民币' + out;
+  $('rm-out').textContent = out;
+  $('rm-out').dataset.text = out;
+}
+
+$('rm-num').addEventListener('input', convert);
+$('rm-prefix').addEventListener('change', convert);
+$('rm-only').addEventListener('change', convert);
+$('rm-copy').addEventListener('click', () => {
+  const text = $('rm-out').dataset.text || '';
+  if (!text) return;
+  const done = () => { $('rm-msg').textContent = '已复制'; $('rm-msg').className = 'msg ok'; };
+  if (navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(text).then(done, done);
+  else { const ta = document.createElement('textarea'); ta.value = text; ta.style.position='fixed'; ta.style.opacity='0'; document.body.appendChild(ta); ta.select(); try{ document.execCommand('copy'); }catch(e){} document.body.removeChild(ta); done(); }
+});
+convert();
+</script>

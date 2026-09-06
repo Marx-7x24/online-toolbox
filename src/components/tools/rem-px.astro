@@ -1,0 +1,72 @@
+---
+// REM 与 PX 单位转换：px/rem/em/% 互转，基准字号可调
+---
+<div class="pane">
+  <div>
+    <div class="field-label"><span>根字号基准（html font-size，默认 16px）</span></div>
+    <input type="number" id="rp-base" value="16" min="1" step="any" style="width:100%;padding:8px;border:1px solid var(--border-color);border-radius:6px;box-sizing:border-box">
+    <div class="field-label" style="margin-top:14px"><span>数值</span></div>
+    <input type="number" id="rp-val" value="24" step="any" style="width:100%;padding:8px;border:1px solid var(--border-color);border-radius:6px;box-sizing:border-box;font-size:16px">
+    <div class="field-label" style="margin-top:12px"><span>从</span></div>
+    <select id="rp-from" style="width:100%;padding:8px;border:1px solid var(--border-color);border-radius:6px;background:#fff">
+      <option value="px" selected>px（像素）</option>
+      <option value="rem">rem</option>
+      <option value="em">em</option>
+      <option value="pct">%</option>
+    </select>
+    <div class="field-label" style="margin-top:12px"><span>到</span></div>
+    <select id="rp-to" style="width:100%;padding:8px;border:1px solid var(--border-color);border-radius:6px;background:#fff">
+      <option value="rem" selected>rem</option>
+      <option value="px">px（像素）</option>
+      <option value="em">em</option>
+      <option value="pct">%</option>
+    </select>
+    <div style="margin-top:16px;padding:14px;background:rgba(0,0,0,.03);border-radius:8px">
+      <div id="rp-out" style="font-size:20px;font-weight:600;color:var(--primary-color)">-</div>
+    </div>
+  </div>
+  <div>
+    <div class="field-label"><span>换算表（基于当前基准）</span></div>
+    <table id="rp-table" style="width:100%;border-collapse:collapse;font-size:14px"></table>
+    <div style="margin-top:12px;font-size:12px;color:var(--text-sub);line-height:1.7">
+      说明：rem 相对根字号；em 相对父元素字号（此处按基准估算）；% 相对父元素字号。移动端适配常以 375 设计稿 → html = 100 × (屏宽/375) px。
+    </div>
+  </div>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const NAME = { px:'px', rem:'rem', em:'em', pct:'%' };
+// 全部先转 px
+function toPx(v, u, base){
+  if (u === 'px') return v;
+  if (u === 'rem') return v * base;
+  if (u === 'em') return v * base;
+  if (u === 'pct') return v / 100 * base;
+}
+function fromPx(px, u, base){
+  if (u === 'px') return px;
+  if (u === 'rem') return px / base;
+  if (u === 'em') return px / base;
+  if (u === 'pct') return px / base * 100;
+}
+function fmt(n){ return isFinite(n) ? (+n.toFixed(4)).toLocaleString('zh-CN', { maximumFractionDigits: 4 }) : '-'; }
+function convert(){
+  const base = parseFloat($('rp-base').value) || 16;
+  const v = parseFloat($('rp-val').value);
+  if (isNaN(v)){ $('rp-out').textContent = '-'; $('rp-table').innerHTML=''; return; }
+  const px = toPx(v, $('rp-from').value, base);
+  const out = fromPx(px, $('rp-to').value, base);
+  $('rp-out').textContent = fmt(out) + ' ' + NAME[$('rp-to').value];
+  const samples = [12, 14, 16, 18, 20, 24, 32, 48];
+  let html = '<tr style="border-bottom:2px solid var(--border-color)"><td style="padding:6px 4px">px</td><td style="padding:6px 4px;text-align:right">rem</td><td style="padding:6px 4px;text-align:right">%</td></tr>';
+  for (const p of samples){
+    html += `<tr style="border-bottom:1px solid var(--border-color)"><td style="padding:6px 4px;font-weight:600">${p}</td><td style="padding:6px 4px;text-align:right">${fmt(fromPx(p,'rem',base))}</td><td style="padding:6px 4px;text-align:right">${fmt(fromPx(p,'pct',base))}</td></tr>`;
+  }
+  $('rp-table').innerHTML = html;
+}
+['rp-base','rp-val','rp-from','rp-to'].forEach(id => $(id).addEventListener('input', convert));
+$('rp-from').addEventListener('change', convert);
+$('rp-to').addEventListener('change', convert);
+convert();
+</script>

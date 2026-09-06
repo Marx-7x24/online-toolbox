@@ -1,0 +1,73 @@
+---
+// 声音强度单位换算：dB ↔ 声压 Pa / 声压比 / 声功率比
+---
+<div class="pane">
+  <div>
+    <div class="field-label"><span>数值</span></div>
+    <input type="number" id="sc-val" value="60" step="any" style="width:100%;padding:8px;border:1px solid var(--border-color);border-radius:6px;box-sizing:border-box;font-size:16px">
+    <div class="field-label" style="margin-top:12px"><span>从</span></div>
+    <select id="sc-from" style="width:100%;padding:8px;border:1px solid var(--border-color);border-radius:6px;background:#fff">
+      <option value="db" selected>声压级 dB (SPL)</option>
+      <option value="pa">声压 (Pa)</option>
+      <option value="pratio">声压比 (p/p₀)</option>
+      <option value="wratio">声功率比 (W/W₀)</option>
+    </select>
+    <div class="field-label" style="margin-top:12px"><span>到</span></div>
+    <select id="sc-to" style="width:100%;padding:8px;border:1px solid var(--border-color);border-radius:6px;background:#fff">
+      <option value="pa" selected>声压 (Pa)</option>
+      <option value="db">声压级 dB (SPL)</option>
+      <option value="pratio">声压比 (p/p₀)</option>
+      <option value="wratio">声功率比 (W/W₀)</option>
+    </select>
+    <div style="margin-top:16px;padding:14px;background:rgba(0,0,0,.03);border-radius:8px">
+      <div id="sc-out" style="font-size:20px;font-weight:600;color:var(--primary-color);word-break:break-all">-</div>
+    </div>
+  </div>
+  <div>
+    <div class="field-label"><span>全部等价值</span></div>
+    <table id="sc-table" style="width:100%;border-collapse:collapse;font-size:14px"></table>
+    <div style="margin-top:12px;font-size:12px;color:var(--text-sub);line-height:1.7">
+      参考声压 p₀ = 20 μPa（人耳 1kHz 可听阈）。常见参考：图书馆 40dB、交谈 60dB、地铁 90dB、痛阈 120dB。
+    </div>
+  </div>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const NAME = { db:'声压级 dB (SPL)', pa:'声压 (Pa)', pratio:'声压比 (p/p₀)', wratio:'声功率比 (W/W₀)' };
+const P0 = 2e-5;
+// 统一先转到 dB SPL
+function toDb(v, u){
+  if (u === 'db') return v;
+  if (u === 'pa') return 20 * Math.log10(v / P0);
+  if (u === 'pratio') return 20 * Math.log10(v);
+  if (u === 'wratio') return 10 * Math.log10(v);
+}
+function fromDb(db, u){
+  if (u === 'db') return db;
+  if (u === 'pa') return P0 * Math.pow(10, db / 20);
+  if (u === 'pratio') return Math.pow(10, db / 20);
+  if (u === 'wratio') return Math.pow(10, db / 10);
+}
+function fmt(n){
+  if (!isFinite(n)) return '-';
+  if (n !== 0 && (Math.abs(n) < 1e-4 || Math.abs(n) >= 1e9)) return n.toExponential(4);
+  return n.toLocaleString('zh-CN', { maximumFractionDigits: 6 });
+}
+function convert(){
+  const v = parseFloat($('sc-val').value);
+  if (isNaN(v)){ $('sc-out').textContent = '-'; $('sc-table').innerHTML = ''; return; }
+  const db = toDb(v, $('sc-from').value);
+  const out = fromDb(db, $('sc-to').value);
+  $('sc-out').textContent = fmt(out) + ' ' + NAME[$('sc-to').value];
+  let html = '';
+  for (const u of ['db','pa','pratio','wratio']){
+    html += '<tr style="border-bottom:1px solid var(--border-color)"><td style="padding:7px 4px;color:var(--text-sub)">' + NAME[u] + '</td><td style="padding:7px 4px;text-align:right;font-weight:600">' + fmt(fromDb(db, u)) + '</td></tr>';
+  }
+  $('sc-table').innerHTML = html;
+}
+['sc-val','sc-from','sc-to'].forEach(id => $(id).addEventListener('input', convert));
+$('sc-from').addEventListener('change', convert);
+$('sc-to').addEventListener('change', convert);
+convert();
+</script>

@@ -1,0 +1,95 @@
+---
+// pressure-converter：纯前端单位换算（系数型）
+const UNITS = [{"sym":"MPa","zh":"兆帕","f":1000000},{"sym":"kPa","zh":"千帕","f":1000},{"sym":"Pa","zh":"帕斯卡","f":1},{"sym":"hPa","zh":"百帕","f":100},{"sym":"bar","zh":"巴","f":100000},{"sym":"mbar","zh":"毫巴","f":100},{"sym":"atm","zh":"标准大气压","f":101325},{"sym":"mmHg","zh":"毫米汞柱","f":133.322},{"sym":"inHg","zh":"英寸汞柱","f":3386.389},{"sym":"psi","zh":"磅/平方英寸","f":6894.757},{"sym":"kgfcm2","zh":"千克力/平方厘米","f":98066.5}];
+const BASE = { name: "帕斯卡", sym: "Pa" };
+---
+<div class="pane">
+  <div>
+    <div class="field-label"><span>数值</span></div>
+    <input type="number" id="uc-val" value="1" step="any" style="width:100%;padding:8px;border:1px solid var(--border-color);border-radius:6px;box-sizing:border-box;font-size:16px">
+    <div class="field-label" style="margin-top:12px"><span>从</span></div>
+    <select id="uc-from" style="width:100%;padding:8px;border:1px solid var(--border-color);border-radius:6px;background:#fff;font-size:14px">
+      <option value="MPa" data-f="1000000">兆帕 (MPa)</option>
+      <option value="kPa" data-f="1000">千帕 (kPa)</option>
+      <option value="Pa" data-f="1">帕斯卡 (Pa)</option>
+      <option value="hPa" data-f="100">百帕 (hPa)</option>
+      <option value="bar" data-f="100000">巴 (bar)</option>
+      <option value="mbar" data-f="100">毫巴 (mbar)</option>
+      <option value="atm" data-f="101325">标准大气压 (atm)</option>
+      <option value="mmHg" data-f="133.322">毫米汞柱 (mmHg)</option>
+      <option value="inHg" data-f="3386.389">英寸汞柱 (inHg)</option>
+      <option value="psi" data-f="6894.757">磅/平方英寸 (psi)</option>
+      <option value="kgfcm2" data-f="98066.5">千克力/平方厘米 (kgfcm2)</option>
+    </select>
+    <div style="text-align:center;margin:8px 0">
+      <button id="uc-swap">⇅ 交换单位</button>
+    </div>
+    <div class="field-label"><span>到</span></div>
+    <select id="uc-to" style="width:100%;padding:8px;border:1px solid var(--border-color);border-radius:6px;background:#fff;font-size:14px">
+      <option value="MPa" data-f="1000000">兆帕 (MPa)</option>
+      <option value="kPa" data-f="1000">千帕 (kPa)</option>
+      <option value="Pa" data-f="1">帕斯卡 (Pa)</option>
+      <option value="hPa" data-f="100">百帕 (hPa)</option>
+      <option value="bar" data-f="100000">巴 (bar)</option>
+      <option value="mbar" data-f="100">毫巴 (mbar)</option>
+      <option value="atm" data-f="101325">标准大气压 (atm)</option>
+      <option value="mmHg" data-f="133.322">毫米汞柱 (mmHg)</option>
+      <option value="inHg" data-f="3386.389">英寸汞柱 (inHg)</option>
+      <option value="psi" data-f="6894.757">磅/平方英寸 (psi)</option>
+      <option value="kgfcm2" data-f="98066.5">千克力/平方厘米 (kgfcm2)</option>
+    </select>
+    <div style="margin-top:16px;padding:14px;background:rgba(0,0,0,.03);border-radius:8px">
+      <div id="uc-out" style="font-size:20px;font-weight:600;color:var(--primary-color);word-break:break-all;line-height:1.5">-</div>
+      <div style="font-size:12px;color:var(--text-sub);margin-top:4px">换算结果</div>
+    </div>
+  </div>
+  <div>
+    <div class="field-label"><span>等于以下所有单位</span></div>
+    <table id="uc-table" style="width:100%;border-collapse:collapse;font-size:14px"></table>
+    <p class="msg" id="uc-msg"></p>
+  </div>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const UNITS = [{"sym":"MPa","zh":"兆帕","f":1000000},{"sym":"kPa","zh":"千帕","f":1000},{"sym":"Pa","zh":"帕斯卡","f":1},{"sym":"hPa","zh":"百帕","f":100},{"sym":"bar","zh":"巴","f":100000},{"sym":"mbar","zh":"毫巴","f":100},{"sym":"atm","zh":"标准大气压","f":101325},{"sym":"mmHg","zh":"毫米汞柱","f":133.322},{"sym":"inHg","zh":"英寸汞柱","f":3386.389},{"sym":"psi","zh":"磅/平方英寸","f":6894.757},{"sym":"kgfcm2","zh":"千克力/平方厘米","f":98066.5}];
+function fmt(n){
+  if (!isFinite(n)) return '-';
+  if (n !== 0 && (Math.abs(n) < 1e-6 || Math.abs(n) >= 1e15)) return n.toExponential(6).replace(/(\.\d*?[1-9])0+e|\.0+e/g, '$1e');
+  const s = n.toLocaleString('zh-CN', { maximumFractionDigits: 10 });
+  return s;
+}
+function factorOf(sel){
+  const opt = sel.options[sel.selectedIndex];
+  return parseFloat(opt.dataset.f);
+}
+function symOf(sel){ return sel.value; }
+function convert(){
+  const v = parseFloat($('uc-val').value);
+  if (isNaN(v)){ $('uc-out').textContent = '-'; $('uc-table').innerHTML=''; return; }
+  const from = factorOf($('uc-from')), to = factorOf($('uc-to'));
+  const base = v * from;
+  const out = base / to;
+  $('uc-out').textContent = fmt(out) + ' ' + symOf($('uc-to'));
+  let html = '';
+  for (const u of UNITS){
+    html += '<tr style="border-bottom:1px solid var(--border-color)">' +
+      '<td style="padding:7px 4px;color:var(--text-sub)">' + u.zh + ' (' + u.sym + ')</td>' +
+      '<td style="padding:7px 4px;text-align:right;font-weight:600">' + fmt(base / u.f) + '</td></tr>';
+  }
+  $('uc-table').innerHTML = html;
+}
+['uc-val','uc-from','uc-to'].forEach(id => $(id).addEventListener('input', convert));
+$('uc-from').addEventListener('change', convert);
+$('uc-to').addEventListener('change', convert);
+$('uc-swap').addEventListener('click', () => {
+  const a = $('uc-from').selectedIndex, b = $('uc-to').selectedIndex;
+  $('uc-from').selectedIndex = b; $('uc-to').selectedIndex = a;
+  convert();
+});
+// 默认：从基准单位到第二个单位
+$('uc-from').selectedIndex = UNITS.findIndex(u => u.sym === "Pa");
+if ($('uc-to').selectedIndex === $('uc-from').selectedIndex) $('uc-to').selectedIndex = ("Pa" === 'm/s' ? 1 : 0);
+if ($('uc-to').selectedIndex === $('uc-from').selectedIndex && $('uc-to').length > 1) $('uc-to').selectedIndex = 1;
+convert();
+</script>

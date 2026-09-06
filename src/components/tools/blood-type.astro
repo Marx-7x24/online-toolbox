@@ -1,0 +1,89 @@
+---
+// 血型遗传计算器：父母 ABO 血型 → 子女可能血型与概率
+---
+<div class="pane">
+  <div>
+    <div class="field-label"><span>父亲血型</span></div>
+    <select id="bt-dad" style="width:100%;padding:10px;border:1px solid var(--border-color);border-radius:6px;background:#fff;font-size:16px">
+      <option value="A">A 型</option>
+      <option value="B">B 型</option>
+      <option value="AB" selected>AB 型</option>
+      <option value="O">O 型</option>
+    </select>
+    <div class="field-label" style="margin-top:12px"><span>母亲血型</span></div>
+    <select id="bt-mom" style="width:100%;padding:10px;border:1px solid var(--border-color);border-radius:6px;background:#fff;font-size:16px">
+      <option value="A">A 型</option>
+      <option value="B">B 型</option>
+      <option value="AB">AB 型</option>
+      <option value="O" selected>O 型</option>
+    </select>
+    <div style="margin-top:10px;font-size:13px;color:var(--text-sub);line-height:1.6">
+      ABO 血型由基因型决定：A（AA/AO）、B（BB/BO）、AB、O。本工具按基因型组合计算概率。
+    </div>
+  </div>
+  <div>
+    <div class="field-label"><span>子女可能的血型</span></div>
+    <div id="bt-out" style="padding:14px;background:rgba(0,0,0,.03);border-radius:8px"></div>
+    <div class="field-label" style="margin-top:12px"><span>父母可能的基因型</span></div>
+    <div id="bt-geno" style="font-size:13px;color:var(--text-sub)"></div>
+    <div style="margin-top:12px;font-size:12px;color:var(--text-sub);line-height:1.7">
+      注：极罕见情况（如孟买血型）可能出现例外；RH 阴阳性单独遗传（Rh+ 为显性），本表仅覆盖 ABO 系统。
+    </div>
+  </div>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+// 表现型 → 可能基因型（概率均等简化）
+const GENO = {
+  A:  [['AA', .25], ['AO', .75]],   // 人群中 AO 更常见，按 1:3 简化
+  B:  [['BB', .25], ['BO', .75]],
+  AB: [['AB', 1]],
+  O:  [['OO', 1]],
+};
+// 等位基因对 → 表现型
+function phenotype(g){
+  if (g === 'AB') return 'AB';
+  if (g === 'OO') return 'O';
+  if (g[0] === 'A' || g[1] === 'A') return 'A';
+  return 'B';
+}
+function combine(){
+  const dad = $('bt-dad').value, mom = $('bt-mom').value;
+  // 收集等位基因组合（带权重）
+  const dadAllele = [];
+  for (const [g, w] of GENO[dad]){ dadAllele.push([g[0], w / 2], [g[1], w / 2]); }
+  const momAllele = [];
+  for (const [g, w] of GENO[mom]){ momAllele.push([g[0], w / 2], [g[1], w / 2]); }
+  const probs = {};
+  const genoProb = {};
+  for (const [a1, w1] of dadAllele){
+    for (const [a2, w2] of momAllele){
+      const pair = [a1, a2].sort().join('');
+      const p = phenotype(pair);
+      probs[p] = (probs[p] || 0) + w1 * w2;
+      genoProb[pair] = (genoProb[pair] || 0) + w1 * w2;
+    }
+  }
+  const colors = { A:'#e74c3c', B:'#3498db', AB:'#9b59b6', O:'#27ae60' };
+  let html = '';
+  const order = ['A','B','AB','O'];
+  for (const t of order){
+    const p = probs[t] || 0;
+    const pct = (p * 100);
+    html += `<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+      <span style="width:44px;font-weight:700;color:${p>0?colors[t]:'#999'}">${t} 型</span>
+      <div style="flex:1;height:14px;background:rgba(0,0,0,.06);border-radius:7px;overflow:hidden">
+        <div style="width:${pct}%;height:100%;background:${colors[t]};opacity:${p>0?1:.25};border-radius:7px"></div>
+      </div>
+      <span style="width:64px;text-align:right;font-weight:600">${p>0?pct.toFixed(1)+'%':'不可能'}</span>
+    </div>`;
+  }
+  $('bt-out').innerHTML = html;
+  const fmtG = (obj) => Object.entries(obj).filter(([,w])=>w>0).map(([g,w])=>`${g}(${(w*100).toFixed(0)}%)`).join('、');
+  $('bt-geno').innerHTML = `父亲（${dad} 型）：${fmtG(Object.fromEntries(GENO[dad]))}<br>母亲（${mom} 型）：${fmtG(Object.fromEntries(GENO[mom]))}<br>子女基因型可能：${fmtG(genoProb)}`;
+}
+$('bt-dad').addEventListener('change', combine);
+$('bt-mom').addEventListener('change', combine);
+combine();
+</script>

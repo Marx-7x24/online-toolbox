@@ -1,0 +1,68 @@
+---
+// 油耗单位换算：L/100km ↔ mpg(US/UK) ↔ km/L（倒数关系）
+---
+<div class="pane">
+  <div>
+    <div class="field-label"><span>数值</span></div>
+    <input type="number" id="fc-val" value="8" step="any" style="width:100%;padding:8px;border:1px solid var(--border-color);border-radius:6px;box-sizing:border-box;font-size:16px">
+    <div class="field-label" style="margin-top:12px"><span>从</span></div>
+    <select id="fc-from" style="width:100%;padding:8px;border:1px solid var(--border-color);border-radius:6px;background:#fff">
+      <option value="l100" selected>升/百公里 (L/100km)</option>
+      <option value="mpgus">英里/加仑 美制 (MPG US)</option>
+      <option value="mpguk">英里/加仑 英制 (MPG UK)</option>
+      <option value="kml">公里/升 (km/L)</option>
+    </select>
+    <div class="field-label" style="margin-top:12px"><span>到</span></div>
+    <select id="fc-to" style="width:100%;padding:8px;border:1px solid var(--border-color);border-radius:6px;background:#fff">
+      <option value="mpgus" selected>英里/加仑 美制 (MPG US)</option>
+      <option value="l100">升/百公里 (L/100km)</option>
+      <option value="mpguk">英里/加仑 英制 (MPG UK)</option>
+      <option value="kml">公里/升 (km/L)</option>
+    </select>
+    <div style="margin-top:16px;padding:14px;background:rgba(0,0,0,.03);border-radius:8px">
+      <div id="fc-out" style="font-size:20px;font-weight:600;color:var(--primary-color);word-break:break-all">-</div>
+    </div>
+  </div>
+  <div>
+    <div class="field-label"><span>全部等价值</span></div>
+    <table id="fc-table" style="width:100%;border-collapse:collapse;font-size:14px"></table>
+    <div style="margin-top:12px;font-size:12px;color:var(--text-sub);line-height:1.7">
+      换算基准：1 加仑(美) = 3.785411784 L，1 英里 = 1.609344 km；mpg(US) = 235.215 ÷ (L/100km)，mpg(UK) = 282.481 ÷ (L/100km)。
+    </div>
+  </div>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const NAME = { l100:'升/百公里 (L/100km)', mpgus:'MPG 美制', mpguk:'MPG 英制', kml:'公里/升 (km/L)' };
+// 统一先转成 L/100km
+function toL100(v, u){
+  if (u === 'l100') return v;
+  if (u === 'mpgus') return 235.214583 / v;
+  if (u === 'mpguk') return 282.480936 / v;
+  if (u === 'kml') return 100 / v;
+}
+function fromL100(l, u){
+  if (u === 'l100') return l;
+  if (u === 'mpgus') return 235.214583 / l;
+  if (u === 'mpguk') return 282.480936 / l;
+  if (u === 'kml') return 100 / l;
+}
+function fmt(n){ return isFinite(n) && n > 0 ? n.toLocaleString('zh-CN', { maximumFractionDigits: 4 }) : '-'; }
+function convert(){
+  const v = parseFloat($('fc-val').value);
+  if (isNaN(v) || v <= 0){ $('fc-out').textContent = '-'; $('fc-table').innerHTML = ''; return; }
+  const l = toL100(v, $('fc-from').value);
+  const out = fromL100(l, $('fc-to').value);
+  $('fc-out').textContent = fmt(out) + ' ' + NAME[$('fc-to').value];
+  let html = '';
+  for (const u of ['l100','mpgus','mpguk','kml']){
+    html += '<tr style="border-bottom:1px solid var(--border-color)"><td style="padding:7px 4px;color:var(--text-sub)">' + NAME[u] + '</td><td style="padding:7px 4px;text-align:right;font-weight:600">' + fmt(fromL100(l, u)) + '</td></tr>';
+  }
+  $('fc-table').innerHTML = html;
+}
+['fc-val','fc-from','fc-to'].forEach(id => $(id).addEventListener('input', convert));
+$('fc-from').addEventListener('change', convert);
+$('fc-to').addEventListener('change', convert);
+convert();
+</script>

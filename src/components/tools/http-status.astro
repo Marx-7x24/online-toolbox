@@ -1,0 +1,71 @@
+---
+// HTTP状态码查询：1xx~5xx 状态码速查表
+---
+<div class="pane">
+  <div>
+    <div class="field-label"><span>搜索状态码或关键词</span></div>
+    <input type="text" id="hs-q" placeholder="如：404 / redirect / 服务器错误" style="width:100%;padding:9px;border:1px solid var(--border-color);border-radius:6px;box-sizing:border-box">
+    <div class="field-label" style="margin-top:12px"><span>分类筛选</span></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button data-c="all" type="button" class="primary">全部</button>
+      <button data-c="1" type="button">1xx 信息</button>
+      <button data-c="2" type="button">2xx 成功</button>
+      <button data-c="3" type="button">3xx 重定向</button>
+      <button data-c="4" type="button">4xx 客户端错误</button>
+      <button data-c="5" type="button">5xx 服务器错误</button>
+    </div>
+    <div style="margin-top:14px;font-size:12px;color:var(--text-sub);line-height:1.7">
+      常用速记：200 成功｜301 永久重定向｜302 临时重定向｜304 缓存有效｜403 禁止访问｜404 未找到｜429 请求过多｜500 服务器内部错误｜502 网关错误｜503 服务不可用。
+    </div>
+  </div>
+  <div>
+    <div class="field-label"><span>状态码列表</span></div>
+    <div id="hs-list" style="max-height:420px;overflow-y:auto"></div>
+  </div>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const DATA = [
+  [100,'Continue','继续，客户端应继续请求'],[101,'Switching Protocols','切换协议（如升级 WebSocket）'],
+  [200,'OK','请求成功'],[201,'Created','已创建（常用于 POST 新资源）'],[202,'Accepted','已接受，处理中'],
+  [204,'No Content','成功但无返回内容'],[206,'Partial Content','部分内容（断点续传/Range）'],
+  [301,'Moved Permanently','永久重定向（SEO 权重转移）'],[302,'Found','临时重定向'],
+  [303,'See Other','查看其他位置（PRG 模式）'],[304,'Not Modified','缓存有效，使用本地缓存'],
+  [307,'Temporary Redirect','临时重定向（保持方法不变）'],[308,'Permanent Redirect','永久重定向（保持方法不变）'],
+  [400,'Bad Request','请求语法错误'],[401,'Unauthorized','未认证（需登录/Token）'],
+  [403,'Forbidden','已认证但无权限'],[404,'Not Found','资源不存在'],
+  [405,'Method Not Allowed','HTTP 方法不允许'],[408,'Request Timeout','请求超时'],
+  [409,'Conflict','资源冲突'],[410,'Gone','资源已永久删除'],
+  [413,'Payload Too Large','请求体过大'],[415,'Unsupported Media Type','媒体类型不支持'],
+  [429,'Too Many Requests','请求过于频繁（限流）'],[444,'Nginx No Response','Nginx 主动断开连接'],
+  [451,'Unavailable For Legal Reasons','因法律原因不可用'],
+  [500,'Internal Server Error','服务器内部错误'],[501,'Not Implemented','功能未实现'],
+  [502,'Bad Gateway','网关收到无效响应（反代常见）'],[503,'Service Unavailable','服务不可用/过载'],
+  [504,'Gateway Timeout','网关等待后端超时'],[508,'Loop Detected','检测到循环'],
+];
+const COLORS = { 1:'#8e8e8e', 2:'#27ae60', 3:'#2980b9', 4:'#e67e22', 5:'#e74c3c' };
+let filter = 'all';
+function render(){
+  const q = $('hs-q').value.trim().toLowerCase();
+  let html = '';
+  for (const [code, en, zh] of DATA){
+    if (filter !== 'all' && String(code)[0] !== filter) continue;
+    if (q && !(String(code).includes(q) || en.toLowerCase().includes(q) || zh.toLowerCase().includes(q))) continue;
+    const cls = COLORS[String(code)[0]];
+    html += `<div style="display:flex;gap:10px;align-items:flex-start;padding:8px 6px;border-bottom:1px solid var(--border-color)">
+      <span style="font-family:ui-monospace,monospace;font-weight:700;color:${cls};width:44px;flex-shrink:0">${code}</span>
+      <div><div style="font-size:14px;font-weight:600">${en}</div><div style="font-size:12.5px;color:var(--text-sub)">${zh}</div></div>
+    </div>`;
+  }
+  $('hs-list').innerHTML = html || '<div style="color:var(--text-sub);padding:20px;text-align:center;font-size:13px">无匹配结果</div>';
+}
+$('hs-q').addEventListener('input', render);
+document.querySelectorAll('button[data-c]').forEach(btn => btn.addEventListener('click', () => {
+  filter = btn.dataset.c;
+  document.querySelectorAll('button[data-c]').forEach(b => b.classList.remove('primary'));
+  btn.classList.add('primary');
+  render();
+}));
+render();
+</script>

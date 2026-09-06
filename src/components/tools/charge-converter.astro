@@ -1,0 +1,89 @@
+---
+// charge-converter：纯前端单位换算（系数型）
+const UNITS = [{"sym":"C","zh":"库仑","f":1},{"sym":"kC","zh":"千库仑","f":1000},{"sym":"mC","zh":"毫库仑","f":0.001},{"sym":"μC","zh":"微库仑","f":0.000001},{"sym":"nC","zh":"纳库仑","f":1e-9},{"sym":"Ah","zh":"安时","f":3600},{"sym":"mAh","zh":"毫安时","f":3.6},{"sym":"e","zh":"元电荷","f":1.602176634e-19}];
+const BASE = { name: "库仑", sym: "C" };
+---
+<div class="pane">
+  <div>
+    <div class="field-label"><span>数值</span></div>
+    <input type="number" id="uc-val" value="1" step="any" style="width:100%;padding:8px;border:1px solid var(--border-color);border-radius:6px;box-sizing:border-box;font-size:16px">
+    <div class="field-label" style="margin-top:12px"><span>从</span></div>
+    <select id="uc-from" style="width:100%;padding:8px;border:1px solid var(--border-color);border-radius:6px;background:#fff;font-size:14px">
+      <option value="C" data-f="1">库仑 (C)</option>
+      <option value="kC" data-f="1000">千库仑 (kC)</option>
+      <option value="mC" data-f="0.001">毫库仑 (mC)</option>
+      <option value="μC" data-f="0.000001">微库仑 (μC)</option>
+      <option value="nC" data-f="1e-9">纳库仑 (nC)</option>
+      <option value="Ah" data-f="3600">安时 (Ah)</option>
+      <option value="mAh" data-f="3.6">毫安时 (mAh)</option>
+      <option value="e" data-f="1.602176634e-19">元电荷 (e)</option>
+    </select>
+    <div style="text-align:center;margin:8px 0">
+      <button id="uc-swap">⇅ 交换单位</button>
+    </div>
+    <div class="field-label"><span>到</span></div>
+    <select id="uc-to" style="width:100%;padding:8px;border:1px solid var(--border-color);border-radius:6px;background:#fff;font-size:14px">
+      <option value="C" data-f="1">库仑 (C)</option>
+      <option value="kC" data-f="1000">千库仑 (kC)</option>
+      <option value="mC" data-f="0.001">毫库仑 (mC)</option>
+      <option value="μC" data-f="0.000001">微库仑 (μC)</option>
+      <option value="nC" data-f="1e-9">纳库仑 (nC)</option>
+      <option value="Ah" data-f="3600">安时 (Ah)</option>
+      <option value="mAh" data-f="3.6">毫安时 (mAh)</option>
+      <option value="e" data-f="1.602176634e-19">元电荷 (e)</option>
+    </select>
+    <div style="margin-top:16px;padding:14px;background:rgba(0,0,0,.03);border-radius:8px">
+      <div id="uc-out" style="font-size:20px;font-weight:600;color:var(--primary-color);word-break:break-all;line-height:1.5">-</div>
+      <div style="font-size:12px;color:var(--text-sub);margin-top:4px">换算结果</div>
+    </div>
+  </div>
+  <div>
+    <div class="field-label"><span>等于以下所有单位</span></div>
+    <table id="uc-table" style="width:100%;border-collapse:collapse;font-size:14px"></table>
+    <p class="msg" id="uc-msg"></p>
+  </div>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const UNITS = [{"sym":"C","zh":"库仑","f":1},{"sym":"kC","zh":"千库仑","f":1000},{"sym":"mC","zh":"毫库仑","f":0.001},{"sym":"μC","zh":"微库仑","f":0.000001},{"sym":"nC","zh":"纳库仑","f":1e-9},{"sym":"Ah","zh":"安时","f":3600},{"sym":"mAh","zh":"毫安时","f":3.6},{"sym":"e","zh":"元电荷","f":1.602176634e-19}];
+function fmt(n){
+  if (!isFinite(n)) return '-';
+  if (n !== 0 && (Math.abs(n) < 1e-6 || Math.abs(n) >= 1e15)) return n.toExponential(6).replace(/(\.\d*?[1-9])0+e|\.0+e/g, '$1e');
+  const s = n.toLocaleString('zh-CN', { maximumFractionDigits: 10 });
+  return s;
+}
+function factorOf(sel){
+  const opt = sel.options[sel.selectedIndex];
+  return parseFloat(opt.dataset.f);
+}
+function symOf(sel){ return sel.value; }
+function convert(){
+  const v = parseFloat($('uc-val').value);
+  if (isNaN(v)){ $('uc-out').textContent = '-'; $('uc-table').innerHTML=''; return; }
+  const from = factorOf($('uc-from')), to = factorOf($('uc-to'));
+  const base = v * from;
+  const out = base / to;
+  $('uc-out').textContent = fmt(out) + ' ' + symOf($('uc-to'));
+  let html = '';
+  for (const u of UNITS){
+    html += '<tr style="border-bottom:1px solid var(--border-color)">' +
+      '<td style="padding:7px 4px;color:var(--text-sub)">' + u.zh + ' (' + u.sym + ')</td>' +
+      '<td style="padding:7px 4px;text-align:right;font-weight:600">' + fmt(base / u.f) + '</td></tr>';
+  }
+  $('uc-table').innerHTML = html;
+}
+['uc-val','uc-from','uc-to'].forEach(id => $(id).addEventListener('input', convert));
+$('uc-from').addEventListener('change', convert);
+$('uc-to').addEventListener('change', convert);
+$('uc-swap').addEventListener('click', () => {
+  const a = $('uc-from').selectedIndex, b = $('uc-to').selectedIndex;
+  $('uc-from').selectedIndex = b; $('uc-to').selectedIndex = a;
+  convert();
+});
+// 默认：从基准单位到第二个单位
+$('uc-from').selectedIndex = UNITS.findIndex(u => u.sym === "C");
+if ($('uc-to').selectedIndex === $('uc-from').selectedIndex) $('uc-to').selectedIndex = ("C" === 'm/s' ? 1 : 0);
+if ($('uc-to').selectedIndex === $('uc-from').selectedIndex && $('uc-to').length > 1) $('uc-to').selectedIndex = 1;
+convert();
+</script>

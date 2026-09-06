@@ -1,0 +1,82 @@
+---
+// 色温换算：色温 K → 近似 RGB/十六进制（Tanner Helland 近似算法）
+---
+<div class="pane">
+  <div>
+    <div class="field-label"><span>色温（开尔文 K）</span></div>
+    <input type="number" id="ct-k" value="6500" min="1000" max="40000" step="100" style="width:100%;padding:8px;border:1px solid var(--border-color);border-radius:6px;box-sizing:border-box;font-size:16px">
+    <input type="range" id="ct-range" min="1000" max="20000" step="100" value="6500" style="width:100%;margin-top:10px">
+    <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+      <button data-k="2700" type="button">2700K 暖黄</button>
+      <button data-k="4000" type="button">4000K 暖白</button>
+      <button data-k="5000" type="button">5000K 正白</button>
+      <button data-k="6500" type="button">6500K 冷白</button>
+      <button data-k="8000" type="button">8000K 冷蓝</button>
+    </div>
+    <div style="margin-top:16px;padding:14px;background:rgba(0,0,0,.03);border-radius:8px">
+      <div style="display:flex;align-items:center;gap:12px">
+        <div id="ct-swatch" style="width:56px;height:56px;border-radius:8px;border:1px solid var(--border-color);flex-shrink:0"></div>
+        <div>
+          <div id="ct-hex" style="font-size:18px;font-weight:600;font-family:ui-monospace,monospace">-</div>
+          <div id="ct-rgb" style="font-size:13px;color:var(--text-sub)">-</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div>
+    <div class="field-label"><span>常见色温对照</span></div>
+    <table id="ct-table" style="width:100%;border-collapse:collapse;font-size:14px"></table>
+    <div style="margin-top:12px;font-size:12px;color:var(--text-sub);line-height:1.7">
+      参考值：蜡烛 1850K｜白炽灯 2700K｜日光 5500K｜阴天 6500K｜蓝天 12000K+。算法为 Tanner Helland 近似，仅供调色参考。
+    </div>
+  </div>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+// Tanner Helland 色温 → RGB 近似
+function kelvinToRgb(kelvin){
+  const t = kelvin / 100;
+  let r, g, b;
+  if (t <= 66){ r = 255; g = 99.4708025861 * Math.log(t) - 161.1195681661; }
+  else { r = 329.698727446 * Math.pow(t - 60, -0.1332047592); g = 288.1221695283 * Math.pow(t - 60, -0.0755148492); }
+  if (t >= 66) b = 255;
+  else if (t <= 19) b = 0;
+  else b = 138.5177312231 * Math.log(t - 10) - 305.0447927307;
+  const cl = (x) => Math.round(Math.min(255, Math.max(0, x)));
+  return [cl(r), cl(g), cl(b)];
+}
+function render(){
+  const k = parseInt($('ct-k').value, 10);
+  if (isNaN(k) || k < 1000 || k > 40000) return;
+  const [r, g, b] = kelvinToRgb(k);
+  const hex = '#' + [r, g, b].map(x => x.toString(16).padStart(2, '0')).join('');
+  $('ct-swatch').style.background = hex;
+  $('ct-hex').textContent = hex.toUpperCase();
+  $('ct-rgb').textContent = `rgb(${r}, ${g}, ${b})`;
+  // 对照表
+  const presets = [
+    ['1850K', 1850, '蜡烛'], ['2700K', 2700, '白炽灯'], ['3200K', 3200, '影棚灯'],
+    ['4000K', 4000, '暖白 LED'], ['5000K', 5000, '正白'], ['5500K', 5500, '正午日光'],
+    ['6500K', 6500, '阴天/显示器'], ['8000K', 8000, '蓝天阴影'], ['12000K', 12000, '晴空'],
+  ];
+  let html = '';
+  for (const [label, kk, note] of presets){
+    const [rr, gg, bb] = kelvinToRgb(kk);
+    const h = '#' + [rr, gg, bb].map(x => x.toString(16).padStart(2, '0')).join('');
+    html += `<tr style="border-bottom:1px solid var(--border-color)">
+      <td style="padding:6px 4px;white-space:nowrap">${label}</td>
+      <td style="padding:6px 4px;color:var(--text-sub)">${note}</td>
+      <td style="padding:6px 4px"><span style="display:inline-block;width:36px;height:16px;border-radius:3px;background:${h};border:1px solid var(--border-color);vertical-align:middle"></span></td>
+      <td style="padding:6px 4px;text-align:right;font-family:ui-monospace,monospace">${h.toUpperCase()}</td>
+    </tr>`;
+  }
+  $('ct-table').innerHTML = html;
+}
+$('ct-k').addEventListener('input', () => { $('ct-range').value = Math.min(20000, Math.max(1000, +$('ct-k').value || 6500)); render(); });
+$('ct-range').addEventListener('input', () => { $('ct-k').value = $('ct-range').value; render(); });
+document.querySelectorAll('button[data-k]').forEach(btn => btn.addEventListener('click', () => {
+  $('ct-k').value = btn.dataset.k; $('ct-range').value = Math.min(20000, btn.dataset.k); render();
+}));
+render();
+</script>
