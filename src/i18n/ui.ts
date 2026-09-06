@@ -33,6 +33,7 @@ export const UI: Record<Lang, Record<string, string>> = {
     recentConfirm: '确定清空最近使用记录？',
     recentViewAll: '查看全部',
     relatedTools: '相关工具',
+    toolGuide: '使用说明',
   },
   en: {
     siteName: 'Online Toolbox',
@@ -61,6 +62,7 @@ export const UI: Record<Lang, Record<string, string>> = {
     recentConfirm: 'Clear all recent tools?',
     recentViewAll: 'View all',
     relatedTools: 'Related Tools',
+    toolGuide: 'How to use',
   },
 };
 

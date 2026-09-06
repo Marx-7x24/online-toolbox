@@ -3,6 +3,7 @@ import Base from '../../../layouts/Base.astro';
 import ToolCard from '../../../components/ToolCard.astro';
 import Support from '../../../components/Support.astro';
 import JsonLd from '../../../components/JsonLd.astro';
+import { getGuide } from '../../../data/guides.js';
 
 // 结构化数据用的绝对地址：域名取自 astro.config 的 site（由 SITE_URL 环境变量注入）
 const siteUrl = (p) => new URL(p, Astro.site).href;
@@ -75,6 +76,16 @@ const ToolComponent = modules[`../../../components/tools/${tool.slug}.astro`].de
   <div class="tool-body">
     <ToolComponent />
   </div>
+
+  {(tool.guide !== false) && (() => {
+    const guide = getGuide(tool.slug, lang);
+    return guide ? (
+      <section class="tool-guide" aria-label={t(lang, 'toolGuide')}>
+        <h2>{t(lang, 'toolGuide')}</h2>
+        <p>{guide}</p>
+      </section>
+    ) : null;
+  })()}
 
   <Support lang={lang} />
 

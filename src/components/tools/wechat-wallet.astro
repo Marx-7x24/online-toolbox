@@ -23,7 +23,8 @@
   <div>
     <div class="field-label"><span>预览</span></div>
     <div id="ww-screen" style="max-width:340px;margin:0 auto;background:#ededed;border-radius:14px;overflow:hidden;box-shadow:0 4px 18px rgba(0,0,0,.12);min-height:420px">
-      <div id="ww-header" style="background:#ededed;padding:10px 12px;font-size:14px;text-align:center;color:#111;border-bottom:1px solid #d9d9d9;display:flex;justify-content:space-between;align-items:center"><span>‹</span><strong style="font-size:15px">零钱</strong><span style="visibility:hidden">·</span></div>
+      <div id="ww-statusbar" style="background:#ededed;padding:4px 12px 2px;font-size:12px;color:#111;display:flex;justify-content:space-between;align-items:center"><span id="ww-clock">14:30</span><span style="opacity:.6">●●● 100%</span></div>
+      <div id="ww-header" style="background:#ededed;padding:8px 12px;font-size:14px;text-align:center;color:#111;border-bottom:1px solid #d9d9d9;display:flex;justify-content:space-between;align-items:center"><span>‹</span><strong style="font-size:15px">零钱</strong><span style="visibility:hidden">·</span></div>
       <div id="ww-body" style="padding:0 14px 16px"></div>
     </div>
     <div class="btn-row" style="justify-content:center">
@@ -89,7 +90,9 @@ function render(){
   const ch = +$('ww-change').value || 0;
   const pass = +$('ww-pass').value || 0;
   const total = ch + pass;
+  const time = $('ww-time').value || '14:30';
   const list = parseTx($('ww-tx').value);
+  if ($('ww-clock')) $('ww-clock').textContent = time;
   $('ww-body').innerHTML = `
     <div class="ww-total">
       <div class="ww-total-label">总资产（元）</div>

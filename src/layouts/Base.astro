@@ -291,13 +291,11 @@ const switchUrl = Astro.url.pathname.replace(`/${lang}/`, `/${otherLang}/`) || `
             if (!window.confirm(I18N.confirm)) return;
             try { localStorage.removeItem(RECENT_KEY); } catch (e) {}
             renderRecentPage();
-            renderRecent();
           });
         }
       }
 
       function renderAll() {
-        renderRecent();
         renderRecentPage();
       }
 
