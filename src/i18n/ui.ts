@@ -7,6 +7,7 @@ export type Lang = (typeof LANGS)[number];
 export const UI: Record<Lang, Record<string, string>> = {
   zh: {
     siteName: 'Wevva 极速工具箱',
+    brandSuffix: '极速工具箱',
     tagline: '来了就用，即开即走。无需注册，一触即达的极速在线工具箱。',
     heroTitle: 'Wevva Tools · 即用箱',
     heroSlogan: '来了就用，即开即走。无需注册，一触即达的极速在线工具箱。',
@@ -39,6 +40,7 @@ export const UI: Record<Lang, Record<string, string>> = {
   },
   en: {
     siteName: 'Wevva Tools',
+    brandSuffix: 'Tools',
     tagline: 'Simple Online Tools. No login, no fuss—just click and solve.',
     heroTitle: 'Wevva Tools · Instant Toolbox',
     heroSlogan: 'Simple Online Tools. No login, no fuss—just click and solve.',

@@ -15,7 +15,10 @@ const { lang, active = 'home' } = Astro.props;
   <header class="sidebar-header">
     <a href={`/${lang}/`} class="logo">
       <img class="logo-image" src="/logo.png" alt="Wevva" width="34" height="34" />
-      <span class="logo-text">{t(lang, 'siteName')} <span class="logo-badge">Toolbox</span></span>
+      <span class="logo-text">
+        <span class="logo-text__main">Wevva</span>
+        <span class="logo-text__sub">{t(lang, 'brandSuffix')}</span>
+      </span>
     </a>
   </header>
 

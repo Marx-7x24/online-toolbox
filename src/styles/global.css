@@ -114,16 +114,30 @@ a { color: inherit; text-decoration: none; }
   border-radius: 8px;
   flex-shrink: 0;
 }
-/* Logo 文字：精致小巧、自适应半透明，hover 时渐显 */
+/* Logo 文字：两行结构（Wevva / 极速工具箱），两行总高与左侧 Logo 图严格一致（34px） */
 .logo .logo-text {
-  font-size: 16px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  height: 34px;
+  line-height: 17px;
   opacity: .72;
   transition: opacity .2s ease;
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 .logo:hover .logo-text { opacity: 1; }
+.logo .logo-text__main {
+  font-size: 14.5px;
+  font-weight: 700;
+  letter-spacing: .3px;
+  color: var(--text-color);
+}
+.logo .logo-text__sub {
+  font-size: 11.5px;
+  font-weight: 500;
+  letter-spacing: .3px;
+  color: var(--text-sub);
+}
 .logo .logo-badge { color: var(--primary-color); }
 
 /* 导航菜单 */
