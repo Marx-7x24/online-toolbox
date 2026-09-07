@@ -16,10 +16,11 @@ const { lang } = Astro.props;
 
 <Base
   title={`${t(lang, 'siteName')} - ${t(lang, 'tagline')}`}
-  description={t(lang, 'aboutIntro')}
+  description={t(lang, 'heroSlogan')}
   keywords="在线工具,免费工具,工具箱,JSON格式化,Base64,时间戳转换,图片压缩,online tools,free tools"
   lang={lang}
   active="home"
+  hero={true}
 >
   <JsonLd data={{
     '@context': 'https://schema.org',
@@ -36,6 +37,13 @@ const { lang } = Astro.props;
       'query-input': 'required name=search_term_string',
     },
   }} />
+
+  {/* 首屏 Hero：一句话让用户知道怎么用（SEO H1 + Slogan） */}
+  <section class="hero">
+    <img class="hero__logo" src="/logo.png" alt="Wevva" width="56" height="56" />
+    <h1 class="hero__title">{t(lang, 'heroTitle')}</h1>
+    <p class="hero__slogan">{t(lang, 'heroSlogan')}</p>
+  </section>
 
   {/* 首页页签：全部工具 / 最近使用（参考懒人工具箱，最近使用在右侧主区展示，不在左侧平铺） */}
   <div class="home-tabs">

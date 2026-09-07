@@ -20,6 +20,21 @@
   --radius: 8px;
 }
 
+/* 暗色主题：跟随系统（head 内联脚本按 prefers-color-scheme 初始化），也可手动切换并记忆 */
+[data-theme="dark"] {
+  --main-bg: #17181c;
+  --text-color: #e8eaed;
+  --text-sub: #9aa3af;
+  --text-hint: #6b7280;
+  --border-color: #2c2e33;
+  --focus-bg: #232529;
+  --card-shadow: 0 0 5px 3px rgba(0, 0, 0, 0.25);
+  --button-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.4);
+  --hover-bg: #1e2025;
+  --primary-color: #7d74ff;
+  --primary-soft: #2a2850;
+}
+
 * { box-sizing: border-box; }
 
 html { -webkit-text-size-adjust: 100%; }
@@ -86,12 +101,29 @@ a { color: inherit; text-decoration: none; }
   gap: 8px;
   padding: 10px 8px 18px;
   outline: none;
-  font-size: 20px;
+  font-size: 18px;
   font-weight: bold;
   color: var(--text-color);
   letter-spacing: .5px;
 }
-.logo .logo-image { width: 28px; height: 28px; object-fit: cover; }
+/* Logo 图形：常规 28px 基础上增大 15%+5% 分量（≈34px），更醒目 */
+.logo .logo-image {
+  width: 34px;
+  height: 34px;
+  object-fit: cover;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+/* Logo 文字：精致小巧、自适应半透明，hover 时渐显 */
+.logo .logo-text {
+  font-size: 16px;
+  opacity: .72;
+  transition: opacity .2s ease;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.logo:hover .logo-text { opacity: 1; }
 .logo .logo-badge { color: var(--primary-color); }
 
 /* 导航菜单 */
@@ -193,10 +225,10 @@ a { color: inherit; text-decoration: none; }
   transition: border-color .15s, box-shadow .15s;
 }
 .search-input:focus {
-  border-color: #5a4df8;
+  border-color: var(--primary-color);
   box-shadow: 0 0 0 2px rgba(90, 77, 248, .12);
 }
-.search-input::placeholder { color: #77778a; font-size: 14px; font-weight: 500; }
+.search-input::placeholder { color: var(--text-hint); font-size: 14px; font-weight: 500; }
 .search-icon {
   position: absolute;
   left: 14px;
@@ -221,13 +253,40 @@ a { color: inherit; text-decoration: none; }
 }
 .search-clear.show { display: block; }
 
-/* 语言切换（放搜索框右侧） */
-.lang-switch {
+/* 顶部右侧操作区：主题切换 + 语言切换 */
+.topbar-actions {
   position: absolute;
   right: 0;
   top: 50%;
   transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--border-color);
+  border-radius: 999px;
+  background: var(--hover-bg);
+  color: var(--text-sub);
+  cursor: pointer;
+  padding: 0;
+  transition: color .2s ease, border-color .2s ease, transform .2s ease;
+}
+.theme-toggle:hover { border-color: var(--primary-color); color: var(--primary-color); transform: scale(1.08); }
+.theme-toggle svg { width: 16px; height: 16px; }
+/* light 显示月亮（点击切到暗色），dark 显示太阳 */
+.theme-toggle__moon { display: block; }
+.theme-toggle__sun { display: none; }
+[data-theme="dark"] .theme-toggle__moon { display: none; }
+[data-theme="dark"] .theme-toggle__sun { display: block; }
+
+/* 语言切换（放搜索框右侧，与主题切换并排） */
+.lang-switch { line-height: 1; }
 .lang-switch__btn {
   display: inline-block;
   border: 1px solid var(--border-color);
@@ -257,7 +316,7 @@ a { color: inherit; text-decoration: none; }
   vertical-align: -2px;
   border-radius: 1px;
 }
-.main-content h2 a.more { color: #191919; }
+.main-content h2 a.more { color: var(--text-color); }
 .main-content h2 .home-section__count {
   font-size: 13px;
   color: var(--text-hint);
@@ -737,4 +796,59 @@ button.primary:hover { opacity: .9; }
 @media (max-width: 900px) {
   .cat-layout { grid-template-columns: 1fr; }
   .cat-subnav { position: static; max-height: none; }
+}
+
+/* ============================================================
+   暗色主题补丁：覆盖无法用变量表达的场景色/组件底色
+   ============================================================ */
+[data-theme="dark"] .btn-blue,
+[data-theme="dark"] .btn-grey,
+[data-theme="dark"] .btn-orange,
+[data-theme="dark"] .btn-green {
+  background-color: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.18);
+}
+[data-theme="dark"] .btn-blue { color: #6cb2ff; }
+[data-theme="dark"] .btn-grey { color: #b9bec4; }
+[data-theme="dark"] .btn-orange { color: #edb35e; }
+[data-theme="dark"] .btn-green { color: #85d276; }
+[data-theme="dark"] .tip {
+  background: rgba(230, 162, 60, 0.1);
+  border-color: rgba(230, 162, 60, 0.35);
+  color: #e8b56a;
+}
+[data-theme="dark"] .msg.err { color: #ff6b6b; }
+[data-theme="dark"] .msg.ok { color: #4ade80; }
+[data-theme="dark"] .search-input { background: var(--hover-bg); color: var(--text-color); }
+[data-theme="dark"] .search-input:focus { box-shadow: 0 0 0 2px rgba(125, 116, 255, 0.22); }
+[data-theme="dark"] .cat-subnav a:hover { background: rgba(255,255,255,.06); }
+[data-theme="dark"] img { filter: brightness(.92); }
+
+/* ============================================================
+   首页首屏 Hero：Logo + H1 + Slogan
+   ============================================================ */
+.hero {
+  text-align: center;
+  padding: 30px 16px 22px;
+  margin-bottom: 6px;
+}
+.hero__logo {
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
+  display: inline-block;
+}
+.hero__title {
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: .5px;
+  margin: 12px 0 8px;
+  color: var(--text-color);
+}
+.hero__slogan {
+  font-size: 15px;
+  color: var(--text-sub);
+  margin: 0 auto;
+  max-width: 560px;
+  line-height: 1.7;
 }

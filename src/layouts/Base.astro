@@ -11,8 +11,9 @@ interface Props {
   keywords?: string;
   lang?: string;
   active?: string; // 侧栏高亮：'home' | 'recent' | category slug
+  hero?: boolean; // 首页传 true：主区自渲染可见 H1（Slogan），sr-only 兜底标题不再输出
 }
-const { title, description, keywords, lang = 'zh', active = 'home' } = Astro.props;
+const { title, description, keywords, lang = 'zh', active = 'home', hero = false } = Astro.props;
 // 客户端可用的工具索引：侧边栏「最近使用」与 /recent/ 独立页都靠它在浏览器端渲染。
 // 带上 desc 与懒人图标文件名，保证独立页卡片外观与首页完全一致。
 const toolMap = Object.fromEntries(
@@ -69,8 +70,21 @@ const switchUrl = Astro.url.pathname.replace(`/${lang}/`, `/${otherLang}/`) || `
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content={title} />
   <meta name="twitter:description" content={description} />
-  <meta name="twitter:image" content={new URL('/og-image.png', Astro.site).href} />
-  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <meta property="twitter:image" content={new URL('/og-image.png', Astro.site).href} />
+  <link rel="icon" href="/favicon.png" type="image/png" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+  {/* 主题防闪烁：构建时同步执行，先于首帧渲染确定 light/dark。默认跟随系统，用户手动切换后记住选择。 */}
+  <script is:inline>
+    (function () {
+      try {
+        var saved = localStorage.getItem('theme');
+        var dark = saved ? saved === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
+        document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+      } catch (e) {
+        document.documentElement.setAttribute('data-theme', 'light');
+      }
+    })();
+  </script>
 </head>
 <body>
   <!-- 懒人式左右结构：左侧 aside 导航 + 右侧主内容 -->
@@ -78,7 +92,7 @@ const switchUrl = Astro.url.pathname.replace(`/${lang}/`, `/${otherLang}/`) || `
     <Sidebar lang={lang} active={active} />
 
     <main class="main-content" id="main-content">
-      <h1 class="sr-only">{title}</h1>
+      {!hero && <h1 class="sr-only">{title}</h1>}
 
       <!-- 顶部搜索框（sticky，仿懒人） -->
       <div class="search-container" id="search-box">
@@ -93,10 +107,16 @@ const switchUrl = Astro.url.pathname.replace(`/${lang}/`, `/${otherLang}/`) || `
         />
         <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
         <button type="button" class="search-clear" id="search-clear" aria-label="清空搜索">✕</button>
-        <div class="lang-switch">
-          <a href={switchUrl} class="lang-switch__btn" hreflang={otherLang}>
-            {otherLang === 'en' ? 'EN' : '中'}
-          </a>
+        <div class="topbar-actions">
+          <button type="button" class="theme-toggle" id="theme-toggle" aria-label="切换深浅色主题" title="切换主题">
+            <svg class="theme-toggle__sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+            <svg class="theme-toggle__moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+          </button>
+          <div class="lang-switch">
+            <a href={switchUrl} class="lang-switch__btn" hreflang={otherLang}>
+              {otherLang === 'en' ? 'EN' : '中'}
+            </a>
+          </div>
         </div>
       </div>
 
@@ -170,6 +190,20 @@ const switchUrl = Astro.url.pathname.replace(`/${lang}/`, `/${otherLang}/`) || `
           applyFilter(q.trim().toLowerCase());
         }
       } catch (e) {}
+    })();
+  </script>
+
+  <script>
+    // 主题切换：点击在 light/dark 间切换并持久化；初始值由 head 内联脚本按系统偏好设定。
+    (function () {
+      var btn = document.getElementById('theme-toggle');
+      if (!btn) return;
+      var root = document.documentElement;
+      btn.addEventListener('click', function () {
+        var next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+        root.setAttribute('data-theme', next);
+        try { localStorage.setItem('theme', next); } catch (e) {}
+      });
     })();
   </script>
 

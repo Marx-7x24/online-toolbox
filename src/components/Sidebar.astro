@@ -14,12 +14,8 @@ const { lang, active = 'home' } = Astro.props;
 <aside class="aside-content">
   <header class="sidebar-header">
     <a href={`/${lang}/`} class="logo">
-      <svg class="logo-image" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-        <rect x="8" y="8" width="84" height="84" rx="18" fill="#3e2eff"/>
-        <path d="M30 62 L46 46 L54 54 L72 36" stroke="#fff" stroke-width="9" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-        <circle cx="72" cy="36" r="5" fill="#fff"/>
-      </svg>
-      <span>{t(lang, 'siteName')} <span class="logo-badge">Toolbox</span></span>
+      <img class="logo-image" src="/logo.png" alt="Wevva" width="34" height="34" />
+      <span class="logo-text">{t(lang, 'siteName')} <span class="logo-badge">Toolbox</span></span>
     </a>
   </header>
 

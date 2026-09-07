@@ -35,7 +35,7 @@
 </div>
 
 <style>
-  .cr-stage { position: relative; margin-top: 10px; border: 1px dashed var(--border); border-radius: 8px; min-height: 240px; background: #fafafa; overflow: hidden; user-select: none; max-height: 480px; display: inline-block; }
+  .cr-stage { position: relative; margin-top: 10px; border: 1px dashed var(--border); border-radius: 8px; min-height: 240px; background: var(--hover-bg); overflow: hidden; user-select: none; max-height: 480px; display: inline-block; }
   .cr-stage canvas { display: block; max-width: 100%; }
   .cr-rect { position: absolute; border: 2px solid var(--primary-color, #3e2eff); background: rgba(62, 46, 255, 0.12); cursor: move; box-sizing: border-box; }
   .cr-handle { position: absolute; width: 10px; height: 10px; background: #fff; border: 2px solid var(--primary-color, #3e2eff); border-radius: 50%; }
@@ -47,7 +47,7 @@
   .cr-handle[data-h="s"]  { bottom: -5px; left: calc(50% - 5px); cursor: ns-resize; }
   .cr-handle[data-h="sw"] { bottom: -5px; left: -5px; cursor: nesw-resize; }
   .cr-handle[data-h="w"]  { top: calc(50% - 5px); left: -5px; cursor: ew-resize; }
-  .cr-cropped { margin-top: 10px; border: 1px dashed var(--border); border-radius: 8px; padding: 10px; min-height: 120px; display: flex; align-items: center; justify-content: center; background: #fafafa; }
+  .cr-cropped { margin-top: 10px; border: 1px dashed var(--border); border-radius: 8px; padding: 10px; min-height: 120px; display: flex; align-items: center; justify-content: center; background: var(--hover-bg); }
   .cr-cropped img { max-width: 100%; max-height: 320px; }
   .cr-cropped:empty::before { content: '尚未裁切'; color: #999; }
 </style>
