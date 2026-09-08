@@ -225,10 +225,13 @@ a { color: inherit; text-decoration: none; }
   background: var(--main-bg);
   margin-bottom: 6px;
 }
-.search-input {
+/* 选择器带 .search-container 提升特异性：
+   下方通用表单规则 input[type="search"]（0,1,1）会覆盖单类选择器（0,1,0），
+   导致 padding 变 8px 12px、放大镜与占位文字重叠 */
+.search-container .search-input {
   width: 100%;
   height: 40px;
-  padding: 0 40px 0 42px;
+  padding: 0 96px 0 42px;
   border: 1px solid var(--border-color);
   border-radius: 10px;
   background: var(--hover-bg);
