@@ -1,11 +1,35 @@
 ---
-// 广告位占位组件（当前隐藏）。
-// 上线接入：取消下方注释，把广告平台提供的 <script> / <ins> 代码放到注释位置即可。
-// 通过 slot 属性区分不同位置（top / home / category / tool-top），方便后续分价位售卖。
+// Google AdSense 广告位（预留）。
+// 启用方式：在部署环境（Cloudflare Pages → Settings → Environment variables）设置：
+//   PUBLIC_ADSENSE_CLIENT=ca-pub-xxxxxxxxxxxxxxxx
+//   PUBLIC_ADSENSE_SLOT=1234567890
+// 未配置 client 时本组件不渲染任何 DOM，站点行为与无广告完全一致（审核前后零影响、不影响 SEO）。
 interface Props {
-  slot?: string;
-  lang?: string;
+  slot?: string; // 位置标识（tool / category / home…），便于后续按位统计
 }
-const { slot = '' } = Astro.props;
+const { slot = 'tool' } = Astro.props;
+const client = import.meta.env.PUBLIC_ADSENSE_CLIENT || '';
+const adSlot = import.meta.env.PUBLIC_ADSENSE_SLOT || '';
 ---
-{/* 广告位已隐藏（slot={slot}） */}
+
+{
+  client && (
+    <div class="ad-slot" data-ad-position={slot}>
+      <ins
+        class="adsbygoogle"
+        style="display:block"
+        data-ad-client={client}
+        data-ad-slot={adSlot}
+        data-ad-format="auto"
+        data-full-width-responsive="true"
+      />
+      <script is:inline>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+    </div>
+  )
+}
+
+<style>
+  .ad-slot {
+    margin: 18px 0;
+  }
+</style>

@@ -1,0 +1,36 @@
+---
+import Base from '../../layouts/Base.astro';
+import { t } from '../../i18n/ui.ts';
+
+// 隐私政策：AdSense 申请的硬性要求（必须有独立可访问的隐私政策页）
+export function getStaticPaths() {
+  return ['zh', 'en'].map((lang) => ({ params: { lang }, props: { lang } }));
+}
+const { lang } = Astro.props;
+---
+
+<Base
+  title={`${t(lang, 'privacy')} - ${t(lang, 'siteName')}`}
+  description={t(lang, 'privacyIntro')}
+  lang={lang}
+  active="home"
+>
+  <div class="tool-page-head">
+    <h1>{t(lang, 'privacy')}</h1>
+    <p>{t(lang, 'privacyIntro')}</p>
+  </div>
+
+  <article class="static-page">
+    <h2>{t(lang, 'privacyLocalTitle')}</h2>
+    <p>{t(lang, 'privacyLocal')}</p>
+
+    <h2>{t(lang, 'privacyAdsTitle')}</h2>
+    <p>{t(lang, 'privacyAds')}</p>
+
+    <h2>{t(lang, 'privacyLogTitle')}</h2>
+    <p>{t(lang, 'privacyLog')}</p>
+
+    <h2>{t(lang, 'privacyContactTitle')}</h2>
+    <p>{t(lang, 'privacyContact')}</p>
+  </article>
+</Base>

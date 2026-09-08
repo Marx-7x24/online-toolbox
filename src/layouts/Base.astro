@@ -46,6 +46,10 @@ const canonical = new URL(Astro.url.pathname, Astro.site).href;
 const otherLang = lang === 'zh' ? 'en' : 'zh';
 // 语言切换：把路径里的 /zh/ 换成 /en/（或反之）
 const switchUrl = Astro.url.pathname.replace(`/${lang}/`, `/${otherLang}/`) || `/${otherLang}/`;
+// hreflang：同一页面的中英两个版本 + x-default 兜底（国际站必须，让 Google 正确区分/归并语言版本）
+const pathNoLang = Astro.url.pathname.replace(new RegExp(`^/${lang}/`), '/');
+const zhUrl = new URL(`/zh${pathNoLang}`, Astro.site).href;
+const enUrl = new URL(`/en${pathNoLang}`, Astro.site).href;
 ---
 
 <!doctype html>
@@ -57,6 +61,10 @@ const switchUrl = Astro.url.pathname.replace(`/${lang}/`, `/${otherLang}/`) || `
   <meta name="description" content={description} />
   {keywords && <meta name="keywords" content={keywords} />}
   <link rel="canonical" href={canonical} />
+  {/* hreflang：zh-CN / en 双向互链 + x-default 兜底 */}
+  <link rel="alternate" hreflang="zh-CN" href={zhUrl} />
+  <link rel="alternate" hreflang="en" href={enUrl} />
+  <link rel="alternate" hreflang="x-default" href={zhUrl} />
   <meta property="og:title" content={title} />
   <meta property="og:description" content={description} />
   <meta property="og:type" content="website" />
@@ -73,6 +81,15 @@ const switchUrl = Astro.url.pathname.replace(`/${lang}/`, `/${otherLang}/`) || `
   <meta property="twitter:image" content={new URL('/og-image.png', Astro.site).href} />
   <link rel="icon" href="/favicon.png" type="image/png" />
   <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+  {/* AdSense 脚本：仅在配置了 PUBLIC_ADSENSE_CLIENT 时加载（未配置则零请求、零 Cookie） */}
+  {import.meta.env.PUBLIC_ADSENSE_CLIENT && (
+    <script
+      is:inline
+      async
+      src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${import.meta.env.PUBLIC_ADSENSE_CLIENT}`}
+      crossorigin="anonymous"
+    ></script>
+  )}
   {/* 主题防闪烁：构建时同步执行，先于首帧渲染确定 light/dark。默认跟随系统，用户手动切换后记住选择。 */}
   <script is:inline>
     (function () {
@@ -131,6 +148,7 @@ const switchUrl = Astro.url.pathname.replace(`/${lang}/`, `/${otherLang}/`) || `
             <a href={`/${lang}/category/${c.slug}/`}>{categoryI18n(c, lang).name}</a>
           ))}
           <a href={`/${lang}/about/`}>{t(lang, 'about')}</a>
+          <a href={`/${lang}/privacy/`}>{t(lang, 'privacy')}</a>
         </nav>
         <p>{t(lang, 'footerPrivacy')}</p>
         <p>{t(lang, 'footerCopy')}</p>

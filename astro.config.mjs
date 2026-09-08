@@ -19,7 +19,15 @@ function isHiddenToolUrl(page) {
 export default defineConfig({
   site: process.env.SITE_URL || 'https://tool.example.com',
   output: 'static',
-  integrations: [sitemap({ filter: (page) => !isHiddenToolUrl(page) })],
+  integrations: [
+    sitemap({
+      filter: (page) => !isHiddenToolUrl(page),
+      // 每条 URL 带 lastmod（本次构建时间），提示 Google 内容新鲜度、利于重新抓取
+      serialize(item) {
+        return { ...item, lastmod: new Date().toISOString().slice(0, 10) };
+      },
+    }),
+  ],
   build: {
     // 每个工具一个独立 HTML，和懒人工具箱的 URL 结构一致
     format: 'directory',

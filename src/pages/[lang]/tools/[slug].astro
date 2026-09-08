@@ -4,6 +4,7 @@ import ToolCard from '../../../components/ToolCard.astro';
 import Support from '../../../components/Support.astro';
 import JsonLd from '../../../components/JsonLd.astro';
 import { getGuide } from '../../../data/guides.js';
+import AdSlot from '../../../components/AdSlot.astro';
 
 // 结构化数据用的绝对地址：域名取自 astro.config 的 site（由 SITE_URL 环境变量注入）
 const siteUrl = (p) => new URL(p, Astro.site).href;
@@ -88,6 +89,9 @@ const ToolComponent = modules[`../../../components/tools/${tool.slug}.astro`].de
       </section>
     ) : null;
   })()}
+
+  {/* AdSense 广告位：未配置 PUBLIC_ADSENSE_CLIENT 时不渲染，配置后自动出广告 */}
+  <AdSlot slot="tool" />
 
   <Support lang={lang} />
 

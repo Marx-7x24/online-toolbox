@@ -866,3 +866,24 @@ button.primary:hover { opacity: .9; }
   max-width: 560px;
   line-height: 1.7;
 }
+
+/* ============================================================
+   静态内容页（隐私政策 / 关于）：正文排版
+   ============================================================ */
+.static-page {
+  background: var(--hover-bg);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  padding: 18px 22px;
+  font-size: 14.5px;
+  line-height: 1.85;
+}
+.static-page h2 {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 18px 0 8px;
+  color: var(--text-color);
+}
+.static-page h2:first-child { margin-top: 0; }
+.static-page p { color: var(--text-sub); margin: 0 0 10px; }
+.static-page a { color: var(--primary-color); text-decoration: underline; }
