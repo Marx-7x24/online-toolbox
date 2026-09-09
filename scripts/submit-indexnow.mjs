@@ -26,14 +26,35 @@ function findKey() {
   return f.replace('.txt', '');
 }
 
-// 2) 从构建产物 sitemap 提取所有 URL
-function collectUrls() {
-  const urls = new Set();
+// 2) 收集待提交 URL：优先从**线上** sitemap 拉取。
+//    为什么不用本地 dist：本地构建不注入 SITE_URL，sitemap 里是占位域名 tool.example.com，
+//    直接拿来提交会全被 host 校验过滤掉（或提交错域名）。线上拉到的才是真实 URL。
+//    另外 sitemap-index 里的 <loc> 指向 sitemap-0.xml（XML 而非页面），混进 urlList 会 422。
+async function collectUrls() {
+  const origin = `https://${HOST}`;
+  const locsOf = (xml) => [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1].trim());
+
+  // 先读本地 dist（离线兜底），成功就直接用（前提是本地构建带 SITE_URL）
+  const local = [];
   const dist = path.join(ROOT, 'dist');
-  for (const f of fs.readdirSync(dist)) {
+  for (const f of fs.existsSync(dist) ? fs.readdirSync(dist) : []) {
     if (!/^sitemap(-.*)?\.xml$/.test(f)) continue;
-    const xml = fs.readFileSync(path.join(dist, f), 'utf8');
-    for (const m of xml.matchAll(/<loc>([^<]+)<\/loc>/g)) urls.add(m[1].trim());
+    local.push(...locsOf(fs.readFileSync(path.join(dist, f), 'utf8')));
+  }
+  const localPages = local.filter((u) => u.startsWith(origin + '/') && !u.endsWith('.xml'));
+  if (localPages.length) return [...new Set(localPages)];
+
+  // 否则从线上 sitemap-index 逐层拉取
+  const idxRes = await fetch(`${origin}/sitemap-index.xml`);
+  if (!idxRes.ok) throw new Error(`无法读取线上 sitemap-index.xml（${idxRes.status}）`);
+  const children = locsOf(await idxRes.text()).filter((u) => u.endsWith('.xml'));
+  const urls = new Set();
+  for (const sm of children) {
+    const r = await fetch(sm);
+    if (!r.ok) continue;
+    for (const u of locsOf(await r.text())) {
+      if (u.startsWith(origin + '/') && !u.endsWith('.xml')) urls.add(u);
+    }
   }
   return [...urls];
 }
@@ -52,7 +73,7 @@ async function verifyKey(key) {
 
 async function main() {
   const key = findKey();
-  const urls = collectUrls();
+  const urls = await collectUrls();
   console.log(`[indexnow] host=${HOST} key=${key} urls=${urls.length}`);
 
   const v = await verifyKey(key);
