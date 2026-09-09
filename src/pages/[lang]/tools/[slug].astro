@@ -4,6 +4,7 @@ import ToolCard from '../../../components/ToolCard.astro';
 import Support from '../../../components/Support.astro';
 import JsonLd from '../../../components/JsonLd.astro';
 import { getGuide } from '../../../data/guides.js';
+import { buildGuide, buildFaq } from '../../../data/toolContent.js';
 import AdSlot from '../../../components/AdSlot.astro';
 
 // 结构化数据用的绝对地址：域名取自 astro.config 的 site（由 SITE_URL 环境变量注入）
@@ -31,6 +32,12 @@ const related = category
 // 每个工具一个组件文件，文件名与 slug 一致。加新工具时只需新增组件 + 在 data/tools.js 注册。
 const modules = import.meta.glob('../../../components/tools/*.astro', { eager: true });
 const ToolComponent = modules[`../../../components/tools/${tool.slug}.astro`].default;
+
+// 长尾正文：手写说明优先，其余按工具名/描述/分类生成（补薄内容 + 吃长尾搜索）
+const manualGuide = getGuide(tool.slug, lang);
+const guideText = buildGuide(tool, lang, manualGuide);
+// FAQ：页面展示 + FAQPage 结构化数据（Google 搜索结果可展示折叠问答，提升点击率）
+const faqs = buildFaq(tool, lang);
 ---
 
 <Base
@@ -63,6 +70,15 @@ const ToolComponent = modules[`../../../components/tools/${tool.slug}.astro`].de
       inLanguage: lang === 'en' ? 'en-US' : 'zh-CN',
       offers: { '@type': 'Offer', price: '0', priceCurrency: lang === 'en' ? 'USD' : 'CNY' },
     },
+    {
+      '@context': 'https://schema.org',
+      '@type': 'FAQPage',
+      mainEntity: faqs.map((f) => ({
+        '@type': 'Question',
+        name: f.q,
+        acceptedAnswer: { '@type': 'Answer', text: f.a },
+      })),
+    },
   ]} />
 
   {/* 面包屑 + 工具标题（懒人式：搜索框下方 h1 + 简介） */}
@@ -80,15 +96,23 @@ const ToolComponent = modules[`../../../components/tools/${tool.slug}.astro`].de
     <ToolComponent />
   </div>
 
-  {(tool.guide !== false) && (() => {
-    const guide = getGuide(tool.slug, lang);
-    return guide ? (
-      <section class="tool-guide" aria-label={t(lang, 'toolGuide')}>
-        <h2>{t(lang, 'toolGuide')}</h2>
-        <p>{guide}</p>
-      </section>
-    ) : null;
-  })()}
+  {(tool.guide !== false) && guideText && (
+    <section class="tool-guide" aria-label={t(lang, 'toolGuide')}>
+      <h2>{t(lang, 'toolGuide')}</h2>
+      <p>{guideText}</p>
+    </section>
+  )}
+
+  {/* FAQ：正文 + FAQPage 结构化数据 */}
+  <section class="tool-faq" aria-label={lang === 'zh' ? '常见问题' : 'FAQ'}>
+    <h2>{lang === 'zh' ? '常见问题' : 'Frequently Asked Questions'}</h2>
+    {faqs.map((f) => (
+      <details class="faq-item">
+        <summary>{f.q}</summary>
+        <p>{f.a}</p>
+      </details>
+    ))}
+  </section>
 
   {/* AdSense 广告位：未配置 PUBLIC_ADSENSE_CLIENT 时不渲染，配置后自动出广告 */}
   <AdSlot slot="tool" />

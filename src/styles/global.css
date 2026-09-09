@@ -890,3 +890,48 @@ button.primary:hover { opacity: .9; }
 .static-page h2:first-child { margin-top: 0; }
 .static-page p { color: var(--text-sub); margin: 0 0 10px; }
 .static-page a { color: var(--primary-color); text-decoration: underline; }
+
+/* ============================================================
+   工具页 FAQ（可折叠问答 + FAQPage 结构化数据）
+   ============================================================ */
+.tool-faq { margin: 18px 0 4px; }
+.tool-faq h2 {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0 0 10px;
+  color: var(--text-color);
+}
+.faq-item {
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  background: var(--hover-bg);
+  margin-bottom: 8px;
+  overflow: hidden;
+}
+.faq-item summary {
+  cursor: pointer;
+  padding: 11px 14px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-color);
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.faq-item summary::-webkit-details-marker { display: none; }
+.faq-item summary::before {
+  content: '+';
+  color: var(--primary-color);
+  font-weight: 700;
+  font-size: 15px;
+  line-height: 1;
+}
+.faq-item[open] summary::before { content: '−'; }
+.faq-item p {
+  margin: 0;
+  padding: 0 14px 13px 30px;
+  font-size: 13.5px;
+  line-height: 1.8;
+  color: var(--text-sub);
+}
