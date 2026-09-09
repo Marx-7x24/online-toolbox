@@ -1,0 +1,64 @@
+---
+import Base from '../../layouts/Base.astro';
+import { tools, categories, getToolsByCategory, categoryI18n, toolI18n } from '../../data/tools.js';
+import { t } from '../../i18n/ui.ts';
+
+// HTML 站点地图：给用户和爬虫一份全站链接索引，
+// 让每个工具页都能从首页两跳内到达（内链权重分发 + 加快收录）。
+export function getStaticPaths() {
+  return ['zh', 'en'].map((lang) => ({ params: { lang }, props: { lang } }));
+}
+const { lang } = Astro.props;
+
+const groups = categories
+  .map((c) => ({ c, list: getToolsByCategory(c.slug) }))
+  .filter((g) => g.list.length > 0);
+const total = groups.reduce((n, g) => n + g.list.length, 0);
+---
+
+<Base
+  title={`${t(lang, 'toolsIndex')} - ${t(lang, 'siteName')}`}
+  description={t(lang, 'toolsIndexDesc')}
+  lang={lang}
+  active="home"
+>
+  <div class="tool-page-head">
+    <h1>{t(lang, 'toolsIndex')}</h1>
+    <p>{t(lang, 'toolsIndexDesc')} · {total} {t(lang, 'toolsCount')}</p>
+  </div>
+
+  {groups.map(({ c, list }) => (
+    <section class="sitemap-group">
+      <h2><a href={`/${lang}/category/${c.slug}/`}>{categoryI18n(c, lang).name}</a> <span class="sitemap-group__count">{list.length}</span></h2>
+      <div class="sitemap-links">
+        {list.map((tool) => {
+          const ti = toolI18n(tool, lang);
+          return <a href={`/${lang}/tools/${tool.slug}/`}>{ti.name}</a>;
+        })}
+      </div>
+    </section>
+  ))}
+</Base>
+
+<style>
+  .sitemap-group { margin-bottom: 20px; }
+  .sitemap-group h2 {
+    font-size: 15px;
+    font-weight: 600;
+    margin: 0 0 10px;
+    color: var(--text-color);
+  }
+  .sitemap-group h2 a { color: var(--primary-color); }
+  .sitemap-group__count { font-size: 12px; color: var(--text-hint); font-weight: 400; }
+  .sitemap-links { display: flex; flex-wrap: wrap; gap: 8px 10px; }
+  .sitemap-links a {
+    font-size: 13px;
+    color: var(--text-sub);
+    padding: 3px 9px;
+    border: 1px solid var(--border-color);
+    border-radius: 999px;
+    background: var(--hover-bg);
+    transition: color .15s, border-color .15s;
+  }
+  .sitemap-links a:hover { color: var(--primary-color); border-color: var(--primary-color); }
+</style>

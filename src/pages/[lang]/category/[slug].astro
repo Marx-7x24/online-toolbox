@@ -32,8 +32,8 @@ if (subs.length) {
 ---
 
 <Base
-  title={`${cName} - ${t(lang, 'siteName')}`}
-  description={`${cName} ${t(lang, 'toolsCount')}：${list.length} ${t(lang, 'toolsCount')}。`}
+  title={t(lang, 'catTitleTpl').replaceAll('{name}', cName)}
+  description={t(lang, 'catDescTpl').replaceAll('{name}', cName).replaceAll('{n}', String(list.length))}
   keywords={list.flatMap((tool) => toolI18n(tool, lang).keywords).join(',')}
   lang={lang}
   active={category.slug}
