@@ -235,6 +235,9 @@ const thankYouUrl = new URL(`/${lang}/feedback/?sent=1`, base).href;
     color: var(--text-hint);
     line-height: 1.7;
   }
+  /* 注意：display:flex 的类选择器优先级高于 UA 样式的 [hidden]{display:none}，
+     若不显式处理，hidden 属性会失效、提示永远显示。这条覆盖规则必须保留。 */
+  .fb-done[hidden] { display: none; }
   .fb-done {
     display: flex;
     align-items: center;

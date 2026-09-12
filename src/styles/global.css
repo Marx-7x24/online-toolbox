@@ -935,3 +935,12 @@ button.primary:hover { opacity: .9; }
   line-height: 1.8;
   color: var(--text-sub);
 }
+
+/* ============================================================
+   hidden 属性兜底
+   ------------------------------------------------------------
+   HTML 的 hidden 靠 UA 样式 [hidden]{display:none} 生效，优先级极低；
+   只要组件里给该元素写了 display（如 .box{display:flex}），hidden 就会失效、
+   元素照样显示。这里统一兜底，避免各处重复踩坑。
+   ============================================================ */
+[hidden] { display: none !important; }
