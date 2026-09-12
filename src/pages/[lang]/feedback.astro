@@ -163,6 +163,11 @@ const thankYouUrl = new URL(`/${lang}/feedback/?sent=1`, base).href;
       } catch (e) {
         /* replaceState 失败不影响提示显示 */
       }
+      // 再兜一层：几秒后自动淡出，避免提示常驻在页面上
+      setTimeout(function () {
+        done.classList.add('is-fade');
+        setTimeout(function () { done.hidden = true; }, 400);
+      }, 6000);
     }
   })();
 </script>
@@ -244,6 +249,11 @@ const thankYouUrl = new URL(`/${lang}/feedback/?sent=1`, base).href;
     font-weight: 600;
   }
   .fb-done__icon { font-size: 17px; }
+  .fb-done.is-fade {
+    opacity: 0;
+    transform: translateY(-4px);
+    transition: opacity .4s ease, transform .4s ease;
+  }
   .fb-fallback { text-align: center; padding: 12px 0; }
   .fb-gh {
     display: inline-block;
