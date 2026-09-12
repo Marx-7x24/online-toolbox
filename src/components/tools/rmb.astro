@@ -1,36 +1,43 @@
 ---
+import { tu } from '../../i18n/toolUi.ts';
+
+interface Props { lang?: string }
+const { lang = 'zh' } = Astro.props;
+
 ---
 
-<div class="tip">按财务规范生成中文大写金额，精确到分，符合票据填写要求。</div>
+<div class="tip">{tu(lang, '按财务规范生成中文大写金额，精确到分，符合票据填写要求。')}</div>
 
 <div style="max-width:420px;">
-  <div class="field-label"><span>金额（元）</span></div>
-  <input type="text" id="rm-in" placeholder="例如 12345.67" value="12345.67" spellcheck="false" />
+  <div class="field-label"><span>{tu(lang, '金额（元')}）</span></div>
+  <input type="text" id="rm-in" placeholder={tu(lang, '例如 12345.67')} value="12345.67" spellcheck="false" />
 </div>
 
 <div class="btn-row">
-  <button class="primary" id="rm-go">转换</button>
-  <button id="rm-copy">复制大写</button>
-  <button id="rm-clear">清空</button>
+  <button class="primary" id="rm-go">{tu(lang, '转换')}</button>
+  <button id="rm-copy">{tu(lang, '复制大写')}</button>
+  <button id="rm-clear">{tu(lang, '清空')}</button>
 </div>
 
 <div id="rm-out"></div>
 <p class="msg" id="rm-msg"></p>
 
-<script>
+<script>import { tu, currentLang } from '../../i18n/toolUi.ts';
+const LANG = currentLang();
+
   const $ = (id) => document.getElementById(id);
-  const DIGIT = ['零', '壹', '贰', '叁', '肆', '伍', '陆', '柒', '捌', '玖'];
-  const SEC = ['', '拾', '佰', '仟'];
-  const BIG = ['', '万', '亿', '万亿'];
+  const DIGIT = [tu(LANG, '零'), tu(LANG, '壹'), tu(LANG, '贰'), tu(LANG, '叁'), tu(LANG, '肆'), tu(LANG, '伍'), tu(LANG, '陆'), tu(LANG, '柒'), tu(LANG, '捌'), tu(LANG, '玖')];
+  const SEC = ['', tu(LANG, '拾'), tu(LANG, '佰'), tu(LANG, '仟')];
+  const BIG = ['', tu(LANG, '万'), tu(LANG, '亿'), tu(LANG, '万亿')];
 
   function intPart(n) {
-    if (n === 0) return '零';
+    if (n === 0) return tu(LANG, '零');
     let out = '';
     let group = 0;
     while (n > 0) {
       const g = n % 10000;
       if (g === 0) {
-        if (out && !out.startsWith('零')) out = '零' + out;
+        if (out && !out.startsWith(tu(LANG, '零'))) out = tu(LANG, '零') + out;
       } else {
         let s = '';
         let x = g;
@@ -39,19 +46,19 @@
           s = (d === 0 ? '零' : DIGIT[d] + SEC[i]) + s;
           x = Math.floor(x / 10);
         }
-        s = s.replace(/零+/g, '零').replace(/零$/, '');
+        s = s.replace(/零+/g, tu(LANG, '零')).replace(/零$/, '');
         out = s + BIG[group] + out;
       }
       n = Math.floor(n / 10000);
       group++;
     }
-    return out.replace(/零+/g, '零').replace(/零$/, '');
+    return out.replace(/零+/g, tu(LANG, '零')).replace(/零$/, '');
   }
 
   function convert(input) {
     const raw = input.trim().replace(/[,，\s￥¥]/g, '');
-    if (!raw) throw new Error('请输入金额');
-    if (!/^-?\d+(\.\d{1,2})?$/.test(raw)) throw new Error('金额格式不对，最多两位小数');
+    if (!raw) throw new Error(tu(LANG, '请输入金额'));
+    if (!/^-?\d+(\.\d{1,2})?$/.test(raw)) throw new Error(tu(LANG, '金额格式不对，最多两位小数'));
 
     const neg = raw.startsWith('-');
     const abs = raw.replace('-', '');
@@ -62,15 +69,15 @@
     const fen = Number(pad[1]);
 
     let s = '';
-    if (yuan > 0n) s += intPart(Number(yuan)) + '元';
+    if (yuan > 0n) s += intPart(Number(yuan)) + tu(LANG, '元');
     if (jiao === 0 && fen === 0) {
-      s += '整';
+      s += tu(LANG, '整');
     } else {
-      if (jiao > 0) s += DIGIT[jiao] + '角';
-      else if (yuan > 0n) s += '零';
-      if (fen > 0) s += DIGIT[fen] + '分';
+      if (jiao > 0) s += DIGIT[jiao] + tu(LANG, '角');
+      else if (yuan > 0n) s += tu(LANG, '零');
+      if (fen > 0) s += DIGIT[fen] + tu(LANG, '分');
     }
-    if (yuan === 0n && jiao === 0 && fen === 0) s = '零元整';
+    if (yuan === 0n && jiao === 0 && fen === 0) s = tu(LANG, '零元整');
     return (neg ? '负' : '') + s;
   }
 
@@ -94,7 +101,7 @@
           <tr><th>大写金额</th><td>${esc(upper)}</td></tr>
           <tr><th>票据填写</th><td style="font-family:ui-monospace,monospace;">人民币${esc(upper)}</td></tr>
         </table>`;
-      msg.textContent = '转换完成';
+      msg.textContent = tu(LANG, '转换完成');
       msg.className = 'msg ok';
     } catch (e) {
       $('rm-out').innerHTML = '';
@@ -109,7 +116,7 @@
     const t = $('rm-text');
     if (!t) return;
     await navigator.clipboard.writeText(t.textContent);
-    $('rm-msg').textContent = '已复制大写金额';
+    $('rm-msg').textContent = tu(LANG, '已复制大写金额');
     $('rm-msg').className = 'msg ok';
   };
   $('rm-clear').onclick = () => {

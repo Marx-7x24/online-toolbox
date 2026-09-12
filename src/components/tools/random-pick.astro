@@ -1,48 +1,55 @@
 ---
+import { tu } from '../../i18n/toolUi.ts';
+
+interface Props { lang?: string }
+const { lang = 'zh' } = Astro.props;
+
 ---
 
-<div class="tip">用浏览器随机数在本地抽取，适合抽奖、点名、分组。结果不会上传。</div>
+<div class="tip">{tu(lang, '用浏览器随机数在本地抽取，适合抽奖、点名、分组。结果不会上传。')}</div>
 
-<div class="field-label"><span>候选列表（每行一个）</span><span id="rp-count"></span></div>
-<textarea id="rp-in" placeholder="每行输入一个候选项&#10;张三&#10;李四&#10;王五" style="min-height:180px;" spellcheck="false"></textarea>
+<div class="field-label"><span>{tu(lang, '候选列表（每行一个')}）</span><span id="rp-count"></span></div>
+<textarea id="rp-in" placeholder={tu(lang, '每行输入一个候选项&#10;张三&#10;李四&#10;王五')} style="min-height:180px;" spellcheck="false"></textarea>
 
 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px;margin-top:12px;">
   <div>
-    <div class="field-label"><span>抽取数量</span></div>
+    <div class="field-label"><span>{tu(lang, '抽取数量')}</span></div>
     <input type="number" id="rp-n" value="1" min="1" />
   </div>
   <div>
-    <div class="field-label"><span>分组数（0 为不分组）</span></div>
+    <div class="field-label"><span>{tu(lang, '分组数（0 为不分组')}）</span></div>
     <input type="number" id="rp-g" value="0" min="0" />
   </div>
   <div>
-    <div class="field-label"><span>选项</span></div>
-    <label style="display:block;font-size:13px;"><input type="checkbox" id="rp-repeat" /> 允许重复</label>
-    <label style="display:block;font-size:13px;"><input type="checkbox" id="rp-remove" /> 抽取后从列表移除</label>
+    <div class="field-label"><span>{tu(lang, '选项')}</span></div>
+    <label style="display:block;font-size:13px;"><input type="checkbox" id="rp-repeat" /> {tu(lang, '允许重复')}</label>
+    <label style="display:block;font-size:13px;"><input type="checkbox" id="rp-remove" /> {tu(lang, '抽取后从列表移除')}</label>
   </div>
   <div>
-    <div class="field-label"><span>排序</span></div>
+    <div class="field-label"><span>{tu(lang, '排序')}</span></div>
     <select id="rp-sort">
-      <option value="none">保持原顺序</option>
-      <option value="shuffle">随机打乱</option>
-      <option value="asc">升序</option>
-      <option value="desc">降序</option>
+      <option value="none">{tu(lang, '保持原顺序')}</option>
+      <option value="shuffle">{tu(lang, '随机打乱')}</option>
+      <option value="asc">{tu(lang, '升序')}</option>
+      <option value="desc">{tu(lang, '降序')}</option>
     </select>
   </div>
 </div>
 
 <div class="btn-row">
-  <button class="primary" id="rp-go">开始</button>
-  <button id="rp-shuffle">仅打乱顺序</button>
-  <button id="rp-sample">填入示例</button>
-  <button id="rp-copy">复制结果</button>
-  <button id="rp-clear">清空</button>
+  <button class="primary" id="rp-go">{tu(lang, '开始')}</button>
+  <button id="rp-shuffle">{tu(lang, '仅打乱顺序')}</button>
+  <button id="rp-sample">{tu(lang, '填入示例')}</button>
+  <button id="rp-copy">{tu(lang, '复制结果')}</button>
+  <button id="rp-clear">{tu(lang, '清空')}</button>
 </div>
 
 <p class="msg" id="rp-msg"></p>
 <div id="rp-out"></div>
 
-<script>
+<script>import { tu, currentLang } from '../../i18n/toolUi.ts';
+const LANG = currentLang();
+
   const $ = (id) => document.getElementById(id);
 
   function items() {
@@ -74,7 +81,7 @@
 
   function run() {
     let list = items();
-    if (!list.length) { $('rp-msg').textContent = '请先输入候选项'; $('rp-msg').className = 'msg err'; return; }
+    if (!list.length) { $('rp-msg').textContent = tu(LANG, '请先输入候选项'); $('rp-msg').className = 'msg err'; return; }
 
     if ($('rp-sort').value === 'shuffle') list = shuffle(list);
     else if ($('rp-sort').value === 'asc') list.sort((a, b) => a.localeCompare(b, 'zh-CN'));
@@ -110,7 +117,7 @@
 
       html =
         '<table class="result-table" style="margin-top:14px;max-width:520px;">' +
-        picked.map((p, i) => `<tr><th>${n > 1 ? '第 ' + (i + 1) + ' 个' : '结果'}</th>
+        picked.map((p, i) => `<tr><th>${n > 1 ? tu(LANG, '第 ') + (i + 1) + ' 个' : tu(LANG, '结果')}</th>
           <td style="font-size:16px;font-weight:500;">${esc(p)}</td></tr>`).join('') +
         '</table>';
 
@@ -131,13 +138,13 @@
   $('rp-go').onclick = run;
   $('rp-shuffle').onclick = () => {
     const list = items();
-    if (!list.length) { $('rp-msg').textContent = '请先输入候选项'; $('rp-msg').className = 'msg err'; return; }
+    if (!list.length) { $('rp-msg').textContent = tu(LANG, '请先输入候选项'); $('rp-msg').className = 'msg err'; return; }
     const s = shuffle(list);
     $('rp-in').value = s.join('\n');
     $('rp-out').innerHTML =
       '<table class="result-table" style="margin-top:14px;max-width:520px;">' +
       s.map((p, i) => `<tr><th>${i + 1}</th><td>${esc(p)}</td></tr>`).join('') + '</table>';
-    $('rp-msg').textContent = '已打乱顺序';
+    $('rp-msg').textContent = tu(LANG, '已打乱顺序');
     $('rp-msg').className = 'msg ok';
   };
   $('rp-sample').onclick = () => {
@@ -149,7 +156,7 @@
     if (!rows.length) return;
     const text = [...rows].map((r) => r.textContent.trim()).join('\n');
     await navigator.clipboard.writeText(text);
-    $('rp-msg').textContent = '已复制结果';
+    $('rp-msg').textContent = tu(LANG, '已复制结果');
     $('rp-msg').className = 'msg ok';
   };
   $('rp-clear').onclick = () => {

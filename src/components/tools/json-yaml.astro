@@ -1,25 +1,31 @@
 ---
+import { tu } from '../../i18n/toolUi.ts';
 // JSON 转 YAML（简易序列化，覆盖常见结构）
+interface Props { lang?: string }
+const { lang = 'zh' } = Astro.props;
+
 ---
 
 <div class="pane">
   <div>
-    <div class="field-label"><span>输入 JSON</span></div>
+    <div class="field-label"><span>{tu(lang, '输入')} JSON</span></div>
     <textarea id="jy-in" placeholder='{"name":"张三","age":20,"tags":["a","b"],"addr":{"city":"北京"}}'></textarea>
   </div>
   <div>
-    <div class="field-label"><span>YAML 输出</span></div>
+    <div class="field-label"><span>YAML {tu(lang, '输出')}</span></div>
     <textarea id="jy-out" readonly></textarea>
   </div>
 </div>
 <div class="btn-row">
-  <button id="jy-run" class="primary">转换为 YAML</button>
-  <button id="jy-copy">复制结果</button>
-  <button id="jy-download">下载 .yaml</button>
+  <button id="jy-run" class="primary">{tu(lang, '转换为')} YAML</button>
+  <button id="jy-copy">{tu(lang, '复制结果')}</button>
+  <button id="jy-download">{tu(lang, '下载')} .yaml</button>
   <span id="jy-msg" class="msg"></span>
 </div>
 
-<script>
+<script>import { tu, currentLang } from '../../i18n/toolUi.ts';
+const LANG = currentLang();
+
   const $ = (id) => document.getElementById(id);
   const input = $('jy-in'), output = $('jy-out'), msg = $('jy-msg');
 
@@ -73,16 +79,16 @@
       const lines = [];
       toYaml(data, 0, lines);
       output.value = lines.join('\n');
-      msg.textContent = '转换完成'; msg.className = 'msg ok';
+      msg.textContent = tu(LANG, '转换完成'); msg.className = 'msg ok';
     } catch (e) {
-      msg.textContent = 'JSON 解析失败：' + e.message; msg.className = 'msg err';
+      msg.textContent = tu(LANG, 'JSON 解析失败：') + e.message; msg.className = 'msg err';
     }
   });
 
   $('jy-copy').addEventListener('click', async () => {
     if (!output.value) return;
-    try { await navigator.clipboard.writeText(output.value); msg.textContent = '已复制'; msg.className = 'msg ok'; }
-    catch { msg.textContent = '复制失败'; msg.className = 'msg err'; }
+    try { await navigator.clipboard.writeText(output.value); msg.textContent = tu(LANG, '已复制'); msg.className = 'msg ok'; }
+    catch { msg.textContent = tu(LANG, '复制失败'); msg.className = 'msg err'; }
   });
 
   $('jy-download').addEventListener('click', () => {

@@ -1,62 +1,68 @@
 ---
+import { tu } from '../../i18n/toolUi.ts';
 // area-converter：纯前端单位换算（系数型）
 const UNITS = [{"sym":"km2","zh":"平方千米","f":1000000},{"sym":"hm2","zh":"公顷","f":10000},{"sym":"mu","zh":"亩","f":666.6666666666666},{"sym":"fen","zh":"分","f":6.666666666666667},{"sym":"m2","zh":"平方米","f":1},{"sym":"dm2","zh":"平方分米","f":0.01},{"sym":"cm2","zh":"平方厘米","f":0.0001},{"sym":"mm2","zh":"平方毫米","f":0.000001},{"sym":"sqmi","zh":"平方英里","f":2589988.110336},{"sym":"acre","zh":"英亩","f":4046.8564224},{"sym":"sqyd","zh":"平方码","f":0.83612736},{"sym":"sqft","zh":"平方英尺","f":0.09290304},{"sym":"sqin","zh":"平方英寸","f":0.00064516}];
 const BASE = { name: "平方米", sym: "m²" };
+interface Props { lang?: string }
+const { lang = 'zh' } = Astro.props;
+
 ---
 <div class="pane">
   <div>
-    <div class="field-label"><span>数值</span></div>
+    <div class="field-label"><span>{tu(lang, '数值')}</span></div>
     <input type="number" id="uc-val" value="1" step="any" style="width:100%;padding:8px;border:1px solid var(--border-color);border-radius:6px;box-sizing:border-box;font-size:16px">
-    <div class="field-label" style="margin-top:12px"><span>从</span></div>
+    <div class="field-label" style="margin-top:12px"><span>{tu(lang, '从')}</span></div>
     <select id="uc-from" style="width:100%;padding:8px;border:1px solid var(--border-color);border-radius:6px;background:#fff;font-size:14px">
-      <option value="km2" data-f="1000000">平方千米 (km2)</option>
-      <option value="hm2" data-f="10000">公顷 (hm2)</option>
-      <option value="mu" data-f="666.6666666666666">亩 (mu)</option>
-      <option value="fen" data-f="6.666666666666667">分 (fen)</option>
-      <option value="m2" data-f="1">平方米 (m2)</option>
-      <option value="dm2" data-f="0.01">平方分米 (dm2)</option>
-      <option value="cm2" data-f="0.0001">平方厘米 (cm2)</option>
-      <option value="mm2" data-f="0.000001">平方毫米 (mm2)</option>
-      <option value="sqmi" data-f="2589988.110336">平方英里 (sqmi)</option>
-      <option value="acre" data-f="4046.8564224">英亩 (acre)</option>
-      <option value="sqyd" data-f="0.83612736">平方码 (sqyd)</option>
-      <option value="sqft" data-f="0.09290304">平方英尺 (sqft)</option>
-      <option value="sqin" data-f="0.00064516">平方英寸 (sqin)</option>
+      <option value="km2" data-f="1000000">{tu(lang, '平方千米')} (km2)</option>
+      <option value="hm2" data-f="10000">{tu(lang, '公顷')} (hm2)</option>
+      <option value="mu" data-f="666.6666666666666">{tu(lang, '亩')} (mu)</option>
+      <option value="fen" data-f="6.666666666666667">{tu(lang, '分')} (fen)</option>
+      <option value="m2" data-f="1">{tu(lang, '平方米')} (m2)</option>
+      <option value="dm2" data-f="0.01">{tu(lang, '平方分米')} (dm2)</option>
+      <option value="cm2" data-f="0.0001">{tu(lang, '平方厘米')} (cm2)</option>
+      <option value="mm2" data-f="0.000001">{tu(lang, '平方毫米')} (mm2)</option>
+      <option value="sqmi" data-f="2589988.110336">{tu(lang, '平方英里')} (sqmi)</option>
+      <option value="acre" data-f="4046.8564224">{tu(lang, '英亩')} (acre)</option>
+      <option value="sqyd" data-f="0.83612736">{tu(lang, '平方码')} (sqyd)</option>
+      <option value="sqft" data-f="0.09290304">{tu(lang, '平方英尺')} (sqft)</option>
+      <option value="sqin" data-f="0.00064516">{tu(lang, '平方英寸')} (sqin)</option>
     </select>
     <div style="text-align:center;margin:8px 0">
-      <button id="uc-swap">⇅ 交换单位</button>
+      <button id="uc-swap">⇅ {tu(lang, '交换单位')}</button>
     </div>
-    <div class="field-label"><span>到</span></div>
+    <div class="field-label"><span>{tu(lang, '到')}</span></div>
     <select id="uc-to" style="width:100%;padding:8px;border:1px solid var(--border-color);border-radius:6px;background:#fff;font-size:14px">
-      <option value="km2" data-f="1000000">平方千米 (km2)</option>
-      <option value="hm2" data-f="10000">公顷 (hm2)</option>
-      <option value="mu" data-f="666.6666666666666">亩 (mu)</option>
-      <option value="fen" data-f="6.666666666666667">分 (fen)</option>
-      <option value="m2" data-f="1">平方米 (m2)</option>
-      <option value="dm2" data-f="0.01">平方分米 (dm2)</option>
-      <option value="cm2" data-f="0.0001">平方厘米 (cm2)</option>
-      <option value="mm2" data-f="0.000001">平方毫米 (mm2)</option>
-      <option value="sqmi" data-f="2589988.110336">平方英里 (sqmi)</option>
-      <option value="acre" data-f="4046.8564224">英亩 (acre)</option>
-      <option value="sqyd" data-f="0.83612736">平方码 (sqyd)</option>
-      <option value="sqft" data-f="0.09290304">平方英尺 (sqft)</option>
-      <option value="sqin" data-f="0.00064516">平方英寸 (sqin)</option>
+      <option value="km2" data-f="1000000">{tu(lang, '平方千米')} (km2)</option>
+      <option value="hm2" data-f="10000">{tu(lang, '公顷')} (hm2)</option>
+      <option value="mu" data-f="666.6666666666666">{tu(lang, '亩')} (mu)</option>
+      <option value="fen" data-f="6.666666666666667">{tu(lang, '分')} (fen)</option>
+      <option value="m2" data-f="1">{tu(lang, '平方米')} (m2)</option>
+      <option value="dm2" data-f="0.01">{tu(lang, '平方分米')} (dm2)</option>
+      <option value="cm2" data-f="0.0001">{tu(lang, '平方厘米')} (cm2)</option>
+      <option value="mm2" data-f="0.000001">{tu(lang, '平方毫米')} (mm2)</option>
+      <option value="sqmi" data-f="2589988.110336">{tu(lang, '平方英里')} (sqmi)</option>
+      <option value="acre" data-f="4046.8564224">{tu(lang, '英亩')} (acre)</option>
+      <option value="sqyd" data-f="0.83612736">{tu(lang, '平方码')} (sqyd)</option>
+      <option value="sqft" data-f="0.09290304">{tu(lang, '平方英尺')} (sqft)</option>
+      <option value="sqin" data-f="0.00064516">{tu(lang, '平方英寸')} (sqin)</option>
     </select>
     <div style="margin-top:16px;padding:14px;background:rgba(0,0,0,.03);border-radius:8px">
       <div id="uc-out" style="font-size:20px;font-weight:600;color:var(--primary-color);word-break:break-all;line-height:1.5">-</div>
-      <div style="font-size:12px;color:var(--text-sub);margin-top:4px">换算结果</div>
+      <div style="font-size:12px;color:var(--text-sub);margin-top:4px">{tu(lang, '换算结果')}</div>
     </div>
   </div>
   <div>
-    <div class="field-label"><span>等于以下所有单位</span></div>
+    <div class="field-label"><span>{tu(lang, '等于以下所有单位')}</span></div>
     <table id="uc-table" style="width:100%;border-collapse:collapse;font-size:14px"></table>
     <p class="msg" id="uc-msg"></p>
   </div>
 </div>
 
-<script>
+<script>import { tu, currentLang } from '../../i18n/toolUi.ts';
+const LANG = currentLang();
+
 const $ = (id) => document.getElementById(id);
-const UNITS = [{"sym":"km2","zh":"平方千米","f":1000000},{"sym":"hm2","zh":"公顷","f":10000},{"sym":"mu","zh":"亩","f":666.6666666666666},{"sym":"fen","zh":"分","f":6.666666666666667},{"sym":"m2","zh":"平方米","f":1},{"sym":"dm2","zh":"平方分米","f":0.01},{"sym":"cm2","zh":"平方厘米","f":0.0001},{"sym":"mm2","zh":"平方毫米","f":0.000001},{"sym":"sqmi","zh":"平方英里","f":2589988.110336},{"sym":"acre","zh":"英亩","f":4046.8564224},{"sym":"sqyd","zh":"平方码","f":0.83612736},{"sym":"sqft","zh":"平方英尺","f":0.09290304},{"sym":"sqin","zh":"平方英寸","f":0.00064516}];
+const UNITS = [{"sym":"km2","zh":tu(LANG, "平方千米"),"f":1000000},{"sym":"hm2","zh":tu(LANG, "公顷"),"f":10000},{"sym":"mu","zh":tu(LANG, "亩"),"f":666.6666666666666},{"sym":"fen","zh":tu(LANG, "分"),"f":6.666666666666667},{"sym":"m2","zh":tu(LANG, "平方米"),"f":1},{"sym":"dm2","zh":tu(LANG, "平方分米"),"f":0.01},{"sym":"cm2","zh":tu(LANG, "平方厘米"),"f":0.0001},{"sym":"mm2","zh":tu(LANG, "平方毫米"),"f":0.000001},{"sym":"sqmi","zh":tu(LANG, "平方英里"),"f":2589988.110336},{"sym":"acre","zh":tu(LANG, "英亩"),"f":4046.8564224},{"sym":"sqyd","zh":tu(LANG, "平方码"),"f":0.83612736},{"sym":"sqft","zh":tu(LANG, "平方英尺"),"f":0.09290304},{"sym":"sqin","zh":tu(LANG, "平方英寸"),"f":0.00064516}];
 function fmt(n){
   if (!isFinite(n)) return '-';
   if (n !== 0 && (Math.abs(n) < 1e-6 || Math.abs(n) >= 1e15)) return n.toExponential(6).replace(/(\.\d*?[1-9])0+e|\.0+e/g, '$1e');

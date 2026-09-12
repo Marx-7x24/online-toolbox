@@ -1,42 +1,49 @@
 ---
+import { tu } from '../../i18n/toolUi.ts';
+
+interface Props { lang?: string }
+const { lang = 'zh' } = Astro.props;
+
 ---
 
 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;max-width:760px;">
   <div>
-    <div class="field-label"><span>换算类型</span></div>
+    <div class="field-label"><span>{tu(lang, '换算类型')}</span></div>
     <select id="un-cat"></select>
   </div>
   <div>
-    <div class="field-label"><span>数值</span></div>
+    <div class="field-label"><span>{tu(lang, '数值')}</span></div>
     <input type="text" id="un-val" value="1" spellcheck="false" />
   </div>
   <div>
-    <div class="field-label"><span>源单位</span></div>
+    <div class="field-label"><span>{tu(lang, '源单位')}</span></div>
     <select id="un-from"></select>
   </div>
   <div>
-    <div class="field-label"><span>目标单位</span></div>
+    <div class="field-label"><span>{tu(lang, '目标单位')}</span></div>
     <select id="un-to"></select>
   </div>
 </div>
 
 <div class="btn-row">
-  <button class="primary" id="un-go">换算</button>
-  <button id="un-swap">交换单位</button>
-  <button id="un-copy">复制结果</button>
+  <button class="primary" id="un-go">{tu(lang, '换算')}</button>
+  <button id="un-swap">{tu(lang, '交换单位')}</button>
+  <button id="un-copy">{tu(lang, '复制结果')}</button>
 </div>
 
 <div id="un-result" style="margin-top:14px;"></div>
 <div id="un-table"></div>
 <p class="msg" id="un-msg"></p>
 
-<script>
+<script>import { tu, currentLang } from '../../i18n/toolUi.ts';
+const LANG = currentLang();
+
   const $ = (id) => document.getElementById(id);
 
   // 每类给出「换算到基准单位」的方法，温度用函数，其余用因子
   const CATS = {
     length: {
-      name: '长度', base: 'm',
+      name: tu(LANG, '长度'), base: 'm',
       units: {
         'mm 毫米': 0.001, 'cm 厘米': 0.01, 'dm 分米': 0.1, 'm 米': 1,
         'km 千米': 1000, 'in 英寸': 0.0254, 'ft 英尺': 0.3048, 'yd 码': 0.9144,
@@ -44,7 +51,7 @@
       },
     },
     weight: {
-      name: '重量', base: 'kg',
+      name: tu(LANG, '重量'), base: 'kg',
       units: {
         'mg 毫克': 0.000001, 'g 克': 0.001, 'kg 千克': 1, 't 吨': 1000,
         'lb 磅': 0.45359237, 'oz 盎司': 0.028349523125, 'st 英石': 6.35029318,
@@ -52,7 +59,7 @@
       },
     },
     area: {
-      name: '面积', base: 'm²',
+      name: tu(LANG, '面积'), base: 'm²',
       units: {
         'mm² 平方毫米': 0.000001, 'cm² 平方厘米': 0.0001, 'm² 平方米': 1,
         'km² 平方千米': 1000000, '公顷 ha': 10000, '亩': 666.6666667,
@@ -60,7 +67,7 @@
       },
     },
     volume: {
-      name: '体积容积', base: 'L',
+      name: tu(LANG, '体积容积'), base: 'L',
       units: {
         'mL 毫升': 0.001, 'L 升': 1, 'm³ 立方米': 1000, 'cm³ 立方厘米': 0.001,
         'ft³ 立方英尺': 28.316846592, 'in³ 立方英寸': 0.016387064,
@@ -68,7 +75,7 @@
       },
     },
     temp: {
-      name: '温度', base: '°C',
+      name: tu(LANG, '温度'), base: '°C',
       units: {
         '°C 摄氏度': { to: (v) => v, from: (v) => v },
         '°F 华氏度': { to: (v) => (v - 32) * 5 / 9, from: (v) => v * 9 / 5 + 32 },
@@ -77,7 +84,7 @@
       },
     },
     time: {
-      name: '时间', base: 's',
+      name: tu(LANG, '时间'), base: 's',
       units: {
         'ms 毫秒': 0.001, 's 秒': 1, 'min 分钟': 60, 'h 小时': 3600,
         'd 天': 86400, '周': 604800, '月(30天)': 2592000, '年(365天)': 31536000,
@@ -85,14 +92,14 @@
       },
     },
     speed: {
-      name: '速度', base: 'm/s',
+      name: tu(LANG, '速度'), base: 'm/s',
       units: {
         'm/s 米每秒': 1, 'km/h 千米每小时': 1 / 3.6, 'mph 英里每小时': 0.44704,
         'ft/s 英尺每秒': 0.3048, 'kn 节': 0.5144444444, '马赫(海平面)': 340.3,
       },
     },
     data: {
-      name: '数据存储', base: 'B',
+      name: tu(LANG, '数据存储'), base: 'B',
       units: {
         'bit 比特': 0.125, 'B 字节': 1, 'KB(1024)': 1024, 'MB(1024)': 1048576,
         'GB(1024)': 1073741824, 'TB(1024)': 1099511627776, 'PB(1024)': 1125899906842624,
@@ -100,7 +107,7 @@
       },
     },
     pressure: {
-      name: '压力', base: 'Pa',
+      name: tu(LANG, '压力'), base: 'Pa',
       units: {
         'Pa 帕斯卡': 1, 'kPa 千帕': 1000, 'MPa 兆帕': 1000000,
         'bar 巴': 100000, 'atm 标准大气压': 101325, 'mmHg 毫米汞柱': 133.322387415,
@@ -131,7 +138,7 @@
     const v = Number(raw);
     if (raw === '' || Number.isNaN(v)) {
       $('un-result').innerHTML = '';
-      $('un-msg').textContent = '请输入有效数值';
+      $('un-msg').textContent = tu(LANG, '请输入有效数值');
       $('un-msg').className = 'msg err';
       return;
     }
@@ -184,7 +191,7 @@
     const t = $('un-out-text');
     if (!t) return;
     await navigator.clipboard.writeText(t.textContent);
-    $('un-msg').textContent = '已复制结果';
+    $('un-msg').textContent = tu(LANG, '已复制结果');
     $('un-msg').className = 'msg ok';
   };
 

@@ -1,45 +1,52 @@
 ---
+import { tu } from '../../i18n/toolUi.ts';
+
+interface Props { lang?: string }
+const { lang = 'zh' } = Astro.props;
+
 ---
 
-<div class="tip">等额本息月供固定、总利息多；等额本金月供递减、总利息少。可切换对比。</div>
+<div class="tip">{tu(lang, '等额本息月供固定、总利息多；等额本金月供递减、总利息少。可切换对比。')}</div>
 
 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;">
   <div>
-    <div class="field-label"><span>贷款总额（万元）</span></div>
+    <div class="field-label"><span>{tu(lang, '贷款总额（万元')}）</span></div>
     <input type="number" id="hl-amount" value="150" min="1" step="1" />
   </div>
   <div>
-    <div class="field-label"><span>贷款年限</span></div>
+    <div class="field-label"><span>{tu(lang, '贷款年限')}</span></div>
     <select id="hl-years">
-      <option value="10">10 年</option>
-      <option value="15">15 年</option>
-      <option value="20">20 年</option>
-      <option value="25">25 年</option>
-      <option value="30" selected>30 年</option>
+      <option value="10">10 {tu(lang, '年')}</option>
+      <option value="15">15 {tu(lang, '年')}</option>
+      <option value="20">20 {tu(lang, '年')}</option>
+      <option value="25">25 {tu(lang, '年')}</option>
+      <option value="30" selected>30 {tu(lang, '年')}</option>
     </select>
   </div>
   <div>
-    <div class="field-label"><span>年利率</span><span id="hl-rate-val">3.10%</span></div>
+    <div class="field-label"><span>{tu(lang, '年利率')}</span><span id="hl-rate-val">3.10%</span></div>
     <input type="range" id="hl-rate" min="200" max="700" value="310" style="padding:0;" />
   </div>
   <div>
-    <div class="field-label"><span>还款方式</span></div>
+    <div class="field-label"><span>{tu(lang, '还款方式')}</span></div>
     <select id="hl-type">
-      <option value="equal">等额本息</option>
-      <option value="principal">等额本金</option>
+      <option value="equal">{tu(lang, '等额本息')}</option>
+      <option value="principal">{tu(lang, '等额本金')}</option>
     </select>
   </div>
 </div>
 
 <div class="btn-row">
-  <button class="primary" id="hl-go">计算</button>
-  <button id="hl-clear">重置</button>
+  <button class="primary" id="hl-go">{tu(lang, '计算')}</button>
+  <button id="hl-clear">{tu(lang, '重置')}</button>
 </div>
 
 <div id="hl-out"></div>
 <p class="msg" id="hl-msg"></p>
 
-<script>
+<script>import { tu, currentLang } from '../../i18n/toolUi.ts';
+const LANG = currentLang();
+
   const $ = (id) => document.getElementById(id);
 
   $('hl-rate').oninput = () => { $('hl-rate-val').textContent = ($('hl-rate').value / 100).toFixed(2) + '%'; };
@@ -88,10 +95,10 @@
 
     $('hl-out').innerHTML =
       '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:16px 0;">' +
-      [[type === 'equal' ? '每月月供' : '首月月供', firstPay],
-       [type === 'equal' ? '末月月供' : '末月月供', lastPay],
-       ['支付利息总额', totalInterest],
-       ['本息合计', P + totalInterest]]
+      [[type === 'equal' ? '每月月供' : tu(LANG, '首月月供'), firstPay],
+       [type === 'equal' ? '末月月供' : tu(LANG, '末月月供'), lastPay],
+       [tu(LANG, '支付利息总额'), totalInterest],
+       [tu(LANG, '本息合计'), P + totalInterest]]
         .map(([k, v]) => `<div style="background:var(--bg);border-radius:10px;padding:12px;">
           <div style="font-size:12px;color:var(--text-sub);">${k}</div>
           <div style="font-size:19px;font-weight:500;">${fmt(v)}</div></div>`).join('') +
@@ -110,7 +117,7 @@
       ).join('') +
       '</table></div>';
 
-    $('hl-msg').textContent = '计算完成';
+    $('hl-msg').textContent = tu(LANG, '计算完成');
     $('hl-msg').className = 'msg ok';
   }
 

@@ -1,28 +1,34 @@
 ---
+import { tu } from '../../i18n/toolUi.ts';
 // 小红书违禁词过滤：检测/高亮平台限流词，可一键净化文本（内置演示词表 + 自定义）
+interface Props { lang?: string }
+const { lang = 'zh' } = Astro.props;
+
 ---
 <div class="pane">
   <div>
-    <div class="field-label"><span>待检测文本</span></div>
-    <textarea id="wf-in" placeholder="粘贴要发布的内容…" style="width:100%;height:240px;padding:10px;border:1px solid var(--border-color);border-radius:8px;box-sizing:border-box;resize:vertical;font-size:14px"></textarea>
-    <div class="field-label" style="margin-top:12px"><span>自定义补充词（每行一个）</span></div>
-    <textarea id="wf-custom" placeholder="选填，每行一个词" style="width:100%;height:70px;padding:10px;border:1px solid var(--border-color);border-radius:8px;box-sizing:border-box;font-size:13px"></textarea>
+    <div class="field-label"><span>{tu(lang, '待检测文本')}</span></div>
+    <textarea id="wf-in" placeholder={tu(lang, '粘贴要发布的内容…')} style="width:100%;height:240px;padding:10px;border:1px solid var(--border-color);border-radius:8px;box-sizing:border-box;resize:vertical;font-size:14px"></textarea>
+    <div class="field-label" style="margin-top:12px"><span>{tu(lang, '自定义补充词（每行一个')}）</span></div>
+    <textarea id="wf-custom" placeholder={tu(lang, '选填，每行一个词')} style="width:100%;height:70px;padding:10px;border:1px solid var(--border-color);border-radius:8px;box-sizing:border-box;font-size:13px"></textarea>
     <div class="btn-row" style="margin-top:12px">
-      <button id="wf-run" class="primary">检测</button>
-      <button id="wf-clean">复制净化文本</button>
-      <button id="wf-clear">清空</button>
+      <button id="wf-run" class="primary">{tu(lang, '检测')}</button>
+      <button id="wf-clean">{tu(lang, '复制净化文本')}</button>
+      <button id="wf-clear">{tu(lang, '清空')}</button>
     </div>
   </div>
   <div>
-    <div class="field-label"><span>检测结果（命中词高亮）</span></div>
+    <div class="field-label"><span>{tu(lang, '检测结果（命中词高亮')}）</span></div>
     <div id="wf-out" style="border:1px solid var(--border-color);border-radius:8px;padding:10px;min-height:240px;max-height:340px;overflow:auto;font-size:14px;line-height:1.7;background:#fff"></div>
     <p class="msg" id="wf-msg"></p>
   </div>
 </div>
 
-<script>
+<script>import { tu, currentLang } from '../../i18n/toolUi.ts';
+const LANG = currentLang();
+
   const $ = (id) => document.getElementById(id);
-  const BUILTIN = ['微信','薇信','VX','vx','加微','微信号','公众号','私聊','私信我','引流','兼职','刷单','返利','最','第一','国家级','世界级','顶级','万能','100%','免费领取','点击链接','下单','代购','招代理','秒杀','史低','立即购买','限时','抢购','特价','优惠券','领红包'];
+  const BUILTIN = [tu(LANG, '微信'),tu(LANG, '薇信'),'VX','vx',tu(LANG, '加微'),tu(LANG, '微信号'),tu(LANG, '公众号'),tu(LANG, '私聊'),tu(LANG, '私信我'),tu(LANG, '引流'),tu(LANG, '兼职'),tu(LANG, '刷单'),tu(LANG, '返利'),tu(LANG, '最'),tu(LANG, '第一'),tu(LANG, '国家级'),tu(LANG, '世界级'),tu(LANG, '顶级'),tu(LANG, '万能'),'100%',tu(LANG, '免费领取'),tu(LANG, '点击链接'),tu(LANG, '下单'),tu(LANG, '代购'),tu(LANG, '招代理'),tu(LANG, '秒杀'),tu(LANG, '史低'),tu(LANG, '立即购买'),tu(LANG, '限时'),tu(LANG, '抢购'),tu(LANG, '特价'),tu(LANG, '优惠券'),tu(LANG, '领红包')];
   function list(){
     const s = new Set(BUILTIN);
     $('wf-custom').value.split('\n').map(x=>x.trim()).filter(Boolean).forEach(w=>s.add(w));
@@ -46,7 +52,7 @@
     const text = $('wf-in').value; if(!text) return;
     const words = list(); let out = text;
     words.forEach(w => { out = out.split(w).join(''); });
-    navigator.clipboard.writeText(out).then(()=>{ $('wf-msg').textContent='已复制净化后文本（移除命中词）'; $('wf-msg').className='msg ok'; });
+    navigator.clipboard.writeText(out).then(()=>{ $('wf-msg').textContent=tu(LANG, '已复制净化后文本（移除命中词）'); $('wf-msg').className='msg ok'; });
   });
   $('wf-clear').addEventListener('click', () => { $('wf-in').value=''; $('wf-custom').value=''; $('wf-out').innerHTML=''; $('wf-msg').textContent=''; });
 </script>

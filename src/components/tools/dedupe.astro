@@ -1,33 +1,40 @@
 ---
+import { tu } from '../../i18n/toolUi.ts';
+
+interface Props { lang?: string }
+const { lang = 'zh' } = Astro.props;
+
 ---
 
-<div class="field-label"><span>输入（每行一条）</span><span id="dd-count"></span></div>
-<textarea id="dd-in" placeholder="每行输入一条内容" style="min-height:200px;" spellcheck="false"></textarea>
+<div class="field-label"><span>{tu(lang, '输入（每行一条')}）</span><span id="dd-count"></span></div>
+<textarea id="dd-in" placeholder={tu(lang, '每行输入一条内容')} style="min-height:200px;" spellcheck="false"></textarea>
 
 <div style="display:flex;flex-wrap:wrap;gap:14px;margin-top:14px;font-size:14px;">
-  <label><input type="checkbox" id="dd-trim" checked /> 去除首尾空格</label>
-  <label><input type="checkbox" id="dd-empty" checked /> 去除空行</label>
-  <label><input type="checkbox" id="dd-unique" checked /> 去重</label>
-  <label><input type="checkbox" id="dd-sort" /> 排序</label>
-  <label><input type="checkbox" id="dd-desc" /> 倒序</label>
-  <label><input type="checkbox" id="dd-num" /> 按数值排序</label>
+  <label><input type="checkbox" id="dd-trim" checked /> {tu(lang, '去除首尾空格')}</label>
+  <label><input type="checkbox" id="dd-empty" checked /> {tu(lang, '去除空行')}</label>
+  <label><input type="checkbox" id="dd-unique" checked /> {tu(lang, '去重')}</label>
+  <label><input type="checkbox" id="dd-sort" /> {tu(lang, '排序')}</label>
+  <label><input type="checkbox" id="dd-desc" /> {tu(lang, '倒序')}</label>
+  <label><input type="checkbox" id="dd-num" /> {tu(lang, '按数值排序')}</label>
 </div>
 
 <div class="btn-row">
-  <button class="primary" id="dd-go">处理</button>
-  <button id="dd-stat">统计重复</button>
-  <button id="dd-copy">复制结果</button>
-  <button id="dd-sample">填入示例</button>
-  <button id="dd-clear">清空</button>
+  <button class="primary" id="dd-go">{tu(lang, '处理')}</button>
+  <button id="dd-stat">{tu(lang, '统计重复')}</button>
+  <button id="dd-copy">{tu(lang, '复制结果')}</button>
+  <button id="dd-sample">{tu(lang, '填入示例')}</button>
+  <button id="dd-clear">{tu(lang, '清空')}</button>
 </div>
 
-<div class="field-label"><span>结果</span><span id="dd-outcount"></span></div>
+<div class="field-label"><span>{tu(lang, '结果')}</span><span id="dd-outcount"></span></div>
 <textarea id="dd-out" readonly style="min-height:200px;" spellcheck="false"></textarea>
 
 <p class="msg" id="dd-msg"></p>
 <div id="dd-stat-box"></div>
 
-<script>
+<script>import { tu, currentLang } from '../../i18n/toolUi.ts';
+const LANG = currentLang();
+
   const $ = (id) => document.getElementById(id);
 
   function process() {
@@ -42,8 +49,8 @@
       if ($('dd-desc').checked) lines.reverse();
     }
     $('dd-out').value = lines.join('\n');
-    $('dd-count').textContent = before + ' 行输入';
-    $('dd-outcount').textContent = lines.length + ' 行输出';
+    $('dd-count').textContent = before + tu(LANG, ' 行输入');
+    $('dd-outcount').textContent = lines.length + tu(LANG, ' 行输出');
     $('dd-msg').textContent = `已处理，减少 ${before - lines.length} 行`;
     $('dd-msg').className = 'msg ok';
   }
@@ -55,7 +62,7 @@
 
   $('dd-stat').onclick = () => {
     const lines = $('dd-in').value.split(/\r\n|\r|\n/).map((l) => l.trim()).filter(Boolean);
-    if (!lines.length) { $('dd-msg').textContent = '请先输入内容'; $('dd-msg').className = 'msg err'; return; }
+    if (!lines.length) { $('dd-msg').textContent = tu(LANG, '请先输入内容'); $('dd-msg').className = 'msg err'; return; }
     const map = new Map();
     lines.forEach((l) => map.set(l, (map.get(l) || 0) + 1));
     const dup = [...map.entries()].filter(([, n]) => n > 1).sort((a, b) => b[1] - a[1]);
@@ -72,7 +79,7 @@
   $('dd-copy').onclick = async () => {
     if (!$('dd-out').value) return;
     await navigator.clipboard.writeText($('dd-out').value);
-    $('dd-msg').textContent = '已复制';
+    $('dd-msg').textContent = tu(LANG, '已复制');
     $('dd-msg').className = 'msg ok';
   };
   $('dd-sample').onclick = () => {

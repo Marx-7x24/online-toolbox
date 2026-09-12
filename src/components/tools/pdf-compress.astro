@@ -1,35 +1,41 @@
 ---
+import { tu } from '../../i18n/toolUi.ts';
 // PDF 压缩：去除冗余对象、压缩图像、清理元数据（伪压缩，效果有限）
+interface Props { lang?: string }
+const { lang = 'zh' } = Astro.props;
+
 ---
 <div class="pane">
   <div>
-    <div class="field-label"><span>选择 PDF 文件</span></div>
+    <div class="field-label"><span>{tu(lang, '选择 PDF 文件')}</span></div>
     <input type="file" id="pc-file" accept="application/pdf">
-    <div class="field-label" style="margin-top:14px"><span>压缩强度</span></div>
+    <div class="field-label" style="margin-top:14px"><span>{tu(lang, '压缩强度')}</span></div>
     <select id="pc-lvl" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:6px">
-      <option value="low">低（保留质量）</option>
-      <option value="medium" selected>中（推荐）</option>
-      <option value="high">高（重编码图像）</option>
+      <option value="low">{tu(lang, '低（保留质量')}）</option>
+      <option value="medium" selected>{tu(lang, '中（推荐')}）</option>
+      <option value="high">{tu(lang, '高（重编码图像')}）</option>
     </select>
-    <p style="font-size:12px;color:#999;margin-top:8px">⚠️ 浏览器端 PDF 压缩无法做到服务器级效果。高强度会重新渲染每页为 JPG 重嵌入，会显著降低清晰度。</p>
+    <p style="font-size:12px;color:#999;margin-top:8px">⚠️ {tu(lang, '浏览器端 PDF 压缩无法做到服务器级效果。高强度会重新渲染每页为 JPG 重嵌入，会显著降低清晰度。')}</p>
   </div>
   <div>
-    <div class="field-label"><span>说明</span></div>
+    <div class="field-label"><span>{tu(lang, '说明')}</span></div>
     <p style="font-size:13px;color:#666;background:#f8f9fb;padding:12px;border-radius:8px;line-height:1.6">
-      • 低/中：使用 pdf-lib 重新保存，移除无用对象、压缩对象流<br>
-      • 高：用 pdfjs 把每页渲染为 75 dpi JPEG 重嵌入，体积可缩小 50-80%，但变模糊<br>
-      • 不上传，本地处理
+      • {tu(lang, '低')}/{tu(lang, '中：使用 pdf-lib 重新保存，移除无用对象、压缩对象流')}<br>
+      • {tu(lang, '高：用 pdfjs 把每页渲染为 75 dpi JPEG 重嵌入，体积可缩小 50-80%，但变模糊')}<br>
+      • {tu(lang, '不上传，本地处理')}
     </p>
   </div>
 </div>
 <div class="btn-row">
-  <button id="pc-run" class="primary">开始压缩</button>
-  <button id="pc-dl">下载</button>
-  <button id="pc-reset">重置</button>
+  <button id="pc-run" class="primary">{tu(lang, '开始压缩')}</button>
+  <button id="pc-dl">{tu(lang, '下载')}</button>
+  <button id="pc-reset">{tu(lang, '重置')}</button>
   <span id="pc-msg" class="msg"></span>
 </div>
 
-<script>
+<script>import { tu, currentLang } from '../../i18n/toolUi.ts';
+const LANG = currentLang();
+
   const $ = (id) => document.getElementById(id);
   let sourceFile = null;
   let outBlob = null;
@@ -54,8 +60,8 @@
   }
 
   $('pc-run').addEventListener('click', async () => {
-    if (!sourceFile) { $('pc-msg').textContent = '请先选择 PDF'; $('pc-msg').className = 'msg err'; return; }
-    $('pc-msg').textContent = '处理中…'; $('pc-msg').className = 'msg';
+    if (!sourceFile) { $('pc-msg').textContent = tu(LANG, '请先选择 PDF'); $('pc-msg').className = 'msg err'; return; }
+    $('pc-msg').textContent = tu(LANG, '处理中…'); $('pc-msg').className = 'msg';
     try {
       const PDFLib = await loadPdfLib();
       const buf = await sourceFile.arrayBuffer();
@@ -75,10 +81,10 @@
       });
       outBlob = new Blob([out], { type: 'application/pdf' });
       const ratio = ((origSize - outBlob.size) / origSize * 100).toFixed(1);
-      $('pc-msg').textContent = `完成 · ${(origSize/1024).toFixed(1)} KB → ${(outBlob.size/1024).toFixed(1)} KB（${ratio >= 0 ? '减少' : '增加'} ${Math.abs(ratio)}%）`;
+      $('pc-msg').textContent = `完成 · ${(origSize/1024).toFixed(1)} KB → ${(outBlob.size/1024).toFixed(1)} KB（${ratio >= 0 ? '减少' : tu(LANG, '增加')} ${Math.abs(ratio)}%）`;
       $('pc-msg').className = 'msg ok';
     } catch (err) {
-      $('pc-msg').textContent = '失败：' + err.message;
+      $('pc-msg').textContent = tu(LANG, '失败：') + err.message;
       $('pc-msg').className = 'msg err';
     }
   });

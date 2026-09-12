@@ -1,29 +1,33 @@
 ---
+import { tu } from '../../i18n/toolUi.ts';
 // TIFF/TIF → JPG/PNG（懒加载 UTIF.js）
+interface Props { lang?: string }
+const { lang = 'zh' } = Astro.props;
+
 ---
 <div class="pane">
   <div>
-    <div class="field-label"><span>选择 TIFF 图片</span></div>
+    <div class="field-label"><span>{tu(lang, '选择 TIFF 图片')}</span></div>
     <input type="file" id="iftiff-file" accept=".tif,.tiff,image/tiff">
     <div id="iftiff-info" class="msg"></div>
-    <div class="field-label" style="margin-top:14px"><span>输出格式 & 画质</span></div>
+    <div class="field-label" style="margin-top:14px"><span>{tu(lang, '输出格式')} & {tu(lang, '画质')}</span></div>
     <select id="iftiff-fmt" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:6px">
-      <option value="image/jpeg">JPG（较小）</option>
-      <option value="image/png">PNG（无损）</option>
+      <option value="image/jpeg">JPG（{tu(lang, '较小')}）</option>
+      <option value="image/png">PNG（{tu(lang, '无损')}）</option>
     </select>
-    <div class="field-label" style="margin-top:14px"><span>页码 <span id="iftiff-pv">1</span>（多页 TIFF 可切换）</span></div>
+    <div class="field-label" style="margin-top:14px"><span>{tu(lang, '页码')} <span id="iftiff-pv">1</span>（{tu(lang, '多页 TIFF 可切换')}）</span></div>
     <input type="range" id="iftiff-page" min="1" max="1" value="1" step="1" style="width:100%">
-    <p style="font-size:12px;color:#999;margin-top:8px">首次使用需联网加载解码器 ~30KB。</p>
+    <p style="font-size:12px;color:#999;margin-top:8px">{tu(lang, '首次使用需联网加载解码器')} ~30KB。</p>
   </div>
   <div>
-    <div class="field-label"><span>输出预览</span></div>
+    <div class="field-label"><span>{tu(lang, '输出预览')}</span></div>
     <div id="iftiff-preview" class="iftiff-preview"></div>
   </div>
 </div>
 <div class="btn-row">
-  <button id="iftiff-run" class="primary">开始转换</button>
-  <button id="iftiff-dl">下载</button>
-  <button id="iftiff-reset">重置</button>
+  <button id="iftiff-run" class="primary">{tu(lang, '开始转换')}</button>
+  <button id="iftiff-dl">{tu(lang, '下载')}</button>
+  <button id="iftiff-reset">{tu(lang, '重置')}</button>
   <span id="iftiff-msg" class="msg"></span>
 </div>
 
@@ -33,7 +37,9 @@
   .iftiff-preview:empty::before { content: '尚未选择图片'; color: #999; }
 </style>
 
-<script>
+<script>import { tu, currentLang } from '../../i18n/toolUi.ts';
+const LANG = currentLang();
+
   const $ = (id) => document.getElementById(id);
   let sourceFile = null;
   let pages = []; // 每页 RGBA
@@ -66,8 +72,8 @@
   }
 
   $('iftiff-run').addEventListener('click', async () => {
-    if (!sourceFile) { $('iftiff-msg').textContent = '请先选择 TIFF 图片'; $('iftiff-msg').className = 'msg err'; return; }
-    $('iftiff-msg').textContent = '加载解码器…'; $('iftiff-msg').className = 'msg';
+    if (!sourceFile) { $('iftiff-msg').textContent = tu(LANG, '请先选择 TIFF 图片'); $('iftiff-msg').className = 'msg err'; return; }
+    $('iftiff-msg').textContent = tu(LANG, '加载解码器…'); $('iftiff-msg').className = 'msg';
     try {
       const UTIF = await loadUtif();
       const buf = await sourceFile.arrayBuffer();
@@ -85,7 +91,7 @@
       $('iftiff-info').className = 'msg ok';
       renderPreview();
     } catch (err) {
-      $('iftiff-msg').textContent = '解码失败：' + err.message;
+      $('iftiff-msg').textContent = tu(LANG, '解码失败：') + err.message;
       $('iftiff-msg').className = 'msg err';
     }
   });
@@ -99,7 +105,7 @@
     const ctx = canvas.getContext('2d');
     const imgData = new ImageData(new Uint8ClampedArray(pages[idx]), w, h);
     ctx.putImageData(imgData, 0, 0);
-    $('iftiff-preview').innerHTML = '<img alt="预览">';
+    $('iftiff-preview').innerHTML = '<img alt=tu(LANG, "预览")>';
     $('iftiff-preview').querySelector('img').src = canvas.toDataURL();
   }
 
@@ -134,7 +140,7 @@
   }
 
   $('iftiff-dl').addEventListener('click', () => {
-    if (!outBlob) { $('iftiff-msg').textContent = '请先转换'; $('iftiff-msg').className = 'msg err'; return; }
+    if (!outBlob) { $('iftiff-msg').textContent = tu(LANG, '请先转换'); $('iftiff-msg').className = 'msg err'; return; }
     const a = document.createElement('a');
     a.href = URL.createObjectURL(outBlob);
     a.download = (sourceFile.name.replace(/\.[^.]+$/, '') || 'image') + '.' + outExt;

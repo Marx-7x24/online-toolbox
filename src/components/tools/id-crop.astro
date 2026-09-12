@@ -1,48 +1,52 @@
 ---
+import { tu } from '../../i18n/toolUi.ts';
 // 证件照裁切：按标准尺寸（一寸/二寸/护照/签证）自动居中裁切
+interface Props { lang?: string }
+const { lang = 'zh' } = Astro.props;
+
 ---
 <div class="pane">
   <div>
-    <div class="field-label"><span>选择照片</span></div>
+    <div class="field-label"><span>{tu(lang, '选择照片')}</span></div>
     <input type="file" id="ic-file" accept="image/*">
-    <div class="field-label" style="margin-top:14px"><span>证件照规格</span></div>
+    <div class="field-label" style="margin-top:14px"><span>{tu(lang, '证件照规格')}</span></div>
     <select id="ic-spec" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:6px">
-      <option value="295x413">一寸（295×413）</option>
-      <option value="413x579">二寸（413×579）</option>
-      <option value="260x378">小一寸（260×378）</option>
-      <option value="389x566">大 一寸（389×566）</option>
-      <option value="390x567">护照（390×567）</option>
-      <option value="531x591">签证（531×591，美国签证）</option>
-      <option value="480x640">驾照（480×640）</option>
-      <option value="custom">自定义</option>
+      <option value="295x413">{tu(lang, '一寸')}（295×413）</option>
+      <option value="413x579">{tu(lang, '二寸')}（413×579）</option>
+      <option value="260x378">{tu(lang, '小一寸')}（260×378）</option>
+      <option value="389x566">{tu(lang, '大 一寸')}（389×566）</option>
+      <option value="390x567">{tu(lang, '护照')}（390×567）</option>
+      <option value="531x591">{tu(lang, '签证')}（531×591，{tu(lang, '美国签证')}）</option>
+      <option value="480x640">{tu(lang, '驾照')}（480×640）</option>
+      <option value="custom">{tu(lang, '自定义')}</option>
     </select>
     <div id="ic-custom" style="display:none;margin-top:6px;display:flex;gap:6px">
-      <input type="number" id="ic-w" value="295" placeholder="宽" style="flex:1;padding:6px;border:1px solid var(--border);border-radius:6px">
-      <input type="number" id="ic-h" value="413" placeholder="高" style="flex:1;padding:6px;border:1px solid var(--border);border-radius:6px">
+      <input type="number" id="ic-w" value="295" placeholder={tu(lang, '宽')} style="flex:1;padding:6px;border:1px solid var(--border);border-radius:6px">
+      <input type="number" id="ic-h" value="413" placeholder={tu(lang, '高')} style="flex:1;padding:6px;border:1px solid var(--border);border-radius:6px">
     </div>
-    <div class="field-label" style="margin-top:14px"><span>底色</span></div>
+    <div class="field-label" style="margin-top:14px"><span>{tu(lang, '底色')}</span></div>
     <div style="display:flex;gap:8px;align-items:center">
       <select id="ic-bg" style="flex:1;padding:6px;border:1px solid var(--border);border-radius:6px">
-        <option value="transparent">透明</option>
-        <option value="#ffffff" selected>白色</option>
-        <option value="#d8362a">红色</option>
-        <option value="#3e8ee6">蓝色</option>
-        <option value="custom">自定义</option>
+        <option value="transparent">{tu(lang, '透明')}</option>
+        <option value="#ffffff" selected>{tu(lang, '白色')}</option>
+        <option value="#d8362a">{tu(lang, '红色')}</option>
+        <option value="#3e8ee6">{tu(lang, '蓝色')}</option>
+        <option value="custom">{tu(lang, '自定义')}</option>
       </select>
       <input type="color" id="ic-bg-custom" value="#ffffff" style="width:50px;height:32px;border:1px solid var(--border);border-radius:6px">
     </div>
-    <div class="field-label" style="margin-top:14px"><span>头部位置（% 决定上下偏移）</span></div>
+    <div class="field-label" style="margin-top:14px"><span>{tu(lang, '头部位置（% 决定上下偏移')}）</span></div>
     <input type="range" id="ic-head" min="0" max="100" value="35" style="width:100%">
   </div>
   <div>
-    <div class="field-label"><span>裁切预览</span></div>
+    <div class="field-label"><span>{tu(lang, '裁切预览')}</span></div>
     <div id="ic-preview" class="ic-preview"></div>
   </div>
 </div>
 <div class="btn-row">
-  <button id="ic-run" class="primary">生成证件照</button>
-  <button id="ic-dl">下载</button>
-  <button id="ic-reset">重置</button>
+  <button id="ic-run" class="primary">{tu(lang, '生成证件照')}</button>
+  <button id="ic-dl">{tu(lang, '下载')}</button>
+  <button id="ic-reset">{tu(lang, '重置')}</button>
   <span id="ic-msg" class="msg"></span>
 </div>
 
@@ -52,7 +56,9 @@
   .ic-preview:empty::before { content: '尚未生成'; color: #999; }
 </style>
 
-<script>
+<script>import { tu, currentLang } from '../../i18n/toolUi.ts';
+const LANG = currentLang();
+
   const $ = (id) => document.getElementById(id);
   let sourceFile = null;
   let outBlob = null;
@@ -73,7 +79,7 @@
   }
 
   $('ic-run').addEventListener('click', async () => {
-    if (!sourceFile) { $('ic-msg').textContent = '请先选择照片'; $('ic-msg').className = 'msg err'; return; }
+    if (!sourceFile) { $('ic-msg').textContent = tu(LANG, '请先选择照片'); $('ic-msg').className = 'msg err'; return; }
     try {
       const img = await loadImg(sourceFile);
       const [tw, th] = $('ic-spec').value === 'custom'
@@ -102,12 +108,12 @@
       ctx.drawImage(img, sx, sy, sw, sh, 0, 0, tw, th);
       const fmt = bg === 'transparent' ? 'image/png' : 'image/jpeg';
       outBlob = await new Promise(res => canvas.toBlob(res, fmt, 0.92));
-      $('ic-preview').innerHTML = '<img alt="预览">';
+      $('ic-preview').innerHTML = '<img alt=tu(LANG, "预览")>';
       $('ic-preview').querySelector('img').src = URL.createObjectURL(outBlob);
       $('ic-msg').textContent = `成功 · ${tw}×${th} · ${(outBlob.size/1024).toFixed(1)} KB`;
       $('ic-msg').className = 'msg ok';
     } catch (err) {
-      $('ic-msg').textContent = '失败：' + err.message;
+      $('ic-msg').textContent = tu(LANG, '失败：') + err.message;
       $('ic-msg').className = 'msg err';
     }
   });

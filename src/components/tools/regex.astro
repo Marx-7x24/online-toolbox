@@ -1,4 +1,9 @@
 ---
+import { tu } from '../../i18n/toolUi.ts';
+
+interface Props { lang?: string }
+const { lang = 'zh' } = Astro.props;
+
 ---
 
 <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:12px;max-width:640px;">
@@ -8,33 +13,35 @@
   <input type="text" id="rx-flag" value="g" style="width:80px;" spellcheck="false" />
 </div>
 
-<div class="field-label"><span>测试文本</span></div>
-<textarea id="rx-text" placeholder="在这里粘贴要匹配的文本" style="min-height:150px;">订单号 ORD-2026-0135 金额 1280.00 元
-联系人 张三 手机 13800138000
-邮箱 zhangsan@example.com
-日期 2026-09-01，编号 A-99</textarea>
+<div class="field-label"><span>{tu(lang, '测试文本')}</span></div>
+<textarea id="rx-text" placeholder={tu(lang, '在这里粘贴要匹配的文本')} style="min-height:150px;">{tu(lang, '订单号 ORD-2026-0135 金额 1280.00 元')}
+{tu(lang, '联系人 张三 手机')} 13800138000
+{tu(lang, '邮箱')} zhangsan@example.com
+{tu(lang, '日期 2026-09-01，编号')} A-99</textarea>
 
 <div class="btn-row">
-  <button class="primary" id="rx-go">测试匹配</button>
-  <button id="rx-replace-mode">切换到替换模式</button>
-  <button id="rx-clear">清空结果</button>
+  <button class="primary" id="rx-go">{tu(lang, '测试匹配')}</button>
+  <button id="rx-replace-mode">{tu(lang, '切换到替换模式')}</button>
+  <button id="rx-clear">{tu(lang, '清空结果')}</button>
 </div>
 
 <div id="rx-replace-box" style="display:none;max-width:640px;">
-  <div class="field-label"><span>替换为（可用 $1 $2 引用分组）</span></div>
-  <input type="text" id="rx-rep" placeholder="例如 [$1]" spellcheck="false" />
+  <div class="field-label"><span>{tu(lang, '替换为（可用')} $1 $2 {tu(lang, '引用分组')}）</span></div>
+  <input type="text" id="rx-rep" placeholder={tu(lang, '例如 [$1]')} spellcheck="false" />
 </div>
 
 <p class="msg" id="rx-msg"></p>
 
 <div style="margin-top:12px;">
-  <div class="field-label"><span>匹配结果</span></div>
+  <div class="field-label"><span>{tu(lang, '匹配结果')}</span></div>
   <div id="rx-out" style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px;min-height:60px;white-space:pre-wrap;word-break:break-all;font-family:ui-monospace,monospace;font-size:13px;line-height:1.7;"></div>
 </div>
 
 <div id="rx-groups" style="margin-top:12px;"></div>
 
-<script>
+<script>import { tu, currentLang } from '../../i18n/toolUi.ts';
+const LANG = currentLang();
+
   const $ = (id) => document.getElementById(id);
   let replaceMode = false;
 
@@ -47,7 +54,7 @@
     try {
       re = new RegExp($('rx-pat').value, $('rx-flag').value);
     } catch (e) {
-      msg.textContent = '正则语法错误：' + e.message;
+      msg.textContent = tu(LANG, '正则语法错误：') + e.message;
       msg.className = 'msg err';
       out.innerHTML = '';
       return;
@@ -58,13 +65,13 @@
     if (replaceMode) {
       const rep = $('rx-rep').value.replace(/\$(\d)/g, '$$$1');
       out.innerHTML = esc(text.replace(re, rep));
-      msg.textContent = '替换完成';
+      msg.textContent = tu(LANG, '替换完成');
       msg.className = 'msg ok';
       return;
     }
 
     if (!re.global && !re.sticky) {
-      msg.textContent = '提示：未加 g 标志，只匹配第一处';
+      msg.textContent = tu(LANG, '提示：未加 g 标志，只匹配第一处');
       msg.className = 'msg';
     }
 
@@ -85,7 +92,7 @@
     html += esc(text.slice(last));
 
     out.innerHTML = html || esc(text);
-    msg.textContent = count ? `共匹配 ${count} 处` : '没有匹配结果';
+    msg.textContent = count ? `共匹配 ${count} 处` : tu(LANG, '没有匹配结果');
     msg.className = count ? 'msg ok' : 'msg err';
 
     if (rows.length) {
@@ -102,7 +109,7 @@
   $('rx-replace-mode').onclick = () => {
     replaceMode = !replaceMode;
     $('rx-replace-box').style.display = replaceMode ? 'block' : 'none';
-    $('rx-replace-mode').textContent = replaceMode ? '切换回匹配模式' : '切换到替换模式';
+    $('rx-replace-mode').textContent = replaceMode ? '切换回匹配模式' : tu(LANG, '切换到替换模式');
     run();
   };
 

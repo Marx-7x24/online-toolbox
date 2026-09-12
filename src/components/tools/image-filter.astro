@@ -1,27 +1,31 @@
 ---
+import { tu } from '../../i18n/toolUi.ts';
 // 图片滤镜：Canvas 本地处理
+interface Props { lang?: string }
+const { lang = 'zh' } = Astro.props;
+
 ---
 <div>
-  <div class="field-label"><span>上传图片</span></div>
+  <div class="field-label"><span>{tu(lang, '上传图片')}</span></div>
   <input type="file" id="if-file" accept="image/*">
-  <div class="field-label" style="margin-top:12px;"><span>预设</span></div>
+  <div class="field-label" style="margin-top:12px;"><span>{tu(lang, '预设')}</span></div>
   <div class="if-presets">
-    <button data-p="none" class="primary">原图</button>
-    <button data-p="gray">灰度</button>
-    <button data-p="invert">反相</button>
-    <button data-p="sepia">复古</button>
-    <button data-p="warm">暖色</button>
+    <button data-p="none" class="primary">{tu(lang, '原图')}</button>
+    <button data-p="gray">{tu(lang, '灰度')}</button>
+    <button data-p="invert">{tu(lang, '反相')}</button>
+    <button data-p="sepia">{tu(lang, '复古')}</button>
+    <button data-p="warm">{tu(lang, '暖色')}</button>
   </div>
   <div class="if-sliders">
-    <label>亮度 <input type="range" id="if-bri" min="0" max="200" value="100"><span id="if-bri-v">100%</span></label>
-    <label>对比度 <input type="range" id="if-con" min="0" max="200" value="100"><span id="if-con-v">100%</span></label>
-    <label>模糊 <input type="range" id="if-blur" min="0" max="20" value="0"><span id="if-blur-v">0px</span></label>
+    <label>{tu(lang, '亮度')} <input type="range" id="if-bri" min="0" max="200" value="100"><span id="if-bri-v">100%</span></label>
+    <label>{tu(lang, '对比度')} <input type="range" id="if-con" min="0" max="200" value="100"><span id="if-con-v">100%</span></label>
+    <label>{tu(lang, '模糊')} <input type="range" id="if-blur" min="0" max="20" value="0"><span id="if-blur-v">0px</span></label>
   </div>
-  <div class="field-label" style="margin-top:12px;"><span>预览</span></div>
+  <div class="field-label" style="margin-top:12px;"><span>{tu(lang, '预览')}</span></div>
   <div class="if-wrap"><canvas id="if-canvas"></canvas></div>
 </div>
 <div class="btn-row">
-  <button id="if-dl">下载 PNG</button>
+  <button id="if-dl">{tu(lang, '下载')} PNG</button>
   <span id="if-msg" class="msg"></span>
 </div>
 
@@ -33,7 +37,9 @@
   .if-wrap canvas { max-width: 100%; }
 </style>
 
-<script>
+<script>import { tu, currentLang } from '../../i18n/toolUi.ts';
+const LANG = currentLang();
+
   const $ = (id) => document.getElementById(id);
   let img = null;
   const canvas = $('if-canvas');
@@ -77,11 +83,11 @@
   document.querySelectorAll('.if-presets button').forEach((b) => b.addEventListener('click', () => applyPreset(b.dataset.p)));
   ['if-bri', 'if-con', 'if-blur'].forEach((id) => $(id).addEventListener('input', () => { render(); syncLabels(); }));
   $('if-dl').addEventListener('click', () => {
-    if (!img) { $('if-msg').textContent = '请先上传图片'; $('if-msg').className = 'msg err'; return; }
+    if (!img) { $('if-msg').textContent = tu(LANG, '请先上传图片'); $('if-msg').className = 'msg err'; return; }
     canvas.toBlob((blob) => {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a'); a.href = url; a.download = 'filtered.png'; a.click();
-      $('if-msg').textContent = '已下载'; $('if-msg').className = 'msg ok';
+      $('if-msg').textContent = tu(LANG, '已下载'); $('if-msg').className = 'msg ok';
     });
   });
 </script>

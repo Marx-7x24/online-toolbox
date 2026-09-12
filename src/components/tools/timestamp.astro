@@ -1,44 +1,51 @@
 ---
+import { tu } from '../../i18n/toolUi.ts';
+
+interface Props { lang?: string }
+const { lang = 'zh' } = Astro.props;
+
 ---
 
-<div class="tip">秒级时间戳为 10 位、毫秒级为 13 位，工具会自动识别。</div>
+<div class="tip">{tu(lang, '秒级时间戳为 10 位、毫秒级为 13 位，工具会自动识别。')}</div>
 
 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;">
   <div>
-    <div class="field-label"><span>时间戳</span></div>
-    <input type="text" id="ts-num" placeholder="例如 1700000000" spellcheck="false" />
+    <div class="field-label"><span>{tu(lang, '时间戳')}</span></div>
+    <input type="text" id="ts-num" placeholder={tu(lang, '例如 1700000000')} spellcheck="false" />
     <div class="btn-row">
-      <button class="primary" id="ts-to-date">转日期</button>
-      <button id="ts-now">填入当前</button>
+      <button class="primary" id="ts-to-date">{tu(lang, '转日期')}</button>
+      <button id="ts-now">{tu(lang, '填入当前')}</button>
     </div>
-    <div class="field-label"><span>结果</span></div>
+    <div class="field-label"><span>{tu(lang, '结果')}</span></div>
     <input type="text" id="ts-date-out" readonly placeholder="2023-11-15 06:13:20" />
   </div>
 
   <div>
-    <div class="field-label"><span>日期时间</span></div>
+    <div class="field-label"><span>{tu(lang, '日期时间')}</span></div>
     <input type="text" id="ts-date" placeholder="2023-11-15 06:13:20" spellcheck="false" />
     <div class="btn-row">
-      <button class="primary" id="ts-to-num">转时间戳</button>
-      <button id="ts-now2">填入当前</button>
+      <button class="primary" id="ts-to-num">{tu(lang, '转时间戳')}</button>
+      <button id="ts-now2">{tu(lang, '填入当前')}</button>
     </div>
-    <div class="field-label"><span>结果（秒 / 毫秒）</span></div>
+    <div class="field-label"><span>{tu(lang, '结果（秒')} / {tu(lang, '毫秒')}）</span></div>
     <div style="display:flex;gap:8px;">
-      <input type="text" id="ts-sec" readonly placeholder="秒" />
-      <input type="text" id="ts-ms" readonly placeholder="毫秒" />
+      <input type="text" id="ts-sec" readonly placeholder={tu(lang, '秒')} />
+      <input type="text" id="ts-ms" readonly placeholder={tu(lang, '毫秒')} />
     </div>
   </div>
 </div>
 
 <div class="btn-row" style="margin-top:18px;">
-  <span style="font-size:13px;color:var(--text-sub);align-self:center;">当前时间：</span>
+  <span style="font-size:13px;color:var(--text-sub);align-self:center;">{tu(lang, '当前时间')}：</span>
   <strong id="ts-live" style="font-family:ui-monospace,monospace;font-size:15px;align-self:center;">--</strong>
   <span id="ts-live-num" style="font-size:13px;color:var(--text-hint);align-self:center;"></span>
 </div>
 
 <p class="msg" id="ts-msg"></p>
 
-<script>
+<script>import { tu, currentLang } from '../../i18n/toolUi.ts';
+const LANG = currentLang();
+
   const $ = (id) => document.getElementById(id);
   const pad = (n) => String(n).padStart(2, '0');
 
@@ -49,7 +56,7 @@
   $('ts-to-date').onclick = () => {
     const raw = $('ts-num').value.trim();
     if (!/^-?\d+$/.test(raw)) {
-      $('ts-msg').textContent = '请输入纯数字时间戳';
+      $('ts-msg').textContent = tu(LANG, '请输入纯数字时间戳');
       $('ts-msg').className = 'msg err';
       return;
     }
@@ -57,12 +64,12 @@
     if (String(Math.abs(n)).length <= 10) n *= 1000;
     const d = new Date(n);
     if (isNaN(d.getTime())) {
-      $('ts-msg').textContent = '时间戳超出有效范围';
+      $('ts-msg').textContent = tu(LANG, '时间戳超出有效范围');
       $('ts-msg').className = 'msg err';
       return;
     }
     $('ts-date-out').value = fmt(d);
-    $('ts-msg').textContent = '转换完成（' + (String(Math.abs(n)).length > 10 ? '按毫秒解析' : '按秒解析') + '）';
+    $('ts-msg').textContent = tu(LANG, '转换完成（') + (String(Math.abs(n)).length > 10 ? '按毫秒解析' : tu(LANG, '按秒解析')) + '）';
     $('ts-msg').className = 'msg ok';
   };
 
@@ -70,13 +77,13 @@
     const raw = $('ts-date').value.trim();
     const d = new Date(raw.replace(/-/g, '/'));
     if (isNaN(d.getTime())) {
-      $('ts-msg').textContent = '无法识别该日期格式，建议使用 YYYY-MM-DD HH:mm:ss';
+      $('ts-msg').textContent = tu(LANG, '无法识别该日期格式，建议使用 YYYY-MM-DD HH:mm:ss');
       $('ts-msg').className = 'msg err';
       return;
     }
     $('ts-sec').value = Math.floor(d.getTime() / 1000);
     $('ts-ms').value = d.getTime();
-    $('ts-msg').textContent = '转换完成';
+    $('ts-msg').textContent = tu(LANG, '转换完成');
     $('ts-msg').className = 'msg ok';
   };
 

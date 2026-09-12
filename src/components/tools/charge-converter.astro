@@ -1,52 +1,58 @@
 ---
+import { tu } from '../../i18n/toolUi.ts';
 // charge-converter：纯前端单位换算（系数型）
 const UNITS = [{"sym":"C","zh":"库仑","f":1},{"sym":"kC","zh":"千库仑","f":1000},{"sym":"mC","zh":"毫库仑","f":0.001},{"sym":"μC","zh":"微库仑","f":0.000001},{"sym":"nC","zh":"纳库仑","f":1e-9},{"sym":"Ah","zh":"安时","f":3600},{"sym":"mAh","zh":"毫安时","f":3.6},{"sym":"e","zh":"元电荷","f":1.602176634e-19}];
 const BASE = { name: "库仑", sym: "C" };
+interface Props { lang?: string }
+const { lang = 'zh' } = Astro.props;
+
 ---
 <div class="pane">
   <div>
-    <div class="field-label"><span>数值</span></div>
+    <div class="field-label"><span>{tu(lang, '数值')}</span></div>
     <input type="number" id="uc-val" value="1" step="any" style="width:100%;padding:8px;border:1px solid var(--border-color);border-radius:6px;box-sizing:border-box;font-size:16px">
-    <div class="field-label" style="margin-top:12px"><span>从</span></div>
+    <div class="field-label" style="margin-top:12px"><span>{tu(lang, '从')}</span></div>
     <select id="uc-from" style="width:100%;padding:8px;border:1px solid var(--border-color);border-radius:6px;background:#fff;font-size:14px">
-      <option value="C" data-f="1">库仑 (C)</option>
-      <option value="kC" data-f="1000">千库仑 (kC)</option>
-      <option value="mC" data-f="0.001">毫库仑 (mC)</option>
-      <option value="μC" data-f="0.000001">微库仑 (μC)</option>
-      <option value="nC" data-f="1e-9">纳库仑 (nC)</option>
-      <option value="Ah" data-f="3600">安时 (Ah)</option>
-      <option value="mAh" data-f="3.6">毫安时 (mAh)</option>
-      <option value="e" data-f="1.602176634e-19">元电荷 (e)</option>
+      <option value="C" data-f="1">{tu(lang, '库仑')} (C)</option>
+      <option value="kC" data-f="1000">{tu(lang, '千库仑')} (kC)</option>
+      <option value="mC" data-f="0.001">{tu(lang, '毫库仑')} (mC)</option>
+      <option value="μC" data-f="0.000001">{tu(lang, '微库仑')} (μC)</option>
+      <option value="nC" data-f="1e-9">{tu(lang, '纳库仑')} (nC)</option>
+      <option value="Ah" data-f="3600">{tu(lang, '安时')} (Ah)</option>
+      <option value="mAh" data-f="3.6">{tu(lang, '毫安时')} (mAh)</option>
+      <option value="e" data-f="1.602176634e-19">{tu(lang, '元电荷')} (e)</option>
     </select>
     <div style="text-align:center;margin:8px 0">
-      <button id="uc-swap">⇅ 交换单位</button>
+      <button id="uc-swap">⇅ {tu(lang, '交换单位')}</button>
     </div>
-    <div class="field-label"><span>到</span></div>
+    <div class="field-label"><span>{tu(lang, '到')}</span></div>
     <select id="uc-to" style="width:100%;padding:8px;border:1px solid var(--border-color);border-radius:6px;background:#fff;font-size:14px">
-      <option value="C" data-f="1">库仑 (C)</option>
-      <option value="kC" data-f="1000">千库仑 (kC)</option>
-      <option value="mC" data-f="0.001">毫库仑 (mC)</option>
-      <option value="μC" data-f="0.000001">微库仑 (μC)</option>
-      <option value="nC" data-f="1e-9">纳库仑 (nC)</option>
-      <option value="Ah" data-f="3600">安时 (Ah)</option>
-      <option value="mAh" data-f="3.6">毫安时 (mAh)</option>
-      <option value="e" data-f="1.602176634e-19">元电荷 (e)</option>
+      <option value="C" data-f="1">{tu(lang, '库仑')} (C)</option>
+      <option value="kC" data-f="1000">{tu(lang, '千库仑')} (kC)</option>
+      <option value="mC" data-f="0.001">{tu(lang, '毫库仑')} (mC)</option>
+      <option value="μC" data-f="0.000001">{tu(lang, '微库仑')} (μC)</option>
+      <option value="nC" data-f="1e-9">{tu(lang, '纳库仑')} (nC)</option>
+      <option value="Ah" data-f="3600">{tu(lang, '安时')} (Ah)</option>
+      <option value="mAh" data-f="3.6">{tu(lang, '毫安时')} (mAh)</option>
+      <option value="e" data-f="1.602176634e-19">{tu(lang, '元电荷')} (e)</option>
     </select>
     <div style="margin-top:16px;padding:14px;background:rgba(0,0,0,.03);border-radius:8px">
       <div id="uc-out" style="font-size:20px;font-weight:600;color:var(--primary-color);word-break:break-all;line-height:1.5">-</div>
-      <div style="font-size:12px;color:var(--text-sub);margin-top:4px">换算结果</div>
+      <div style="font-size:12px;color:var(--text-sub);margin-top:4px">{tu(lang, '换算结果')}</div>
     </div>
   </div>
   <div>
-    <div class="field-label"><span>等于以下所有单位</span></div>
+    <div class="field-label"><span>{tu(lang, '等于以下所有单位')}</span></div>
     <table id="uc-table" style="width:100%;border-collapse:collapse;font-size:14px"></table>
     <p class="msg" id="uc-msg"></p>
   </div>
 </div>
 
-<script>
+<script>import { tu, currentLang } from '../../i18n/toolUi.ts';
+const LANG = currentLang();
+
 const $ = (id) => document.getElementById(id);
-const UNITS = [{"sym":"C","zh":"库仑","f":1},{"sym":"kC","zh":"千库仑","f":1000},{"sym":"mC","zh":"毫库仑","f":0.001},{"sym":"μC","zh":"微库仑","f":0.000001},{"sym":"nC","zh":"纳库仑","f":1e-9},{"sym":"Ah","zh":"安时","f":3600},{"sym":"mAh","zh":"毫安时","f":3.6},{"sym":"e","zh":"元电荷","f":1.602176634e-19}];
+const UNITS = [{"sym":"C","zh":tu(LANG, "库仑"),"f":1},{"sym":"kC","zh":tu(LANG, "千库仑"),"f":1000},{"sym":"mC","zh":tu(LANG, "毫库仑"),"f":0.001},{"sym":"μC","zh":tu(LANG, "微库仑"),"f":0.000001},{"sym":"nC","zh":tu(LANG, "纳库仑"),"f":1e-9},{"sym":"Ah","zh":tu(LANG, "安时"),"f":3600},{"sym":"mAh","zh":tu(LANG, "毫安时"),"f":3.6},{"sym":"e","zh":tu(LANG, "元电荷"),"f":1.602176634e-19}];
 function fmt(n){
   if (!isFinite(n)) return '-';
   if (n !== 0 && (Math.abs(n) < 1e-6 || Math.abs(n) >= 1e15)) return n.toExponential(6).replace(/(\.\d*?[1-9])0+e|\.0+e/g, '$1e');

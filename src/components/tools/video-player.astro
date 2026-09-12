@@ -1,37 +1,43 @@
 ---
+import { tu } from '../../i18n/toolUi.ts';
 // 本地视频播放器：本地视频播放，倍速/循环/逐帧截图导出
+interface Props { lang?: string }
+const { lang = 'zh' } = Astro.props;
+
 ---
 <div class="pane">
   <div>
-    <div class="field-label"><span>选择视频文件</span></div>
+    <div class="field-label"><span>{tu(lang, '选择视频文件')}</span></div>
     <input type="file" id="vp-file" accept="video/*">
-    <div class="field-label" style="margin-top:14px"><span>播放控制</span></div>
+    <div class="field-label" style="margin-top:14px"><span>{tu(lang, '播放控制')}</span></div>
     <div style="display:flex;gap:12px;align-items:center;font-size:14px;flex-wrap:wrap">
-      <label>倍速
+      <label>{tu(lang, '倍速')}
         <select id="vp-rate" style="padding:5px;border:1px solid var(--border-color);border-radius:5px;background:#fff">
           <option value="0.25">0.25×</option><option value="0.5">0.5×</option>
           <option value="1" selected>1.0×</option><option value="1.5">1.5×</option>
           <option value="2">2.0×</option>
         </select>
       </label>
-      <label><input type="checkbox" id="vp-loop"> 循环</label>
-      <button id="vp-frame-back">⏪ 后退一帧</button>
-      <button id="vp-frame">⏸ 前进一帧</button>
+      <label><input type="checkbox" id="vp-loop"> {tu(lang, '循环')}</label>
+      <button id="vp-frame-back">⏪ {tu(lang, '后退一帧')}</button>
+      <button id="vp-frame">⏸ {tu(lang, '前进一帧')}</button>
     </div>
     <div class="btn-row" style="margin-top:12px">
-      <button id="vp-shot" class="primary">📸 截取当前帧 (PNG)</button>
+      <button id="vp-shot" class="primary">📸 {tu(lang, '截取当前帧')} (PNG)</button>
     </div>
     <p class="msg" id="vp-msg"></p>
-    <div style="margin-top:10px;font-size:12px;color:var(--text-sub)">视频仅在本地播放与截图，不会上传。</div>
+    <div style="margin-top:10px;font-size:12px;color:var(--text-sub)">{tu(lang, '视频仅在本地播放与截图，不会上传。')}</div>
   </div>
   <div>
-    <div class="field-label"><span>播放器</span></div>
+    <div class="field-label"><span>{tu(lang, '播放器')}</span></div>
     <video id="vp-video" controls style="width:100%;max-height:380px;border-radius:8px;background:#000;display:none"></video>
-    <div id="vp-empty" style="padding:40px;text-align:center;color:var(--text-sub);font-size:13px;border:1px dashed var(--border-color);border-radius:8px">选择视频文件开始播放</div>
+    <div id="vp-empty" style="padding:40px;text-align:center;color:var(--text-sub);font-size:13px;border:1px dashed var(--border-color);border-radius:8px">{tu(lang, '选择视频文件开始播放')}</div>
   </div>
 </div>
 
-<script>
+<script>import { tu, currentLang } from '../../i18n/toolUi.ts';
+const LANG = currentLang();
+
 const $ = (id) => document.getElementById(id);
 const video = $('vp-video');
 let url = null;
@@ -51,7 +57,7 @@ const FRAME = 1 / 30; // 近似一帧
 $('vp-frame-back').addEventListener('click', () => { video.pause(); video.currentTime = Math.max(0, video.currentTime - FRAME); });
 $('vp-frame').addEventListener('click', () => { video.pause(); video.currentTime = Math.min(video.duration || 0, video.currentTime + FRAME); });
 $('vp-shot').addEventListener('click', () => {
-  if (!video.videoWidth){ $('vp-msg').textContent = '请先选择视频'; $('vp-msg').className = 'msg err'; return; }
+  if (!video.videoWidth){ $('vp-msg').textContent = tu(LANG, '请先选择视频'); $('vp-msg').className = 'msg err'; return; }
   const cnv = document.createElement('canvas');
   cnv.width = video.videoWidth; cnv.height = video.videoHeight;
   cnv.getContext('2d').drawImage(video, 0, 0);
@@ -60,7 +66,7 @@ $('vp-shot').addEventListener('click', () => {
     a.href = URL.createObjectURL(b);
     a.download = 'frame-' + video.currentTime.toFixed(2) + 's.png';
     a.click();
-    $('vp-msg').textContent = '已导出当前帧截图'; $('vp-msg').className = 'msg ok';
+    $('vp-msg').textContent = tu(LANG, '已导出当前帧截图'); $('vp-msg').className = 'msg ok';
   }, 'image/png');
 });
 </script>

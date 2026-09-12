@@ -1,29 +1,36 @@
 ---
+import { tu } from '../../i18n/toolUi.ts';
+
+interface Props { lang?: string }
+const { lang = 'zh' } = Astro.props;
+
 ---
 
-<div class="tip">全部在本机计算，文件或文本都不会离开你的浏览器，网断了也能用。</div>
+<div class="tip">{tu(lang, '全部在本机计算，文件或文本都不会离开你的浏览器，网断了也能用。')}</div>
 
 <div style="max-width:620px;">
-  <div class="field-label"><span>文本输入</span></div>
-  <textarea id="h-in" placeholder="输入要计算哈希的文本" style="min-height:120px;"></textarea>
+  <div class="field-label"><span>{tu(lang, '文本输入')}</span></div>
+  <textarea id="h-in" placeholder={tu(lang, '输入要计算哈希的文本')} style="min-height:120px;"></textarea>
 </div>
 
 <div class="btn-row" style="align-items:center;">
-  <label for="h-file" style="font-size:13px;color:var(--text-sub);">或选择文件：</label>
+  <label for="h-file" style="font-size:13px;color:var(--text-sub);">{tu(lang, '或选择文件')}：</label>
   <input type="file" id="h-file" style="width:auto;font-family:inherit;padding:6px;border:none;" />
   <span id="h-fname" style="font-size:13px;color:var(--text-hint);"></span>
 </div>
 
 <div class="btn-row">
-  <button class="primary" id="h-go">计算</button>
-  <button id="h-clear">清空</button>
+  <button class="primary" id="h-go">{tu(lang, '计算')}</button>
+  <button id="h-clear">{tu(lang, '清空')}</button>
 </div>
 
 <div id="h-result"></div>
 
 <p class="msg" id="h-msg"></p>
 
-<script>
+<script>import { tu, currentLang } from '../../i18n/toolUi.ts';
+const LANG = currentLang();
+
   const $ = (id) => document.getElementById(id);
 
   // MD5 需要自己实现：Web Crypto 不提供 MD5，而文件校验场景又离不开它
@@ -72,7 +79,7 @@
       data = new TextEncoder().encode($('h-in').value);
       label = `文本 ${data.length} 字节`;
     } else {
-      msg.textContent = '请输入文本或选择文件'; msg.className = 'msg err'; return;
+      msg.textContent = tu(LANG, '请输入文本或选择文件'); msg.className = 'msg err'; return;
     }
 
     const results = [['MD5', md5(data)]];
@@ -92,12 +99,12 @@
     $('h-result').querySelectorAll('button[data-copy]').forEach((btn) => {
       btn.onclick = async () => {
         await navigator.clipboard.writeText(btn.dataset.copy);
-        btn.textContent = '已复制';
-        setTimeout(() => (btn.textContent = '复制'), 1200);
+        btn.textContent = tu(LANG, '已复制');
+        setTimeout(() => (btn.textContent = tu(LANG, '复制')), 1200);
       };
     });
 
-    msg.textContent = '计算完成';
+    msg.textContent = tu(LANG, '计算完成');
     msg.className = 'msg ok';
   }
 

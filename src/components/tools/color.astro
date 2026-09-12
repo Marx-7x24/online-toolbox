@@ -1,4 +1,9 @@
 ---
+import { tu } from '../../i18n/toolUi.ts';
+
+interface Props { lang?: string }
+const { lang = 'zh' } = Astro.props;
+
 ---
 
 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:18px;">
@@ -21,38 +26,40 @@
     </div>
 
     <div class="btn-row" style="align-items:center;">
-      <label for="c-picker" style="font-size:13px;color:var(--text-sub);">取色器：</label>
+      <label for="c-picker" style="font-size:13px;color:var(--text-sub);">{tu(lang, '取色器')}：</label>
       <input type="color" id="c-picker" value="#2563eb" style="width:52px;height:34px;padding:2px;" />
-      <button id="c-random">随机</button>
+      <button id="c-random">{tu(lang, '随机')}</button>
     </div>
   </div>
 
   <div>
-    <div class="field-label"><span>预览</span></div>
+    <div class="field-label"><span>{tu(lang, '预览')}</span></div>
     <div id="c-preview" style="height:120px;border:1px solid var(--border);border-radius:8px;display:flex;align-items:center;justify-content:center;font-family:ui-monospace,monospace;font-size:15px;"></div>
 
     <div style="display:flex;gap:10px;margin-top:12px;">
       <div style="flex:1;">
-        <div class="field-label"><span>浅色底文字</span></div>
-        <div id="c-on-light" style="height:44px;border:1px solid var(--border);border-radius:8px;background:#ffffff;display:flex;align-items:center;justify-content:center;font-size:13px;">示例文字 Aa</div>
+        <div class="field-label"><span>{tu(lang, '浅色底文字')}</span></div>
+        <div id="c-on-light" style="height:44px;border:1px solid var(--border);border-radius:8px;background:#ffffff;display:flex;align-items:center;justify-content:center;font-size:13px;">{tu(lang, '示例文字')} Aa</div>
       </div>
       <div style="flex:1;">
-        <div class="field-label"><span>深色底文字</span></div>
-        <div id="c-on-dark" style="height:44px;border:1px solid var(--border);border-radius:8px;background:#1a1a1a;display:flex;align-items:center;justify-content:center;font-size:13px;color:#fff;">示例文字 Aa</div>
+        <div class="field-label"><span>{tu(lang, '深色底文字')}</span></div>
+        <div id="c-on-dark" style="height:44px;border:1px solid var(--border);border-radius:8px;background:#1a1a1a;display:flex;align-items:center;justify-content:center;font-size:13px;color:#fff;">{tu(lang, '示例文字')} Aa</div>
       </div>
     </div>
   </div>
 </div>
 
 <div class="btn-row" style="margin-top:16px;">
-  <button class="primary" id="c-copy-hex">复制 HEX</button>
-  <button id="c-copy-rgb">复制 RGB</button>
-  <button id="c-copy-hsl">复制 HSL</button>
+  <button class="primary" id="c-copy-hex">{tu(lang, '复制')} HEX</button>
+  <button id="c-copy-rgb">{tu(lang, '复制')} RGB</button>
+  <button id="c-copy-hsl">{tu(lang, '复制')} HSL</button>
 </div>
 
 <p class="msg" id="c-msg"></p>
 
-<script>
+<script>import { tu, currentLang } from '../../i18n/toolUi.ts';
+const LANG = currentLang();
+
   const $ = (id) => document.getElementById(id);
   const clamp = (n, a, b) => Math.min(b, Math.max(a, n));
 
@@ -145,7 +152,7 @@
 
   const copy = async (text) => {
     await navigator.clipboard.writeText(text);
-    $('c-msg').textContent = '已复制 ' + text;
+    $('c-msg').textContent = tu(LANG, '已复制 ') + text;
     $('c-msg').className = 'msg ok';
   };
   $('c-copy-hex').onclick = () => copy($('c-hex').value);

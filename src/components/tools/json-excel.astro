@@ -1,31 +1,37 @@
 ---
+import { tu } from '../../i18n/toolUi.ts';
 // JSON 转 Excel：导出 CSV（Excel/WPS 可直接打开并另存为 xlsx）
+interface Props { lang?: string }
+const { lang = 'zh' } = Astro.props;
+
 ---
 
 <div class="pane">
   <div>
-    <div class="field-label"><span>输入 JSON 数组</span></div>
+    <div class="field-label"><span>{tu(lang, '输入 JSON 数组')}</span></div>
     <textarea id="je-in" placeholder='[{"姓名":"张三","年龄":20,"城市":"北京"},{"姓名":"李四","年龄":25,"城市":"上海"}]'></textarea>
   </div>
   <div>
-    <div class="field-label"><span>CSV 预览</span></div>
+    <div class="field-label"><span>CSV {tu(lang, '预览')}</span></div>
     <textarea id="je-out" readonly></textarea>
   </div>
 </div>
 <div class="btn-row">
-  <button id="je-run" class="primary">生成表格</button>
-  <button id="je-download">下载 .csv（Excel 可打开）</button>
-  <button id="je-copy">复制内容</button>
+  <button id="je-run" class="primary">{tu(lang, '生成表格')}</button>
+  <button id="je-download">{tu(lang, '下载 .csv（Excel 可打开')}）</button>
+  <button id="je-copy">{tu(lang, '复制内容')}</button>
   <label style="font-size:13px;color:var(--text-sub);display:flex;align-items:center;gap:6px;margin:0;">
-    <input type="checkbox" id="je-bom" checked /> 带 BOM（Excel 中文不乱码）
+    <input type="checkbox" id="je-bom" checked /> {tu(lang, '带 BOM（Excel 中文不乱码')}）
   </label>
   <span id="je-msg" class="msg"></span>
 </div>
 <p class="tip" style="margin-top:12px;">
-  导出为标准 CSV，Excel 与 WPS 可直接打开，再「另存为 .xlsx」即得到 Excel 文件。全过程在浏览器本地完成，文件不上传。
+  {tu(lang, '导出为标准 CSV，Excel 与 WPS 可直接打开，再')}「{tu(lang, '另存为')} .xlsx」{tu(lang, '即得到 Excel 文件。全过程在浏览器本地完成，文件不上传。')}
 </p>
 
-<script>
+<script>import { tu, currentLang } from '../../i18n/toolUi.ts';
+const LANG = currentLang();
+
   const $ = (id) => document.getElementById(id);
   const input = $('je-in'), output = $('je-out'), msg = $('je-msg'), bom = $('je-bom');
 
@@ -49,12 +55,12 @@
     try {
       const data = JSON.parse(input.value);
       const arr = Array.isArray(data) ? data : [data];
-      if (!arr.length || typeof arr[0] !== 'object' || arr[0] === null) throw new Error('请输入 JSON 对象数组');
+      if (!arr.length || typeof arr[0] !== 'object' || arr[0] === null) throw new Error(tu(LANG, '请输入 JSON 对象数组'));
       lastCsv = buildCsv(arr);
       output.value = lastCsv;
       msg.textContent = `已生成 ${arr.length} 行表格`; msg.className = 'msg ok';
     } catch (e) {
-      msg.textContent = 'JSON 解析失败：' + e.message; msg.className = 'msg err';
+      msg.textContent = tu(LANG, 'JSON 解析失败：') + e.message; msg.className = 'msg err';
     }
   });
 
@@ -64,12 +70,12 @@
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob); a.download = 'export.csv'; a.click();
     URL.revokeObjectURL(a.href);
-    msg.textContent = '已下载 export.csv'; msg.className = 'msg ok';
+    msg.textContent = tu(LANG, '已下载 export.csv'); msg.className = 'msg ok';
   });
 
   $('je-copy').addEventListener('click', async () => {
     if (!output.value) return;
-    try { await navigator.clipboard.writeText(output.value); msg.textContent = '已复制'; msg.className = 'msg ok'; }
-    catch { msg.textContent = '复制失败'; msg.className = 'msg err'; }
+    try { await navigator.clipboard.writeText(output.value); msg.textContent = tu(LANG, '已复制'); msg.className = 'msg ok'; }
+    catch { msg.textContent = tu(LANG, '复制失败'); msg.className = 'msg err'; }
   });
 </script>

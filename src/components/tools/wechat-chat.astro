@@ -1,151 +1,157 @@
 ---
+import { tu } from '../../i18n/toolUi.ts';
 // 微信聊天对话模板：内置多类搞笑/土味/表白/怼人对话文案，一键复制完整对话
+interface Props { lang?: string }
+const { lang = 'zh' } = Astro.props;
+
 ---
 <div class="pane">
   <div>
-    <div class="field-label"><span>分类</span></div>
+    <div class="field-label"><span>{tu(lang, '分类')}</span></div>
     <select id="wct-cat" style="width:100%;padding:7px;border:1px solid var(--border-color);border-radius:6px;box-sizing:border-box;background:#fff;font-size:14px"></select>
 
-    <div class="field-label" style="margin-top:12px"><span>模板</span></div>
+    <div class="field-label" style="margin-top:12px"><span>{tu(lang, '模板')}</span></div>
     <select id="wct-tpl" size="10" style="width:100%;padding:6px;border:1px solid var(--border-color);border-radius:6px;box-sizing:border-box;background:#fff;font-size:14px"></select>
 
-    <div class="field-label" style="margin-top:12px"><span>自定义昵称（仅预览显示，不影响复制内容）</span></div>
+    <div class="field-label" style="margin-top:12px"><span>{tu(lang, '自定义昵称（仅预览显示，不影响复制内容')}）</span></div>
     <div style="display:flex;gap:8px">
-      <input type="text" id="wct-other" placeholder="对方昵称" style="flex:1;padding:7px;border:1px solid var(--border-color);border-radius:6px">
-      <input type="text" id="wct-me" placeholder="我的昵称" value="我" style="flex:1;padding:7px;border:1px solid var(--border-color);border-radius:6px">
+      <input type="text" id="wct-other" placeholder={tu(lang, '对方昵称')} style="flex:1;padding:7px;border:1px solid var(--border-color);border-radius:6px">
+      <input type="text" id="wct-me" placeholder={tu(lang, '我的昵称')} value={tu(lang, '我')} style="flex:1;padding:7px;border:1px solid var(--border-color);border-radius:6px">
     </div>
   </div>
   <div>
-    <div class="field-label"><span>对话预览</span></div>
+    <div class="field-label"><span>{tu(lang, '对话预览')}</span></div>
     <div id="wct-preview" style="background:#ededed;border-radius:10px;padding:14px 12px;min-height:260px;max-height:460px;overflow-y:auto;display:flex;flex-direction:column;gap:10px"></div>
     <div class="btn-row" style="margin-top:10px;justify-content:flex-end">
-      <button id="wct-copy">复制为可粘贴格式</button>
-      <button id="wct-copy-sim" class="primary">复制为模拟器格式</button>
+      <button id="wct-copy">{tu(lang, '复制为可粘贴格式')}</button>
+      <button id="wct-copy-sim" class="primary">{tu(lang, '复制为模拟器格式')}</button>
     </div>
     <p class="msg" id="wct-msg"></p>
   </div>
 </div>
 
-<script>
+<script>import { tu, currentLang } from '../../i18n/toolUi.ts';
+const LANG = currentLang();
+
 const $ = (id) => document.getElementById(id);
 
 // 内置对话模板（分类 → 多条）。side: other=对方/左, me=我/右
 const DATA = {
   '搞笑': [
-    { title: '我有个大胆的想法', lines: [
-      {side:'other', text:'在吗？'},
-      {side:'me', text:'在'},
-      {side:'other', text:'我有个大胆的想法'},
-      {side:'me', text:'爱过'},
-      {side:'other', text:'??? 我还没说啥呢'},
-      {side:'me', text:'不重要，结果都一样'}
+    { title: tu(LANG, '我有个大胆的想法'), lines: [
+      {side:'other', text:tu(LANG, '在吗？')},
+      {side:'me', text:tu(LANG, '在')},
+      {side:'other', text:tu(LANG, '我有个大胆的想法')},
+      {side:'me', text:tu(LANG, '爱过')},
+      {side:'other', text:tu(LANG, '??? 我还没说啥呢')},
+      {side:'me', text:tu(LANG, '不重要，结果都一样')}
     ]},
-    { title: '你听我解释', lines: [
-      {side:'other', text:'你听我解释'},
-      {side:'me', text:'我不听我不听'},
-      {side:'other', text:'真的，你听一下'},
-      {side:'me', text:'行，你说'},
-      {side:'other', text:'其实我……'},
-      {side:'me', text:'算了，我不想听了'}
+    { title: tu(LANG, '你听我解释'), lines: [
+      {side:'other', text:tu(LANG, '你听我解释')},
+      {side:'me', text:tu(LANG, '我不听我不听')},
+      {side:'other', text:tu(LANG, '真的，你听一下')},
+      {side:'me', text:tu(LANG, '行，你说')},
+      {side:'other', text:tu(LANG, '其实我……')},
+      {side:'me', text:tu(LANG, '算了，我不想听了')}
     ]},
-    { title: '你是不是喜欢我', lines: [
-      {side:'other', text:'你是不是喜欢我？'},
-      {side:'me', text:'你想多了'},
-      {side:'other', text:'那你为什么偷看我朋友圈三年？'},
-      {side:'me', text:'……那是手滑'},
-      {side:'other', text:'手滑三年？'},
-      {side:'me', text:'手滑成习惯了'}
+    { title: tu(LANG, '你是不是喜欢我'), lines: [
+      {side:'other', text:tu(LANG, '你是不是喜欢我？')},
+      {side:'me', text:tu(LANG, '你想多了')},
+      {side:'other', text:tu(LANG, '那你为什么偷看我朋友圈三年？')},
+      {side:'me', text:tu(LANG, '……那是手滑')},
+      {side:'other', text:tu(LANG, '手滑三年？')},
+      {side:'me', text:tu(LANG, '手滑成习惯了')}
     ]},
   ],
   '土味': [
-    { title: '你是魔鬼吗', lines: [
-      {side:'other', text:'你是魔鬼吗？'},
-      {side:'me', text:'不是'},
-      {side:'other', text:'那为什么你一出现，我的心就被你偷走了？'},
+    { title: tu(LANG, '你是魔鬼吗'), lines: [
+      {side:'other', text:tu(LANG, '你是魔鬼吗？')},
+      {side:'me', text:tu(LANG, '不是')},
+      {side:'other', text:tu(LANG, '那为什么你一出现，我的心就被你偷走了？')},
       {side:'me', text:'……'},
-      {side:'other', text:'做我女朋友好吗？'},
-      {side:'me', text:'好……'},
+      {side:'other', text:tu(LANG, '做我女朋友好吗？')},
+      {side:'me', text:tu(LANG, '好……')},
     ]},
-    { title: '猜猜我的心', lines: [
-      {side:'other', text:'猜猜我的心在哪边？'},
-      {side:'me', text:'左边？'},
-      {side:'other', text:'错，在你那边'},
+    { title: tu(LANG, '猜猜我的心'), lines: [
+      {side:'other', text:tu(LANG, '猜猜我的心在哪边？')},
+      {side:'me', text:tu(LANG, '左边？')},
+      {side:'other', text:tu(LANG, '错，在你那边')},
       {side:'me', text:'……'},
     ]},
-    { title: '你是我的菜', lines: [
-      {side:'other', text:'你是哪里人？'},
-      {side:'me', text:'广东人'},
-      {side:'other', text:'怪不得，你是我的菜啊'},
+    { title: tu(LANG, '你是我的菜'), lines: [
+      {side:'other', text:tu(LANG, '你是哪里人？')},
+      {side:'me', text:tu(LANG, '广东人')},
+      {side:'other', text:tu(LANG, '怪不得，你是我的菜啊')},
       {side:'me', text:'？'},
     ]},
   ],
   '表白': [
-    { title: '从什么时候开始', lines: [
-      {side:'other', text:'在吗？'},
-      {side:'me', text:'在'},
-      {side:'other', text:'我想了很久，决定告诉你'},
-      {side:'me', text:'嗯'},
-      {side:'other', text:'我喜欢你，从第一次见面开始'},
-      {side:'me', text:'我……我也是'},
+    { title: tu(LANG, '从什么时候开始'), lines: [
+      {side:'other', text:tu(LANG, '在吗？')},
+      {side:'me', text:tu(LANG, '在')},
+      {side:'other', text:tu(LANG, '我想了很久，决定告诉你')},
+      {side:'me', text:tu(LANG, '嗯')},
+      {side:'other', text:tu(LANG, '我喜欢你，从第一次见面开始')},
+      {side:'me', text:tu(LANG, '我……我也是')},
     ]},
-    { title: '要不要在一起', lines: [
-      {side:'other', text:'你明天有空吗？'},
-      {side:'me', text:'有啊'},
-      {side:'other', text:'那出来一下呗'},
-      {side:'me', text:'去哪？'},
-      {side:'other', text:'民政局'},
+    { title: tu(LANG, '要不要在一起'), lines: [
+      {side:'other', text:tu(LANG, '你明天有空吗？')},
+      {side:'me', text:tu(LANG, '有啊')},
+      {side:'other', text:tu(LANG, '那出来一下呗')},
+      {side:'me', text:tu(LANG, '去哪？')},
+      {side:'other', text:tu(LANG, '民政局')},
       {side:'me', text:'？？？'},
-      {side:'other', text:'带身份证'},
+      {side:'other', text:tu(LANG, '带身份证')},
     ]},
   ],
   '怼人': [
-    { title: '关你什么事', lines: [
-      {side:'other', text:'你最近是不是又胖了？'},
-      {side:'me', text:'关你什么事？'},
-      {side:'other', text:'关心你啊'},
-      {side:'me', text:'那你可以不关心'},
+    { title: tu(LANG, '关你什么事'), lines: [
+      {side:'other', text:tu(LANG, '你最近是不是又胖了？')},
+      {side:'me', text:tu(LANG, '关你什么事？')},
+      {side:'other', text:tu(LANG, '关心你啊')},
+      {side:'me', text:tu(LANG, '那你可以不关心')},
       {side:'other', text:'……'},
     ]},
-    { title: '谢谢你的好意', lines: [
-      {side:'other', text:'我跟你说个事'},
-      {side:'me', text:'不想听'},
-      {side:'other', text:'就一句话'},
-      {side:'me', text:'那就一句'},
-      {side:'other', text:'你最近变了'},
-      {side:'me', text:'我变了也轮不到你来评价'},
+    { title: tu(LANG, '谢谢你的好意'), lines: [
+      {side:'other', text:tu(LANG, '我跟你说个事')},
+      {side:'me', text:tu(LANG, '不想听')},
+      {side:'other', text:tu(LANG, '就一句话')},
+      {side:'me', text:tu(LANG, '那就一句')},
+      {side:'other', text:tu(LANG, '你最近变了')},
+      {side:'me', text:tu(LANG, '我变了也轮不到你来评价')},
     ]},
   ],
   '职场': [
-    { title: '老板突然找你', lines: [
-      {side:'other', text:'来我办公室一趟'},
-      {side:'me', text:'好的'},
-      {side:'other', text:'最近表现不错'},
-      {side:'me', text:'谢谢老板'},
-      {side:'other', text:'下个月调岗'},
-      {side:'me', text:'……调哪里？'},
-      {side:'other', text:'调动一下你摸鱼的心态'},
+    { title: tu(LANG, '老板突然找你'), lines: [
+      {side:'other', text:tu(LANG, '来我办公室一趟')},
+      {side:'me', text:tu(LANG, '好的')},
+      {side:'other', text:tu(LANG, '最近表现不错')},
+      {side:'me', text:tu(LANG, '谢谢老板')},
+      {side:'other', text:tu(LANG, '下个月调岗')},
+      {side:'me', text:tu(LANG, '……调哪里？')},
+      {side:'other', text:tu(LANG, '调动一下你摸鱼的心态')},
     ]},
-    { title: '同事甩锅', lines: [
-      {side:'other', text:'那个方案你做了吗？'},
-      {side:'me', text:'不是让你做吗？'},
-      {side:'other', text:'我看群里你说接了呀'},
-      {side:'me', text:'我说的是"接"你下班，不是接活'},
+    { title: tu(LANG, '同事甩锅'), lines: [
+      {side:'other', text:tu(LANG, '那个方案你做了吗？')},
+      {side:'me', text:tu(LANG, '不是让你做吗？')},
+      {side:'other', text:tu(LANG, '我看群里你说接了呀')},
+      {side:'me', text:'我说的是tu(LANG, "接")你下班，不是接活'},
     ]},
   ],
   '家庭': [
-    { title: '妈，我不想相亲', lines: [
-      {side:'other', text:'宝贝，周末有个不错的男孩子要不要见见？'},
-      {side:'me', text:'妈，我真的不需要'},
-      {side:'other', text:'你都多大了'},
-      {side:'me', text:'多大了也是您女儿啊'},
-      {side:'other', text:'……就见一面'},
-      {side:'me', text:'那见面可以，我要带闺蜜'},
+    { title: tu(LANG, '妈，我不想相亲'), lines: [
+      {side:'other', text:tu(LANG, '宝贝，周末有个不错的男孩子要不要见见？')},
+      {side:'me', text:tu(LANG, '妈，我真的不需要')},
+      {side:'other', text:tu(LANG, '你都多大了')},
+      {side:'me', text:tu(LANG, '多大了也是您女儿啊')},
+      {side:'other', text:tu(LANG, '……就见一面')},
+      {side:'me', text:tu(LANG, '那见面可以，我要带闺蜜')},
     ]},
-    { title: '爸，我手机呢', lines: [
-      {side:'other', text:'爸我手机呢？'},
-      {side:'me', text:'在我这'},
-      {side:'other', text:'干嘛拿我手机？'},
-      {side:'me', text:'你天天就知道玩手机，帮你收一下'},
+    { title: tu(LANG, '爸，我手机呢'), lines: [
+      {side:'other', text:tu(LANG, '爸我手机呢？')},
+      {side:'me', text:tu(LANG, '在我这')},
+      {side:'other', text:tu(LANG, '干嘛拿我手机？')},
+      {side:'me', text:tu(LANG, '你天天就知道玩手机，帮你收一下')},
       {side:'other', text:'……'},
     ]},
   ],
@@ -180,7 +186,7 @@ function render(){
   const t = (DATA[cat]||[])[idx];
   if (!t){ prevBox.innerHTML = '<div style="color:#9aa0a6;font-size:13px;text-align:center;margin:auto">选择一个模板</div>'; return; }
   const other = $('wct-other').value.trim();
-  const me = $('wct-me').value.trim() || '我';
+  const me = $('wct-me').value.trim() || tu(LANG, '我');
   prevBox.innerHTML = t.lines.map(m => {
     const isMe = m.side === 'me';
     return `<div style="display:flex;justify-content:${isMe?'flex-end':'flex-start'}"><div style="max-width:78%;padding:8px 11px;border-radius:6px;font-size:14px;line-height:1.45;word-break:break-word;white-space:pre-wrap;background:${isMe?'#95EC69':'#fff'};box-shadow:0 1px 1px rgba(0,0,0,.04)">${esc(m.text)}</div></div>`;
@@ -203,22 +209,22 @@ function copy(text, okMsg){
 function fallback(text, okMsg){
   const ta = document.createElement('textarea'); ta.value = text; ta.style.position='fixed'; ta.style.opacity='0'; document.body.appendChild(ta); ta.select();
   try { document.execCommand('copy'); msg.textContent = okMsg; msg.className='msg ok'; }
-  catch(e){ msg.textContent='复制失败，请手动选择'; msg.className='msg err'; }
+  catch(e){ msg.textContent=tu(LANG, '复制失败，请手动选择'); msg.className='msg err'; }
   document.body.removeChild(ta);
 }
 
 $('wct-copy').addEventListener('click', () => {
-  const lines = getLines(); if (!lines.length){ msg.textContent='请选择模板'; msg.className='msg err'; return; }
+  const lines = getLines(); if (!lines.length){ msg.textContent=tu(LANG, '请选择模板'); msg.className='msg err'; return; }
   // 对方：... 我：... 的可读格式
-  const text = lines.map(m => (m.side === 'me' ? '我：' : '对方：') + m.text).join('\n');
-  copy(text, '已复制（含「我/对方」前缀的纯文本）');
+  const text = lines.map(m => (m.side === 'me' ? '我：' : tu(LANG, '对方：')) + m.text).join('\n');
+  copy(text, tu(LANG, '已复制（含「我/对方」前缀的纯文本）'));
 });
 
 $('wct-copy-sim').addEventListener('click', () => {
-  const lines = getLines(); if (!lines.length){ msg.textContent='请选择模板'; msg.className='msg err'; return; }
+  const lines = getLines(); if (!lines.length){ msg.textContent=tu(LANG, '请选择模板'); msg.className='msg err'; return; }
   // 与本工具「添加消息」面板的单行格式对齐：「对方: 文本」或「我: 文本」，每行一条。
-  const text = lines.map(m => (m.side === 'me' ? '我: ' : '对方: ') + m.text).join('\n');
-  copy(text, '已复制（与单聊模拟器兼容的格式，逐行粘贴）');
+  const text = lines.map(m => (m.side === 'me' ? '我: ' : tu(LANG, '对方: ')) + m.text).join('\n');
+  copy(text, tu(LANG, '已复制（与单聊模拟器兼容的格式，逐行粘贴）'));
 });
 
 // 初始化

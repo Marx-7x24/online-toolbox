@@ -1,25 +1,29 @@
 ---
+import { tu } from '../../i18n/toolUi.ts';
 // 多张图片合成 GIF 动图（懒加载 gif.js ~30KB）
+interface Props { lang?: string }
+const { lang = 'zh' } = Astro.props;
+
 ---
 <div class="pane">
   <div>
-    <div class="field-label"><span>选择多张图片（按选择顺序成帧）</span></div>
+    <div class="field-label"><span>{tu(lang, '选择多张图片（按选择顺序成帧')}）</span></div>
     <input type="file" id="itgif-files" accept="image/*" multiple>
     <div id="itgif-thumbs" class="itgif-thumbs"></div>
-    <div class="field-label" style="margin-top:14px"><span>每帧延迟 <span id="itgif-dv">200</span> ms</span></div>
+    <div class="field-label" style="margin-top:14px"><span>{tu(lang, '每帧延迟')} <span id="itgif-dv">200</span> ms</span></div>
     <input type="range" id="itgif-delay" min="50" max="2000" step="50" value="200" style="width:100%">
-    <div class="field-label" style="margin-top:14px"><span>宽度 <span id="itgif-wv">320</span> px（保持比例，高度自动）</span></div>
+    <div class="field-label" style="margin-top:14px"><span>{tu(lang, '宽度')} <span id="itgif-wv">320</span> px（{tu(lang, '保持比例，高度自动')}）</span></div>
     <input type="range" id="itgif-w" min="80" max="800" step="20" value="320" style="width:100%">
   </div>
   <div>
-    <div class="field-label"><span>GIF 预览</span></div>
+    <div class="field-label"><span>GIF {tu(lang, '预览')}</span></div>
     <div id="itgif-preview" class="itgif-preview"></div>
   </div>
 </div>
 <div class="btn-row">
-  <button id="itgif-run" class="primary">生成 GIF</button>
-  <button id="itgif-dl">下载 GIF</button>
-  <button id="itgif-reset">重置</button>
+  <button id="itgif-run" class="primary">{tu(lang, '生成')} GIF</button>
+  <button id="itgif-dl">{tu(lang, '下载')} GIF</button>
+  <button id="itgif-reset">{tu(lang, '重置')}</button>
   <span id="itgif-msg" class="msg"></span>
 </div>
 
@@ -31,7 +35,9 @@
   .itgif-preview:empty::before { content: '尚未生成'; color: #999; }
 </style>
 
-<script>
+<script>import { tu, currentLang } from '../../i18n/toolUi.ts';
+const LANG = currentLang();
+
   const $ = (id) => document.getElementById(id);
   const files = [];
   let gifBlob = null;
@@ -52,7 +58,7 @@
     files.forEach((f, i) => {
       const img = document.createElement('img');
       img.src = URL.createObjectURL(f);
-      img.title = f.name + '（点击移除）';
+      img.title = f.name + tu(LANG, '（点击移除）');
       img.style.cursor = 'pointer';
       img.addEventListener('click', () => { files.splice(i, 1); renderThumbs(); });
       wrap.appendChild(img);
@@ -83,8 +89,8 @@
   }
 
   $('itgif-run').addEventListener('click', async () => {
-    if (files.length === 0) { $('itgif-msg').textContent = '请先选择至少 1 张图片'; $('itgif-msg').className = 'msg err'; return; }
-    $('itgif-msg').textContent = '加载编码器…'; $('itgif-msg').className = 'msg';
+    if (files.length === 0) { $('itgif-msg').textContent = tu(LANG, '请先选择至少 1 张图片'); $('itgif-msg').className = 'msg err'; return; }
+    $('itgif-msg').textContent = tu(LANG, '加载编码器…'); $('itgif-msg').className = 'msg';
     try {
       const GIF = await loadGifJs();
       const w = Number($('itgif-w').value);
@@ -108,20 +114,20 @@
       gif.on('progress', (p) => { $('itgif-msg').textContent = `生成中… ${Math.round(p*100)}%`; });
       gif.on('finished', (blob) => {
         gifBlob = blob;
-        $('itgif-preview').innerHTML = '<img alt="预览">';
+        $('itgif-preview').innerHTML = '<img alt=tu(LANG, "预览")>';
         $('itgif-preview').querySelector('img').src = URL.createObjectURL(blob);
         $('itgif-msg').textContent = `生成成功 · ${(blob.size/1024).toFixed(1)} KB · ${files.length} 帧`;
         $('itgif-msg').className = 'msg ok';
       });
       gif.render();
     } catch (err) {
-      $('itgif-msg').textContent = '生成失败：' + err.message;
+      $('itgif-msg').textContent = tu(LANG, '生成失败：') + err.message;
       $('itgif-msg').className = 'msg err';
     }
   });
 
   $('itgif-dl').addEventListener('click', () => {
-    if (!gifBlob) { $('itgif-msg').textContent = '请先生成'; $('itgif-msg').className = 'msg err'; return; }
+    if (!gifBlob) { $('itgif-msg').textContent = tu(LANG, '请先生成'); $('itgif-msg').className = 'msg err'; return; }
     const a = document.createElement('a');
     a.href = URL.createObjectURL(gifBlob);
     a.download = 'animated.gif';

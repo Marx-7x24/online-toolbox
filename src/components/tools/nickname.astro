@@ -1,16 +1,20 @@
 ---
+import { tu } from '../../i18n/toolUi.ts';
 // 随机昵称生成：中文词表，本地生成
+interface Props { lang?: string }
+const { lang = 'zh' } = Astro.props;
+
 ---
 <div>
-  <div class="field-label"><span>生成数量</span></div>
+  <div class="field-label"><span>{tu(lang, '生成数量')}</span></div>
   <input type="number" id="nk-n" min="1" max="20" value="6">
-  <label class="chk"><input type="checkbox" id="nk-suf" checked> 加后缀（呀/酱/同学…）</label>
-  <div class="field-label" style="margin-top:12px;"><span>结果</span></div>
-  <div id="nk-out" class="nk-out">点击生成</div>
+  <label class="chk"><input type="checkbox" id="nk-suf" checked> {tu(lang, '加后缀（呀')}/{tu(lang, '酱')}/{tu(lang, '同学')}…）</label>
+  <div class="field-label" style="margin-top:12px;"><span>{tu(lang, '结果')}</span></div>
+  <div id="nk-out" class="nk-out">{tu(lang, '点击生成')}</div>
 </div>
 <div class="btn-row">
-  <button id="nk-gen" class="primary">生成</button>
-  <button id="nk-copy">复制</button>
+  <button id="nk-gen" class="primary">{tu(lang, '生成')}</button>
+  <button id="nk-copy">{tu(lang, '复制')}</button>
   <span id="nk-msg" class="msg"></span>
 </div>
 
@@ -19,11 +23,13 @@
   .nk-out { border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; min-height: 80px; line-height: 2; background: var(--bg-soft); word-break: break-all; }
 </style>
 
-<script>
+<script>import { tu, currentLang } from '../../i18n/toolUi.ts';
+const LANG = currentLang();
+
   const $ = (id) => document.getElementById(id);
-  const ADJ = ['安静的', '快乐', '迷糊', '温柔', '酷酷', '软萌', '元气', '佛系', '文艺', '暴躁', '清冷', '甜甜', '咸鱼', '热血', '慢半拍', '爱睡', '话少', '摸鱼', '半糖', '微醺'];
-  const NOUN = ['小猫', '星辰', '月亮', '橘子', '海风', '云朵', '柚子', '苏打', '鹿', '鲸鱼', '栗子', '兔子', '山茶', '麦穗', '泡芙', '布丁', '海盐', '椰汁', '风铃', '苔藓'];
-  const SUF = ['呀', '酱', '同学', '君', '小', '本尊', 'ing', '酱紫', 'kid', '君'];
+  const ADJ = [tu(LANG, '安静的'), tu(LANG, '快乐'), tu(LANG, '迷糊'), tu(LANG, '温柔'), tu(LANG, '酷酷'), tu(LANG, '软萌'), tu(LANG, '元气'), tu(LANG, '佛系'), tu(LANG, '文艺'), tu(LANG, '暴躁'), tu(LANG, '清冷'), tu(LANG, '甜甜'), tu(LANG, '咸鱼'), tu(LANG, '热血'), tu(LANG, '慢半拍'), tu(LANG, '爱睡'), tu(LANG, '话少'), tu(LANG, '摸鱼'), tu(LANG, '半糖'), tu(LANG, '微醺')];
+  const NOUN = [tu(LANG, '小猫'), tu(LANG, '星辰'), tu(LANG, '月亮'), tu(LANG, '橘子'), tu(LANG, '海风'), tu(LANG, '云朵'), tu(LANG, '柚子'), tu(LANG, '苏打'), tu(LANG, '鹿'), tu(LANG, '鲸鱼'), tu(LANG, '栗子'), tu(LANG, '兔子'), tu(LANG, '山茶'), tu(LANG, '麦穗'), tu(LANG, '泡芙'), tu(LANG, '布丁'), tu(LANG, '海盐'), tu(LANG, '椰汁'), tu(LANG, '风铃'), tu(LANG, '苔藓')];
+  const SUF = [tu(LANG, '呀'), tu(LANG, '酱'), tu(LANG, '同学'), tu(LANG, '君'), tu(LANG, '小'), tu(LANG, '本尊'), 'ing', tu(LANG, '酱紫'), 'kid', tu(LANG, '君')];
   const pick = (a) => a[Math.floor(Math.random() * a.length)];
   function gen() {
     const n = Math.max(1, Math.min(20, parseInt($('nk-n').value, 10) || 6));
@@ -38,9 +44,9 @@
   }
   $('nk-gen').addEventListener('click', gen);
   $('nk-copy').addEventListener('click', async () => {
-    if (!$('nk-out').textContent || $('nk-out').textContent === '点击生成') return;
-    try { await navigator.clipboard.writeText($('nk-out').textContent); $('nk-msg').textContent = '已复制'; $('nk-msg').className = 'msg ok'; }
-    catch { $('nk-msg').textContent = '复制失败'; $('nk-msg').className = 'msg err'; }
+    if (!$('nk-out').textContent || $('nk-out').textContent === tu(LANG, '点击生成')) return;
+    try { await navigator.clipboard.writeText($('nk-out').textContent); $('nk-msg').textContent = tu(LANG, '已复制'); $('nk-msg').className = 'msg ok'; }
+    catch { $('nk-msg').textContent = tu(LANG, '复制失败'); $('nk-msg').className = 'msg err'; }
   });
   gen();
 </script>

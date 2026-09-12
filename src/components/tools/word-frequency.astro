@@ -1,20 +1,24 @@
 ---
+import { tu } from '../../i18n/toolUi.ts';
 // 词频统计：本地计数
+interface Props { lang?: string }
+const { lang = 'zh' } = Astro.props;
+
 ---
 <div class="pane">
   <div>
-    <div class="field-label"><span>输入文本</span></div>
-    <textarea id="wf-in" placeholder="粘贴文章或段落"></textarea>
-    <div class="field-label" style="margin-top:10px;"><span>显示前 N 个</span></div>
+    <div class="field-label"><span>{tu(lang, '输入文本')}</span></div>
+    <textarea id="wf-in" placeholder={tu(lang, '粘贴文章或段落')}></textarea>
+    <div class="field-label" style="margin-top:10px;"><span>{tu(lang, '显示前 N 个')}</span></div>
     <input type="number" id="wf-n" min="5" max="50" value="15">
   </div>
   <div>
-    <div class="field-label"><span>词频（中文按字、英文按词）</span></div>
-    <div id="wf-out" class="wf-out">等待统计</div>
+    <div class="field-label"><span>{tu(lang, '词频（中文按字、英文按词')}）</span></div>
+    <div id="wf-out" class="wf-out">{tu(lang, '等待统计')}</div>
   </div>
 </div>
 <div class="btn-row">
-  <button id="wf-run" class="primary">统计</button>
+  <button id="wf-run" class="primary">{tu(lang, '统计')}</button>
   <span id="wf-msg" class="msg"></span>
 </div>
 
@@ -24,11 +28,13 @@
   .wf-out .bar { height: 8px; background: var(--link); border-radius: 4px; }
 </style>
 
-<script>
+<script>import { tu, currentLang } from '../../i18n/toolUi.ts';
+const LANG = currentLang();
+
   const $ = (id) => document.getElementById(id);
   $('wf-run').addEventListener('click', () => {
     const text = $('wf-in').value;
-    if (!text) { $('wf-out').textContent = '等待统计'; return; }
+    if (!text) { $('wf-out').textContent = tu(LANG, '等待统计'); return; }
     const cnt = {};
     const en = text.toLowerCase().match(/[a-z0-9]+/g) || [];
     en.forEach((w) => { cnt[w] = (cnt[w] || 0) + 1; });

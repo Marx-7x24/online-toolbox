@@ -1,29 +1,33 @@
 ---
+import { tu } from '../../i18n/toolUi.ts';
 // Word(docx) 转 PDF：mammoth.js 读 docx → 渲染到 canvas → 嵌入 PDF（简化版）
+interface Props { lang?: string }
+const { lang = 'zh' } = Astro.props;
+
 ---
 <div class="pane">
   <div>
-    <div class="field-label"><span>选择 Word 文件（.docx）</span></div>
+    <div class="field-label"><span>{tu(lang, '选择 Word 文件')}（.docx）</span></div>
     <input type="file" id="w2p-file" accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document">
-    <div class="field-label" style="margin-top:14px"><span>页面尺寸</span></div>
+    <div class="field-label" style="margin-top:14px"><span>{tu(lang, '页面尺寸')}</span></div>
     <select id="w2p-size" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:6px">
       <option value="a4">A4 (210 × 297 mm)</option>
       <option value="letter">Letter</option>
       <option value="a3">A3</option>
     </select>
-    <div class="field-label" style="margin-top:14px"><span>字号 <span id="w2p-sv">14</span> pt</span></div>
+    <div class="field-label" style="margin-top:14px"><span>{tu(lang, '字号')} <span id="w2p-sv">14</span> pt</span></div>
     <input type="range" id="w2p-font" min="9" max="24" value="14" style="width:100%">
-    <p style="font-size:12px;color:#999;margin-top:8px">⚠️ Word 转 PDF 在浏览器端无法完美保真。本工具将 .docx 转 HTML 后按段落渲染到 PDF 页面，复杂表格/图片可能丢失或错位。建议用 Word/WPS 直接另存。</p>
+    <p style="font-size:12px;color:#999;margin-top:8px">⚠️ Word {tu(lang, '转 PDF 在浏览器端无法完美保真。本工具将 .docx 转 HTML 后按段落渲染到 PDF 页面，复杂表格')}/{tu(lang, '图片可能丢失或错位。建议用')} Word/WPS {tu(lang, '直接另存。')}</p>
   </div>
   <div>
-    <div class="field-label"><span>提取预览</span></div>
+    <div class="field-label"><span>{tu(lang, '提取预览')}</span></div>
     <div id="w2p-preview" class="w2p-preview"></div>
   </div>
 </div>
 <div class="btn-row">
-  <button id="w2p-run" class="primary">转换为 PDF</button>
-  <button id="w2p-dl">下载</button>
-  <button id="w2p-reset">重置</button>
+  <button id="w2p-run" class="primary">{tu(lang, '转换为')} PDF</button>
+  <button id="w2p-dl">{tu(lang, '下载')}</button>
+  <button id="w2p-reset">{tu(lang, '重置')}</button>
   <span id="w2p-msg" class="msg"></span>
 </div>
 
@@ -35,7 +39,9 @@
   .w2p-preview:empty::before { content: '尚未转换'; color: #999; }
 </style>
 
-<script>
+<script>import { tu, currentLang } from '../../i18n/toolUi.ts';
+const LANG = currentLang();
+
   const $ = (id) => document.getElementById(id);
   let sourceFile = null;
   let outBlob = null;
@@ -102,8 +108,8 @@
   }
 
   $('w2p-run').addEventListener('click', async () => {
-    if (!sourceFile) { $('w2p-msg').textContent = '请先选择 docx'; $('w2p-msg').className = 'msg err'; return; }
-    $('w2p-msg').textContent = '加载转换器…'; $('w2p-msg').className = 'msg';
+    if (!sourceFile) { $('w2p-msg').textContent = tu(LANG, '请先选择 docx'); $('w2p-msg').className = 'msg err'; return; }
+    $('w2p-msg').textContent = tu(LANG, '加载转换器…'); $('w2p-msg').className = 'msg';
     try {
       const mammoth = await loadMammoth();
       const PDFLib = await loadPdfLib();
@@ -149,7 +155,7 @@
       $('w2p-msg').textContent = `成功 · ${lines.length} 行 / ${totalPages} 页 · ${(outBlob.size/1024).toFixed(1)} KB`;
       $('w2p-msg').className = 'msg ok';
     } catch (err) {
-      $('w2p-msg').textContent = '失败：' + err.message;
+      $('w2p-msg').textContent = tu(LANG, '失败：') + err.message;
       $('w2p-msg').className = 'msg err';
     }
   });

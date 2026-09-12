@@ -1,59 +1,66 @@
 ---
+import { tu } from '../../i18n/toolUi.ts';
+
+interface Props { lang?: string }
+const { lang = 'zh' } = Astro.props;
+
 ---
 
-<div class="tip">仅做号码规则校验与公开规则推算，不查询任何官方数据库，请勿用于身份冒用。</div>
+<div class="tip">{tu(lang, '仅做号码规则校验与公开规则推算，不查询任何官方数据库，请勿用于身份冒用。')}</div>
 
 <div style="max-width:460px;">
-  <div class="field-label"><span>身份证号码</span></div>
-  <input type="text" id="ic-in" placeholder="输入 18 位身份证号码" maxlength="18" spellcheck="false" />
+  <div class="field-label"><span>{tu(lang, '身份证号码')}</span></div>
+  <input type="text" id="ic-in" placeholder={tu(lang, '输入 18 位身份证号码')} maxlength="18" spellcheck="false" />
 </div>
 
 <div class="btn-row">
-  <button class="primary" id="ic-go">解析</button>
-  <button id="ic-gen">生成测试号码</button>
-  <button id="ic-clear">清空</button>
+  <button class="primary" id="ic-go">{tu(lang, '解析')}</button>
+  <button id="ic-gen">{tu(lang, '生成测试号码')}</button>
+  <button id="ic-clear">{tu(lang, '清空')}</button>
 </div>
 
 <div id="ic-result"></div>
 
 <p class="msg" id="ic-msg"></p>
 
-<script>
+<script>import { tu, currentLang } from '../../i18n/toolUi.ts';
+const LANG = currentLang();
+
   const $ = (id) => document.getElementById(id);
 
   const PROVINCE = {
-    11: '北京市', 12: '天津市', 13: '河北省', 14: '山西省', 15: '内蒙古自治区',
-    21: '辽宁省', 22: '吉林省', 23: '黑龙江省',
-    31: '上海市', 32: '江苏省', 33: '浙江省', 34: '安徽省', 35: '福建省', 36: '江西省', 37: '山东省',
-    41: '河南省', 42: '湖北省', 43: '湖南省', 44: '广东省', 45: '广西壮族自治区', 46: '海南省',
-    50: '重庆市', 51: '四川省', 52: '贵州省', 53: '云南省', 54: '西藏自治区',
-    61: '陕西省', 62: '甘肃省', 63: '青海省', 64: '宁夏回族自治区', 65: '新疆维吾尔自治区',
-    71: '台湾省', 81: '香港特别行政区', 82: '澳门特别行政区',
+    11: tu(LANG, '北京市'), 12: tu(LANG, '天津市'), 13: tu(LANG, '河北省'), 14: tu(LANG, '山西省'), 15: tu(LANG, '内蒙古自治区'),
+    21: tu(LANG, '辽宁省'), 22: tu(LANG, '吉林省'), 23: tu(LANG, '黑龙江省'),
+    31: tu(LANG, '上海市'), 32: tu(LANG, '江苏省'), 33: tu(LANG, '浙江省'), 34: tu(LANG, '安徽省'), 35: tu(LANG, '福建省'), 36: tu(LANG, '江西省'), 37: tu(LANG, '山东省'),
+    41: tu(LANG, '河南省'), 42: tu(LANG, '湖北省'), 43: tu(LANG, '湖南省'), 44: tu(LANG, '广东省'), 45: tu(LANG, '广西壮族自治区'), 46: tu(LANG, '海南省'),
+    50: tu(LANG, '重庆市'), 51: tu(LANG, '四川省'), 52: tu(LANG, '贵州省'), 53: tu(LANG, '云南省'), 54: tu(LANG, '西藏自治区'),
+    61: tu(LANG, '陕西省'), 62: tu(LANG, '甘肃省'), 63: tu(LANG, '青海省'), 64: tu(LANG, '宁夏回族自治区'), 65: tu(LANG, '新疆维吾尔自治区'),
+    71: tu(LANG, '台湾省'), 81: tu(LANG, '香港特别行政区'), 82: tu(LANG, '澳门特别行政区'),
   };
 
   const WEIGHT = [7, 9, 10, 5, 8, 4, 2, 1, 6, 3, 7, 9, 10, 5, 8, 4, 2];
   const CHECK = ['1', '0', 'X', '9', '8', '7', '6', '5', '4', '3', '2'];
 
   function validate(id) {
-    if (!/^\d{17}[\dXx]$/.test(id)) return { ok: false, reason: '格式不正确，应为 17 位数字加 1 位数字或 X' };
+    if (!/^\d{17}[\dXx]$/.test(id)) return { ok: false, reason: tu(LANG, '格式不正确，应为 17 位数字加 1 位数字或 X') };
     const sum = WEIGHT.reduce((acc, w, i) => acc + Number(id[i]) * w, 0);
     const expect = CHECK[sum % 11];
-    if (expect !== id[17].toUpperCase()) return { ok: false, reason: '校验位不通过，号码可能有误' };
+    if (expect !== id[17].toUpperCase()) return { ok: false, reason: tu(LANG, '校验位不通过，号码可能有误') };
     const y = +id.slice(6, 10), m = +id.slice(10, 12), d = +id.slice(12, 14);
     const birth = new Date(y, m - 1, d);
     if (birth.getFullYear() !== y || birth.getMonth() !== m - 1 || birth.getDate() !== d) {
-      return { ok: false, reason: '出生日期不合法' };
+      return { ok: false, reason: tu(LANG, '出生日期不合法') };
     }
-    if (birth > new Date()) return { ok: false, reason: '出生日期晚于今天' };
+    if (birth > new Date()) return { ok: false, reason: tu(LANG, '出生日期晚于今天') };
     return { ok: true, birth };
   }
 
   function zodiac(y) {
-    const animals = ['鼠', '牛', '虎', '兔', '龙', '蛇', '马', '羊', '猴', '鸡', '狗', '猪'];
+    const animals = [tu(LANG, '鼠'), tu(LANG, '牛'), tu(LANG, '虎'), tu(LANG, '兔'), tu(LANG, '龙'), tu(LANG, '蛇'), tu(LANG, '马'), tu(LANG, '羊'), tu(LANG, '猴'), tu(LANG, '鸡'), tu(LANG, '狗'), tu(LANG, '猪')];
     return animals[((y - 4) % 12 + 12) % 12];
   }
   function constellation(m, d) {
-    const s = ['摩羯座', '水瓶座', '双鱼座', '白羊座', '金牛座', '双子座', '巨蟹座', '狮子座', '处女座', '天秤座', '天蝎座', '射手座', '摩羯座'];
+    const s = [tu(LANG, '摩羯座'), tu(LANG, '水瓶座'), tu(LANG, '双鱼座'), tu(LANG, '白羊座'), tu(LANG, '金牛座'), tu(LANG, '双子座'), tu(LANG, '巨蟹座'), tu(LANG, '狮子座'), tu(LANG, '处女座'), tu(LANG, '天秤座'), tu(LANG, '天蝎座'), tu(LANG, '射手座'), tu(LANG, '摩羯座')];
     const c = [20, 19, 21, 20, 21, 22, 23, 23, 23, 24, 23, 22];
     return d < c[m - 1] ? s[m - 1] : s[m];
   }
@@ -71,33 +78,33 @@
     const v = validate(id);
     if (!v.ok) {
       box.innerHTML = '';
-      msg.textContent = '校验未通过：' + v.reason;
+      msg.textContent = tu(LANG, '校验未通过：') + v.reason;
       msg.className = 'msg err';
       return;
     }
     const b = v.birth;
     const year = b.getFullYear(), month = b.getMonth() + 1, day = b.getDate();
-    const gender = Number(id[16]) % 2 === 1 ? '男' : '女';
+    const gender = Number(id[16]) % 2 === 1 ? '男' : tu(LANG, '女');
     const rows = [
-      ['校验结果', '号码规则校验通过'],
-      ['出生日期', `${year} 年 ${month} 月 ${day} 日`],
-      ['性别', gender],
-      ['周岁年龄', age(b) + ' 岁'],
-      ['发证地区', PROVINCE[id.slice(0, 2)] || '未知地区码 ' + id.slice(0, 2)],
-      ['地区代码', id.slice(0, 6)],
-      ['生肖', zodiac(year) + '年'],
-      ['星座', constellation(month, day)],
+      [tu(LANG, '校验结果'), tu(LANG, '号码规则校验通过')],
+      [tu(LANG, '出生日期'), `${year} 年 ${month} 月 ${day} 日`],
+      [tu(LANG, '性别'), gender],
+      [tu(LANG, '周岁年龄'), age(b) + tu(LANG, ' 岁')],
+      [tu(LANG, '发证地区'), PROVINCE[id.slice(0, 2)] || tu(LANG, '未知地区码 ') + id.slice(0, 2)],
+      [tu(LANG, '地区代码'), id.slice(0, 6)],
+      [tu(LANG, '生肖'), zodiac(year) + tu(LANG, '年')],
+      [tu(LANG, '星座'), constellation(month, day)],
     ];
     box.innerHTML = '<table class="result-table" style="margin-top:14px;max-width:560px;">' +
       rows.map(([k, val]) => `<tr><th>${k}</th><td>${val}</td></tr>`).join('') +
       '</table>';
-    msg.textContent = '解析完成';
+    msg.textContent = tu(LANG, '解析完成');
     msg.className = 'msg ok';
   }
 
   $('ic-go').onclick = () => {
     const id = $('ic-in').value.trim().toUpperCase();
-    if (!id) { $('ic-msg').textContent = '请输入身份证号码'; $('ic-msg').className = 'msg err'; return; }
+    if (!id) { $('ic-msg').textContent = tu(LANG, '请输入身份证号码'); $('ic-msg').className = 'msg err'; return; }
     render(id);
   };
 

@@ -1,26 +1,30 @@
 ---
+import { tu } from '../../i18n/toolUi.ts';
 // APNG → 多张 PNG（懒加载 upng-js）
+interface Props { lang?: string }
+const { lang = 'zh' } = Astro.props;
+
 ---
 <div class="pane">
   <div>
-    <div class="field-label"><span>选择 APNG 动图</span></div>
+    <div class="field-label"><span>{tu(lang, '选择 APNG 动图')}</span></div>
     <input type="file" id="ifapng-file" accept=".apng,image/apng,image/png">
     <div id="ifapng-info" class="msg"></div>
     <p style="font-size:12px;color:#999;margin-top:8px">
-      APNG 是带动画的 PNG，绝大多数浏览器（如 Chrome/Safari/Edge）都不原生解码播放。
-      本工具可拆出每一帧为独立 PNG 文件，ZIP 打包下载。
-      <br>首次使用需联网加载 upng-js ~10KB。
+      APNG {tu(lang, '是带动画的 PNG，绝大多数浏览器（如')} Chrome/Safari/Edge）{tu(lang, '都不原生解码播放。')}
+      {tu(lang, '本工具可拆出每一帧为独立 PNG 文件，ZIP 打包下载。')}
+      <br>{tu(lang, '首次使用需联网加载')} upng-js ~10KB。
     </p>
   </div>
   <div>
-    <div class="field-label"><span>帧预览</span></div>
+    <div class="field-label"><span>{tu(lang, '帧预览')}</span></div>
     <div id="ifapng-preview" class="ifapng-preview"></div>
   </div>
 </div>
 <div class="btn-row">
-  <button id="ifapng-run" class="primary">拆解为帧</button>
-  <button id="ifapng-dl">打包下载 PNG</button>
-  <button id="ifapng-reset">重置</button>
+  <button id="ifapng-run" class="primary">{tu(lang, '拆解为帧')}</button>
+  <button id="ifapng-dl">{tu(lang, '打包下载')} PNG</button>
+  <button id="ifapng-reset">{tu(lang, '重置')}</button>
   <span id="ifapng-msg" class="msg"></span>
 </div>
 
@@ -30,7 +34,9 @@
   .ifapng-preview:empty::before { content: '尚未拆解'; color: #999; }
 </style>
 
-<script>
+<script>import { tu, currentLang } from '../../i18n/toolUi.ts';
+const LANG = currentLang();
+
   const $ = (id) => document.getElementById(id);
   let sourceFile = null;
   let frameBlobs = []; // 每帧 PNG Blob
@@ -59,8 +65,8 @@
   }
 
   $('ifapng-run').addEventListener('click', async () => {
-    if (!sourceFile) { $('ifapng-msg').textContent = '请先选择 APNG 文件'; $('ifapng-msg').className = 'msg err'; return; }
-    $('ifapng-msg').textContent = '加载解码器…'; $('ifapng-msg').className = 'msg';
+    if (!sourceFile) { $('ifapng-msg').textContent = tu(LANG, '请先选择 APNG 文件'); $('ifapng-msg').className = 'msg err'; return; }
+    $('ifapng-msg').textContent = tu(LANG, '加载解码器…'); $('ifapng-msg').className = 'msg';
     try {
       const UPNG = await loadUpng();
       const buf = await sourceFile.arrayBuffer();
@@ -100,13 +106,13 @@
       $('ifapng-msg').textContent = `拆解完成 · ${frameBlobs.length} 帧`;
       $('ifapng-msg').className = 'msg ok';
     } catch (err) {
-      $('ifapng-msg').textContent = '拆解失败：' + (err.message || '可能不是有效的 APNG');
+      $('ifapng-msg').textContent = tu(LANG, '拆解失败：') + (err.message || tu(LANG, '可能不是有效的 APNG'));
       $('ifapng-msg').className = 'msg err';
     }
   });
 
   $('ifapng-dl').addEventListener('click', async () => {
-    if (!frameBlobs.length) { $('ifapng-msg').textContent = '请先拆解'; $('ifapng-msg').className = 'msg err'; return; }
+    if (!frameBlobs.length) { $('ifapng-msg').textContent = tu(LANG, '请先拆解'); $('ifapng-msg').className = 'msg err'; return; }
     // 直接逐帧下载（无 ZIP 库时）
     if (frameBlobs.length === 1) {
       const a = document.createElement('a');
@@ -114,7 +120,7 @@
       a.download = frameNames[0]; a.click();
       return;
     }
-    $('ifapng-msg').textContent = '正在逐帧下载…'; $('ifapng-msg').className = 'msg';
+    $('ifapng-msg').textContent = tu(LANG, '正在逐帧下载…'); $('ifapng-msg').className = 'msg';
     for (let i = 0; i < frameBlobs.length; i++) {
       const a = document.createElement('a');
       a.href = URL.createObjectURL(frameBlobs[i]);

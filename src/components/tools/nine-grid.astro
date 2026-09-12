@@ -1,26 +1,30 @@
 ---
+import { tu } from '../../i18n/toolUi.ts';
 // 朋友圈九宫格生成器：上传图片自动切 3×3（可调行列）九宫格，实时预览，打包 ZIP 下载。纯前端，无依赖。
+interface Props { lang?: string }
+const { lang = 'zh' } = Astro.props;
+
 ---
 <div class="pane">
   <div>
-    <div class="field-label"><span>上传图片</span></div>
+    <div class="field-label"><span>{tu(lang, '上传图片')}</span></div>
     <input type="file" id="ng-file" accept="image/*">
     <div id="ng-info" style="font-size:12px;color:var(--text-sub);margin-top:6px"></div>
 
-    <div class="field-label" style="margin-top:14px"><span>切割行列</span></div>
+    <div class="field-label" style="margin-top:14px"><span>{tu(lang, '切割行列')}</span></div>
     <div style="display:flex;gap:14px;align-items:center">
-      <label style="font-size:14px">行 <input type="number" id="ng-rows" min="1" max="6" value="3" style="width:56px;padding:6px;border:1px solid var(--border-color);border-radius:6px"></label>
-      <label style="font-size:14px">列 <input type="number" id="ng-cols" min="1" max="6" value="3" style="width:56px;padding:6px;border:1px solid var(--border-color);border-radius:6px"></label>
+      <label style="font-size:14px">{tu(lang, '行')} <input type="number" id="ng-rows" min="1" max="6" value="3" style="width:56px;padding:6px;border:1px solid var(--border-color);border-radius:6px"></label>
+      <label style="font-size:14px">{tu(lang, '列')} <input type="number" id="ng-cols" min="1" max="6" value="3" style="width:56px;padding:6px;border:1px solid var(--border-color);border-radius:6px"></label>
     </div>
 
     <div class="btn-row" style="margin-top:16px">
-      <button id="ng-zip" class="primary">打包 ZIP 下载</button>
-      <button id="ng-clear">清空</button>
+      <button id="ng-zip" class="primary">{tu(lang, '打包 ZIP 下载')}</button>
+      <button id="ng-clear">{tu(lang, '清空')}</button>
     </div>
     <p class="msg" id="ng-msg"></p>
   </div>
   <div>
-    <div class="field-label"><span>预览（编号 1-9）</span></div>
+    <div class="field-label"><span>{tu(lang, '预览（编号')} 1-9）</span></div>
     <div id="ng-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:4px;max-width:360px;margin:0 auto;background:#ededed;padding:4px;border-radius:10px"></div>
   </div>
 </div>
@@ -31,7 +35,9 @@
   .ng-cell span { position:absolute; top:4px; left:6px; font-size:13px; color:#fff; text-shadow:0 1px 2px rgba(0,0,0,.7); font-weight:600; }
 </style>
 
-<script>
+<script>import { tu, currentLang } from '../../i18n/toolUi.ts';
+const LANG = currentLang();
+
 const $ = (id) => document.getElementById(id);
 let imgEl = null, srcUrl = null;
 
@@ -39,7 +45,7 @@ $('ng-file').addEventListener('change', e => {
   const f = e.target.files[0]; if (!f) return;
   const url = URL.createObjectURL(f);
   const img = new Image();
-  img.onload = () => { imgEl = img; srcUrl = url; $('ng-info').textContent = '已加载 ' + img.width + '×' + img.height; render(); };
+  img.onload = () => { imgEl = img; srcUrl = url; $('ng-info').textContent = tu(LANG, '已加载 ') + img.width + '×' + img.height; render(); };
   img.src = url;
 });
 
@@ -130,15 +136,15 @@ $('ng-zip').addEventListener('click', async () => {
   const rows = Math.max(1, Math.min(6, +$('ng-rows').value || 3));
   const cols = Math.max(1, Math.min(6, +$('ng-cols').value || 3));
   const cells = slice(rows, cols);
-  if (!cells.length){ $('ng-msg').textContent='请先上传图片'; $('ng-msg').className='msg err'; return; }
-  $('ng-msg').textContent='打包中…'; $('ng-msg').className='msg';
+  if (!cells.length){ $('ng-msg').textContent=tu(LANG, '请先上传图片'); $('ng-msg').className='msg err'; return; }
+  $('ng-msg').textContent=tu(LANG, '打包中…'); $('ng-msg').className='msg';
   try {
     const files = await Promise.all(cells.map(cell => new Promise(res => cell.canvas.toBlob(b => res({ name: 'grid_' + cell.idx + '.png', blob: b }), 'image/png'))));
     const zip = await makeZip(files);
     const a = document.createElement('a'); a.href = URL.createObjectURL(zip); a.download = 'nine-grid.zip'; a.click();
-    $('ng-msg').textContent = '已打包 ' + cells.length + ' 张切片（nine-grid.zip）'; $('ng-msg').className = 'msg ok';
+    $('ng-msg').textContent = tu(LANG, '已打包 ') + cells.length + tu(LANG, ' 张切片（nine-grid.zip）'); $('ng-msg').className = 'msg ok';
   } catch (e){
-    $('ng-msg').textContent = '打包失败：' + (e.message || e); $('ng-msg').className = 'msg err';
+    $('ng-msg').textContent = tu(LANG, '打包失败：') + (e.message || e); $('ng-msg').className = 'msg err';
   }
 });
 

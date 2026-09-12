@@ -1,37 +1,44 @@
 ---
+import { tu } from '../../i18n/toolUi.ts';
+
+interface Props { lang?: string }
+const { lang = 'zh' } = Astro.props;
+
 ---
 
 <div style="max-width:760px;">
-  <div class="field-label"><span>输入文本</span></div>
-  <textarea id="tc-in" placeholder="输入要转换的文本，如 hello world 或 user_name" style="min-height:110px;">hello world example</textarea>
+  <div class="field-label"><span>{tu(lang, '输入文本')}</span></div>
+  <textarea id="tc-in" placeholder="{tu(lang, '输入要转换的文本，如 hello world 或')} user_name" style="min-height:110px;">hello world example</textarea>
 </div>
 
 <div class="btn-row">
-  <button data-mode="lower">全小写</button>
-  <button data-mode="upper">全大写</button>
-  <button data-mode="capital">首字母大写</button>
-  <button data-mode="title">标题式大写</button>
-  <button data-mode="camel">小驼峰</button>
-  <button data-mode="pascal">大驼峰</button>
-  <button data-mode="snake">下划线 snake_case</button>
-  <button data-mode="kebab">中划线 kebab-case</button>
-  <button data-mode="constant">常量 CONSTANT_CASE</button>
-  <button data-mode="invert">反转大小写</button>
+  <button data-mode="lower">{tu(lang, '全小写')}</button>
+  <button data-mode="upper">{tu(lang, '全大写')}</button>
+  <button data-mode="capital">{tu(lang, '首字母大写')}</button>
+  <button data-mode="title">{tu(lang, '标题式大写')}</button>
+  <button data-mode="camel">{tu(lang, '小驼峰')}</button>
+  <button data-mode="pascal">{tu(lang, '大驼峰')}</button>
+  <button data-mode="snake">{tu(lang, '下划线')} snake_case</button>
+  <button data-mode="kebab">{tu(lang, '中划线')} kebab-case</button>
+  <button data-mode="constant">{tu(lang, '常量')} CONSTANT_CASE</button>
+  <button data-mode="invert">{tu(lang, '反转大小写')}</button>
 </div>
 
 <div style="max-width:760px;">
-  <div class="field-label"><span>结果</span></div>
+  <div class="field-label"><span>{tu(lang, '结果')}</span></div>
   <textarea id="tc-out" readonly style="min-height:110px;"></textarea>
 </div>
 
 <div class="btn-row">
-  <button class="primary" id="tc-copy">复制结果</button>
-  <button id="tc-clear">清空</button>
+  <button class="primary" id="tc-copy">{tu(lang, '复制结果')}</button>
+  <button id="tc-clear">{tu(lang, '清空')}</button>
 </div>
 
 <p class="msg" id="tc-msg"></p>
 
-<script>
+<script>import { tu, currentLang } from '../../i18n/toolUi.ts';
+const LANG = currentLang();
+
   const $ = (id) => document.getElementById(id);
 
   // 把任意写法拆成单词数组
@@ -61,9 +68,9 @@
   document.querySelectorAll('button[data-mode]').forEach((btn) => {
     btn.onclick = () => {
       const raw = $('tc-in').value;
-      if (!raw) { $('tc-msg').textContent = '请先输入内容'; $('tc-msg').className = 'msg err'; return; }
+      if (!raw) { $('tc-msg').textContent = tu(LANG, '请先输入内容'); $('tc-msg').className = 'msg err'; return; }
       $('tc-out').value = MODE[btn.dataset.mode](raw);
-      $('tc-msg').textContent = '已转换为 ' + btn.textContent;
+      $('tc-msg').textContent = tu(LANG, '已转换为 ') + btn.textContent;
       $('tc-msg').className = 'msg ok';
     };
   });
@@ -71,7 +78,7 @@
   $('tc-copy').onclick = async () => {
     if (!$('tc-out').value) return;
     await navigator.clipboard.writeText($('tc-out').value);
-    $('tc-msg').textContent = '已复制';
+    $('tc-msg').textContent = tu(LANG, '已复制');
     $('tc-msg').className = 'msg ok';
   };
   $('tc-clear').onclick = () => {

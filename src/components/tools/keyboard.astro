@@ -1,29 +1,35 @@
 ---
+import { tu } from '../../i18n/toolUi.ts';
 // 在线键盘测试：捕获按键，显示键名 / key / code / 修饰键状态
+interface Props { lang?: string }
+const { lang = 'zh' } = Astro.props;
+
 ---
 <div class="pane">
   <div>
-    <div class="field-label"><span>最近按下的键</span></div>
+    <div class="field-label"><span>{tu(lang, '最近按下的键')}</span></div>
     <div id="kb-big" style="height:90px;display:flex;align-items:center;justify-content:center;background:#0f172a;color:#fff;border-radius:10px;font-size:30px;font-weight:700;word-break:break-all;padding:8px;text-align:center">—</div>
-    <div class="field-label" style="margin-top:12px"><span>按键详情</span></div>
+    <div class="field-label" style="margin-top:12px"><span>{tu(lang, '按键详情')}</span></div>
     <table class="result-table"><tbody>
       <tr><th>key</th><td id="kb-key">—</td></tr>
       <tr><th>code</th><td id="kb-code">—</td></tr>
       <tr><th>keyCode</th><td id="kb-codeval">—</td></tr>
       <tr><th>Shift / Ctrl / Alt</th><td id="kb-mod">—</td></tr>
     </tbody></table>
-    <p style="color:var(--text-hint);font-size:12px">在此页面任意位置按键即可测试（已阻止 Tab/空格等默认滚动行为）。</p>
+    <p style="color:var(--text-hint);font-size:12px">{tu(lang, '在此页面任意位置按键即可测试（已阻止')} Tab/{tu(lang, '空格等默认滚动行为）。')}</p>
   </div>
   <div>
-    <div class="field-label"><span>按键记录</span></div>
+    <div class="field-label"><span>{tu(lang, '按键记录')}</span></div>
     <div id="kb-log" style="border:1px solid var(--border-color);border-radius:8px;padding:8px;height:300px;overflow:auto;font-size:13px;font-family:ui-monospace,monospace;background:var(--hover-bg)"></div>
     <div class="btn-row">
-      <button id="kb-clear">清空记录</button>
+      <button id="kb-clear">{tu(lang, '清空记录')}</button>
     </div>
   </div>
 </div>
 
-<script>
+<script>import { tu, currentLang } from '../../i18n/toolUi.ts';
+const LANG = currentLang();
+
   const $ = (id) => document.getElementById(id);
   window.addEventListener('keydown', (e) => {
     e.preventDefault();
@@ -32,7 +38,7 @@
     $('kb-key').textContent = e.key;
     $('kb-code').textContent = e.code;
     $('kb-codeval').textContent = e.keyCode;
-    $('kb-mod').textContent = `${e.shiftKey?'Shift ':''}${e.ctrlKey?'Ctrl ':''}${e.altKey?'Alt ':''}${e.metaKey?'Meta':''}`.trim() || '无';
+    $('kb-mod').textContent = `${e.shiftKey?'Shift ':''}${e.ctrlKey?'Ctrl ':''}${e.altKey?'Alt ':''}${e.metaKey?'Meta':''}`.trim() || tu(LANG, '无');
     const row = document.createElement('div');
     row.textContent = `${new Date().toLocaleTimeString()}  key="${e.key}"  code=${e.code}`;
     $('kb-log').prepend(row);

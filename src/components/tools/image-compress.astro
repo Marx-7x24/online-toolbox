@@ -1,38 +1,45 @@
 ---
+import { tu } from '../../i18n/toolUi.ts';
+
+interface Props { lang?: string }
+const { lang = 'zh' } = Astro.props;
+
 ---
 
-<div class="tip">图片在你的浏览器里用 Canvas 重新编码，全程不上传服务器。可多选批量处理。</div>
+<div class="tip">{tu(lang, '图片在你的浏览器里用 Canvas 重新编码，全程不上传服务器。可多选批量处理。')}</div>
 
-<div class="field-label" style="max-width:520px;"><span>输出格式</span></div>
+<div class="field-label" style="max-width:520px;"><span>{tu(lang, '输出格式')}</span></div>
 <div style="display:flex;gap:10px;flex-wrap:wrap;max-width:520px;">
   <select id="ic-format">
-    <option value="image/jpeg">JPEG（体积小，不支持透明）</option>
-    <option value="image/webp">WebP（体积最小）</option>
-    <option value="image/png">PNG（无损，支持透明）</option>
+    <option value="image/jpeg">JPEG（{tu(lang, '体积小，不支持透明')}）</option>
+    <option value="image/webp">WebP（{tu(lang, '体积最小')}）</option>
+    <option value="image/png">PNG（{tu(lang, '无损，支持透明')}）</option>
   </select>
 </div>
 
 <div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:14px;">
   <div style="min-width:200px;">
-    <div class="field-label"><span>压缩质量</span><span id="ic-q-val">80%</span></div>
+    <div class="field-label"><span>{tu(lang, '压缩质量')}</span><span id="ic-q-val">80%</span></div>
     <input type="range" id="ic-quality" min="10" max="100" value="80" style="padding:0;" />
   </div>
   <div style="min-width:200px;">
-    <div class="field-label"><span>最大边长</span><span id="ic-s-val">不限</span></div>
+    <div class="field-label"><span>{tu(lang, '最大边长')}</span><span id="ic-s-val">{tu(lang, '不限')}</span></div>
     <input type="range" id="ic-scale" min="0" max="100" value="0" style="padding:0;" />
-    <div style="font-size:12px;color:var(--text-hint);">0 表示保持原始尺寸</div>
+    <div style="font-size:12px;color:var(--text-hint);">0 {tu(lang, '表示保持原始尺寸')}</div>
   </div>
 </div>
 
 <div class="btn-row">
   <input type="file" id="ic-file" accept="image/*" multiple style="width:auto;font-family:inherit;padding:6px;border:none;" />
-  <button id="ic-clear">清空列表</button>
+  <button id="ic-clear">{tu(lang, '清空列表')}</button>
 </div>
 
 <p class="msg" id="ic-msg"></p>
 <div id="ic-list"></div>
 
-<script>
+<script>import { tu, currentLang } from '../../i18n/toolUi.ts';
+const LANG = currentLang();
+
   const $ = (id) => document.getElementById(id);
   let items = [];
 
@@ -92,7 +99,7 @@
         <div style="flex:1;min-width:0;">
           <div style="font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${it.name}</div>
           <div style="font-size:12px;color:var(--text-sub);">
-            ${kb(it.inSize)} → ${it.done ? kb(it.outSize) + (saved > 0 ? ` <span style="color:var(--success);">省 ${saved}%</span>` : '') : '压缩中…'}
+            ${kb(it.inSize)} → ${it.done ? kb(it.outSize) + (saved > 0 ? ` <span style="color:var(--success);">省 ${saved}%</span>` : '') : tu(LANG, '压缩中…')}
             ${it.done ? ` · ${it.width}×${it.height}` : ''}
           </div>
         </div>

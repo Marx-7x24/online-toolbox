@@ -1,23 +1,27 @@
 ---
+import { tu } from '../../i18n/toolUi.ts';
 // REM 与 PX 单位转换：px/rem/em/% 互转，基准字号可调
+interface Props { lang?: string }
+const { lang = 'zh' } = Astro.props;
+
 ---
 <div class="pane">
   <div>
-    <div class="field-label"><span>根字号基准（html font-size，默认 16px）</span></div>
+    <div class="field-label"><span>{tu(lang, '根字号基准（html font-size，默认')} 16px）</span></div>
     <input type="number" id="rp-base" value="16" min="1" step="any" style="width:100%;padding:8px;border:1px solid var(--border-color);border-radius:6px;box-sizing:border-box">
-    <div class="field-label" style="margin-top:14px"><span>数值</span></div>
+    <div class="field-label" style="margin-top:14px"><span>{tu(lang, '数值')}</span></div>
     <input type="number" id="rp-val" value="24" step="any" style="width:100%;padding:8px;border:1px solid var(--border-color);border-radius:6px;box-sizing:border-box;font-size:16px">
-    <div class="field-label" style="margin-top:12px"><span>从</span></div>
+    <div class="field-label" style="margin-top:12px"><span>{tu(lang, '从')}</span></div>
     <select id="rp-from" style="width:100%;padding:8px;border:1px solid var(--border-color);border-radius:6px;background:#fff">
-      <option value="px" selected>px（像素）</option>
+      <option value="px" selected>px（{tu(lang, '像素')}）</option>
       <option value="rem">rem</option>
       <option value="em">em</option>
       <option value="pct">%</option>
     </select>
-    <div class="field-label" style="margin-top:12px"><span>到</span></div>
+    <div class="field-label" style="margin-top:12px"><span>{tu(lang, '到')}</span></div>
     <select id="rp-to" style="width:100%;padding:8px;border:1px solid var(--border-color);border-radius:6px;background:#fff">
       <option value="rem" selected>rem</option>
-      <option value="px">px（像素）</option>
+      <option value="px">px（{tu(lang, '像素')}）</option>
       <option value="em">em</option>
       <option value="pct">%</option>
     </select>
@@ -26,10 +30,10 @@
     </div>
   </div>
   <div>
-    <div class="field-label"><span>换算表（基于当前基准）</span></div>
+    <div class="field-label"><span>{tu(lang, '换算表（基于当前基准')}）</span></div>
     <table id="rp-table" style="width:100%;border-collapse:collapse;font-size:14px"></table>
     <div style="margin-top:12px;font-size:12px;color:var(--text-sub);line-height:1.7">
-      说明：rem 相对根字号；em 相对父元素字号（此处按基准估算）；% 相对父元素字号。移动端适配常以 375 设计稿 → html = 100 × (屏宽/375) px。
+      {tu(lang, '说明：rem 相对根字号；em 相对父元素字号（此处按基准估算）；% 相对父元素字号。移动端适配常以 375 设计稿')} → html = 100 × ({tu(lang, '屏宽')}/375) px。
     </div>
   </div>
 </div>

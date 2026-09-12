@@ -1,28 +1,34 @@
 ---
+import { tu } from '../../i18n/toolUi.ts';
 // JSON 转 SQL：把 JSON 数组生成 CREATE TABLE + INSERT 语句
+interface Props { lang?: string }
+const { lang = 'zh' } = Astro.props;
+
 ---
 
 <div class="pane">
   <div>
-    <div class="field-label"><span>输入 JSON 数组</span></div>
+    <div class="field-label"><span>{tu(lang, '输入 JSON 数组')}</span></div>
     <textarea id="jsql-in" placeholder='[{"id":1,"name":"张三","age":20},{"id":2,"name":"李四","age":25}]'></textarea>
   </div>
   <div>
-    <div class="field-label"><span>SQL 输出</span></div>
+    <div class="field-label"><span>SQL {tu(lang, '输出')}</span></div>
     <textarea id="jsql-out" readonly></textarea>
   </div>
 </div>
 <div class="btn-row">
-  <button id="jsql-run" class="primary">生成 SQL</button>
-  <button id="jsql-copy">复制结果</button>
-  <button id="jsql-download">下载 .sql</button>
+  <button id="jsql-run" class="primary">{tu(lang, '生成')} SQL</button>
+  <button id="jsql-copy">{tu(lang, '复制结果')}</button>
+  <button id="jsql-download">{tu(lang, '下载')} .sql</button>
   <label style="font-size:13px;color:var(--text-sub);display:flex;align-items:center;gap:6px;margin:0;">
-    表名 <input type="text" id="jsql-table" value="my_table" style="width:110px;height:36px;" />
+    {tu(lang, '表名')} <input type="text" id="jsql-table" value="my_table" style="width:110px;height:36px;" />
   </label>
   <span id="jsql-msg" class="msg"></span>
 </div>
 
-<script>
+<script>import { tu, currentLang } from '../../i18n/toolUi.ts';
+const LANG = currentLang();
+
   const $ = (id) => document.getElementById(id);
   const input = $('jsql-in'), output = $('jsql-out'), msg = $('jsql-msg'), table = $('jsql-table');
 
@@ -37,7 +43,7 @@
     try {
       const data = JSON.parse(input.value);
       const arr = Array.isArray(data) ? data : [data];
-      if (!arr.length || typeof arr[0] !== 'object' || arr[0] === null) throw new Error('请输入 JSON 对象数组');
+      if (!arr.length || typeof arr[0] !== 'object' || arr[0] === null) throw new Error(tu(LANG, '请输入 JSON 对象数组'));
       const tName = (table.value || 'my_table').replace(/[^A-Za-z0-9_]/g, '_');
       const cols = [];
       arr.forEach((row) => Object.keys(row).forEach((k) => { if (!cols.includes(k)) cols.push(k); }));
@@ -61,14 +67,14 @@
       output.value = lines.join('\n');
       msg.textContent = `已生成 ${arr.length} 条 INSERT`; msg.className = 'msg ok';
     } catch (e) {
-      msg.textContent = '转换失败：' + e.message; msg.className = 'msg err';
+      msg.textContent = tu(LANG, '转换失败：') + e.message; msg.className = 'msg err';
     }
   });
 
   $('jsql-copy').addEventListener('click', async () => {
     if (!output.value) return;
-    try { await navigator.clipboard.writeText(output.value); msg.textContent = '已复制'; msg.className = 'msg ok'; }
-    catch { msg.textContent = '复制失败'; msg.className = 'msg err'; }
+    try { await navigator.clipboard.writeText(output.value); msg.textContent = tu(LANG, '已复制'); msg.className = 'msg ok'; }
+    catch { msg.textContent = tu(LANG, '复制失败'); msg.className = 'msg err'; }
   });
 
   $('jsql-download').addEventListener('click', () => {

@@ -1,25 +1,31 @@
 ---
+import { tu } from '../../i18n/toolUi.ts';
 // YAML 转 JSON（支持常见缩进 YAML：键值、列表、嵌套）
+interface Props { lang?: string }
+const { lang = 'zh' } = Astro.props;
+
 ---
 
 <div class="pane">
   <div>
-    <div class="field-label"><span>输入 YAML</span></div>
-    <textarea id="yj-in" placeholder="name: 张三&#10;age: 20&#10;tags:&#10;  - a&#10;  - b&#10;addr:&#10;  city: 北京"></textarea>
+    <div class="field-label"><span>{tu(lang, '输入')} YAML</span></div>
+    <textarea id="yj-in" placeholder="name: {tu(lang, '张三')}&#10;age: 20&#10;tags:&#10;  - a&#10;  - b&#10;addr:&#10;  city: {tu(lang, '北京')}"></textarea>
   </div>
   <div>
-    <div class="field-label"><span>JSON 输出</span></div>
+    <div class="field-label"><span>JSON {tu(lang, '输出')}</span></div>
     <textarea id="yj-out" readonly></textarea>
   </div>
 </div>
 <div class="btn-row">
-  <button id="yj-run" class="primary">转换为 JSON</button>
-  <button id="yj-copy">复制结果</button>
-  <button id="yj-download">下载 .json</button>
+  <button id="yj-run" class="primary">{tu(lang, '转换为')} JSON</button>
+  <button id="yj-copy">{tu(lang, '复制结果')}</button>
+  <button id="yj-download">{tu(lang, '下载')} .json</button>
   <span id="yj-msg" class="msg"></span>
 </div>
 
-<script>
+<script>import { tu, currentLang } from '../../i18n/toolUi.ts';
+const LANG = currentLang();
+
   const $ = (id) => document.getElementById(id);
   const input = $('yj-in'), output = $('yj-out'), msg = $('yj-msg');
 
@@ -94,20 +100,20 @@
 
   $('yj-run').addEventListener('click', () => {
     try {
-      if (!input.value.trim()) throw new Error('请输入 YAML');
+      if (!input.value.trim()) throw new Error(tu(LANG, '请输入 YAML'));
       const lines = parseLines(input.value);
       const result = build(lines, 0, lines[0].indent);
       output.value = JSON.stringify(result.value, null, 2);
-      msg.textContent = '转换完成（支持常见缩进 YAML 语法）'; msg.className = 'msg ok';
+      msg.textContent = tu(LANG, '转换完成（支持常见缩进 YAML 语法）'); msg.className = 'msg ok';
     } catch (e) {
-      msg.textContent = '转换失败：' + e.message; msg.className = 'msg err';
+      msg.textContent = tu(LANG, '转换失败：') + e.message; msg.className = 'msg err';
     }
   });
 
   $('yj-copy').addEventListener('click', async () => {
     if (!output.value) return;
-    try { await navigator.clipboard.writeText(output.value); msg.textContent = '已复制'; msg.className = 'msg ok'; }
-    catch { msg.textContent = '复制失败'; msg.className = 'msg err'; }
+    try { await navigator.clipboard.writeText(output.value); msg.textContent = tu(LANG, '已复制'); msg.className = 'msg ok'; }
+    catch { msg.textContent = tu(LANG, '复制失败'); msg.className = 'msg err'; }
   });
 
   $('yj-download').addEventListener('click', () => {

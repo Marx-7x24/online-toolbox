@@ -1,39 +1,45 @@
 ---
+import { tu } from '../../i18n/toolUi.ts';
 // URL 解析：拆解协议、主机、路径、查询参数与锚点
+interface Props { lang?: string }
+const { lang = 'zh' } = Astro.props;
+
 ---
 
 <div>
-  <div class="field-label"><span>输入 URL</span></div>
+  <div class="field-label"><span>{tu(lang, '输入')} URL</span></div>
   <input id="up-in" type="text" placeholder="https://example.com/path?a=1&b=2#frag" />
 </div>
 <div class="btn-row">
-  <button id="up-run" class="primary">解析</button>
+  <button id="up-run" class="primary">{tu(lang, '解析')}</button>
   <span id="up-msg" class="msg"></span>
 </div>
 <table id="up-out" class="result-table" style="margin-top:12px; display:none;">
   <tbody>
-    <tr><th>协议</th><td data-k="protocol"></td></tr>
-    <tr><th>主机</th><td data-k="host"></td></tr>
-    <tr><th>端口</th><td data-k="port"></td></tr>
-    <tr><th>路径</th><td data-k="pathname"></td></tr>
-    <tr><th>锚点</th><td data-k="hash"></td></tr>
+    <tr><th>{tu(lang, '协议')}</th><td data-k="protocol"></td></tr>
+    <tr><th>{tu(lang, '主机')}</th><td data-k="host"></td></tr>
+    <tr><th>{tu(lang, '端口')}</th><td data-k="port"></td></tr>
+    <tr><th>{tu(lang, '路径')}</th><td data-k="pathname"></td></tr>
+    <tr><th>{tu(lang, '锚点')}</th><td data-k="hash"></td></tr>
   </tbody>
 </table>
 <div id="up-params" style="margin-top:12px; display:none;">
-  <h3 style="font-size:15px;margin:0 0 8px;">查询参数</h3>
+  <h3 style="font-size:15px;margin:0 0 8px;">{tu(lang, '查询参数')}</h3>
   <table class="result-table"><tbody id="up-params-body"></tbody></table>
 </div>
 
-<script>
+<script>import { tu, currentLang } from '../../i18n/toolUi.ts';
+const LANG = currentLang();
+
   const $ = (id) => document.getElementById(id);
   const input = $('up-in'), msg = $('up-msg'), out = $('up-out'), paramsBox = $('up-params');
 
   $('up-run').addEventListener('click', () => {
     const raw = input.value.trim();
-    if (!raw) { msg.textContent = '请输入 URL'; msg.className = 'msg err'; return; }
+    if (!raw) { msg.textContent = tu(LANG, '请输入 URL'); msg.className = 'msg err'; return; }
     let u;
-    try { u = new URL(raw); } catch { msg.textContent = 'URL 格式无效'; msg.className = 'msg err'; return; }
-    const map = { protocol: u.protocol, host: u.host, port: u.port || '(默认)', pathname: u.pathname, hash: u.hash || '(无)' };
+    try { u = new URL(raw); } catch { msg.textContent = tu(LANG, 'URL 格式无效'); msg.className = 'msg err'; return; }
+    const map = { protocol: u.protocol, host: u.host, port: u.port || tu(LANG, '(默认)'), pathname: u.pathname, hash: u.hash || tu(LANG, '(无)') };
     Object.entries(map).forEach(([k, v]) => { out.querySelector(`[data-k="${k}"]`).textContent = v; });
     out.style.display = '';
     const params = [...u.searchParams.entries()];
@@ -42,7 +48,7 @@
       ? params.map(([k, v]) => `<tr><th>${escapeHtml(k)}</th><td>${escapeHtml(v)}</td></tr>`).join('')
       : '<tr><th>—</th><td>(无参数)</td></tr>';
     paramsBox.style.display = '';
-    msg.textContent = '解析完成'; msg.className = 'msg ok';
+    msg.textContent = tu(LANG, '解析完成'); msg.className = 'msg ok';
   });
 
   function escapeHtml(s) { return String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }

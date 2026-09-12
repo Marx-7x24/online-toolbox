@@ -1,17 +1,21 @@
 ---
+import { tu } from '../../i18n/toolUi.ts';
 // 番茄钟：专注/休息计时器，纯前端，无需登录
+interface Props { lang?: string }
+const { lang = 'zh' } = Astro.props;
+
 ---
 
 <div class="pomo">
   <div class="pomo__mode">
-    <button id="pm-work" class="primary">专注 25:00</button>
-    <button id="pm-break">休息 5:00</button>
+    <button id="pm-work" class="primary">{tu(lang, '专注')} 25:00</button>
+    <button id="pm-break">{tu(lang, '休息')} 5:00</button>
   </div>
   <div id="pm-time" class="pomo__time">25:00</div>
-  <div id="pm-state" class="pomo__state">准备开始</div>
+  <div id="pm-state" class="pomo__state">{tu(lang, '准备开始')}</div>
   <div class="btn-row">
-    <button id="pm-toggle" class="primary">开始</button>
-    <button id="pm-reset">重置</button>
+    <button id="pm-toggle" class="primary">{tu(lang, '开始')}</button>
+    <button id="pm-reset">{tu(lang, '重置')}</button>
     <span id="pm-msg" class="msg"></span>
   </div>
 </div>
@@ -23,7 +27,9 @@
   .pomo__state { color: var(--text-sub); margin-top: 6px; font-size: 14px; }
 </style>
 
-<script>
+<script>import { tu, currentLang } from '../../i18n/toolUi.ts';
+const LANG = currentLang();
+
   const $ = (id) => document.getElementById(id);
   const timeEl = $('pm-time'), stateEl = $('pm-state'), toggleBtn = $('pm-toggle'), msg = $('pm-msg');
   const DURATIONS = { work: 25 * 60, break: 5 * 60 };
@@ -35,19 +41,19 @@
     mode = m; remaining = DURATIONS[m];
     $('pm-work').className = m === 'work' ? 'primary' : '';
     $('pm-break').className = m === 'break' ? 'primary' : '';
-    stateEl.textContent = m === 'work' ? '专注模式' : '休息模式';
+    stateEl.textContent = m === 'work' ? '专注模式' : tu(LANG, '休息模式');
     stop(); render();
   }
   function tick() {
     remaining--;
-    if (remaining <= 0) { stop(); stateEl.textContent = mode === 'work' ? '专注完成，去休息吧！' : '休息结束，继续专注！'; msg.textContent = '时间到'; return; }
+    if (remaining <= 0) { stop(); stateEl.textContent = mode === 'work' ? '专注完成，去休息吧！' : tu(LANG, '休息结束，继续专注！'); msg.textContent = tu(LANG, '时间到'); return; }
     render();
   }
-  function start() { if (timer) return; toggleBtn.textContent = '暂停'; timer = setInterval(tick, 1000); }
-  function stop() { if (timer) { clearInterval(timer); timer = null; } toggleBtn.textContent = '开始'; }
+  function start() { if (timer) return; toggleBtn.textContent = tu(LANG, '暂停'); timer = setInterval(tick, 1000); }
+  function stop() { if (timer) { clearInterval(timer); timer = null; } toggleBtn.textContent = tu(LANG, '开始'); }
 
   toggleBtn.addEventListener('click', () => { timer ? stop() : start(); });
-  $('pm-reset').addEventListener('click', () => { stop(); remaining = DURATIONS[mode]; render(); stateEl.textContent = mode === 'work' ? '专注模式' : '休息模式'; msg.textContent = ''; });
+  $('pm-reset').addEventListener('click', () => { stop(); remaining = DURATIONS[mode]; render(); stateEl.textContent = mode === 'work' ? '专注模式' : tu(LANG, '休息模式'); msg.textContent = ''; });
   $('pm-work').addEventListener('click', () => setMode('work'));
   $('pm-break').addEventListener('click', () => setMode('break'));
   render();

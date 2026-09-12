@@ -1,27 +1,31 @@
 ---
+import { tu } from '../../i18n/toolUi.ts';
 // PDF 转 Word：提取 PDF 文字流输出 .docx（简化版，无样式保真）
+interface Props { lang?: string }
+const { lang = 'zh' } = Astro.props;
+
 ---
 <div class="pane">
   <div>
-    <div class="field-label"><span>选择 PDF 文件</span></div>
+    <div class="field-label"><span>{tu(lang, '选择 PDF 文件')}</span></div>
     <input type="file" id="p2w-file" accept="application/pdf">
-    <div class="field-label" style="margin-top:14px"><span>输出格式</span></div>
+    <div class="field-label" style="margin-top:14px"><span>{tu(lang, '输出格式')}</span></div>
     <select id="p2w-fmt" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:6px">
-      <option value="txt">TXT（纯文本）</option>
-      <option value="md">Markdown（带简单结构）</option>
-      <option value="docx">DOCX（简易 Word）</option>
+      <option value="txt">TXT（{tu(lang, '纯文本')}）</option>
+      <option value="md">Markdown（{tu(lang, '带简单结构')}）</option>
+      <option value="docx">DOCX（{tu(lang, '简易')} Word）</option>
     </select>
-    <p style="font-size:12px;color:#999;margin-top:8px">⚠️ PDF 是版面格式，转换为 Word 必然丢失字体/表格/图片等。本工具仅做"提取文字内容"。</p>
+    <p style="font-size:12px;color:#999;margin-top:8px">⚠️ PDF {tu(lang, '是版面格式，转换为 Word 必然丢失字体')}/{tu(lang, '表格')}/{tu(lang, '图片等。本工具仅做')}"{tu(lang, '提取文字内容')}"。</p>
   </div>
   <div>
-    <div class="field-label"><span>提取预览</span></div>
-    <textarea id="p2w-preview" readonly placeholder="提取的文字将显示在这里"></textarea>
+    <div class="field-label"><span>{tu(lang, '提取预览')}</span></div>
+    <textarea id="p2w-preview" readonly placeholder={tu(lang, '提取的文字将显示在这里')}></textarea>
   </div>
 </div>
 <div class="btn-row">
-  <button id="p2w-run" class="primary">提取</button>
-  <button id="p2w-dl">下载</button>
-  <button id="p2w-reset">重置</button>
+  <button id="p2w-run" class="primary">{tu(lang, '提取')}</button>
+  <button id="p2w-dl">{tu(lang, '下载')}</button>
+  <button id="p2w-reset">{tu(lang, '重置')}</button>
   <span id="p2w-msg" class="msg"></span>
 </div>
 
@@ -29,7 +33,9 @@
   textarea { width: 100%; min-height: 240px; padding: 8px; border: 1px solid var(--border); border-radius: 6px; font-family: inherit; box-sizing: border-box; resize: vertical; }
 </style>
 
-<script>
+<script>import { tu, currentLang } from '../../i18n/toolUi.ts';
+const LANG = currentLang();
+
   const $ = (id) => document.getElementById(id);
   let sourceFile = null;
   let extractedText = '';
@@ -71,8 +77,8 @@
   }
 
   $('p2w-run').addEventListener('click', async () => {
-    if (!sourceFile) { $('p2w-msg').textContent = '请先选择 PDF'; $('p2w-msg').className = 'msg err'; return; }
-    $('p2w-msg').textContent = '提取中…'; $('p2w-msg').className = 'msg';
+    if (!sourceFile) { $('p2w-msg').textContent = tu(LANG, '请先选择 PDF'); $('p2w-msg').className = 'msg err'; return; }
+    $('p2w-msg').textContent = tu(LANG, '提取中…'); $('p2w-msg').className = 'msg';
     try {
       const pdfjs = await loadPdfJs();
       const buf = await sourceFile.arrayBuffer();
@@ -104,7 +110,7 @@
       $('p2w-msg').textContent = `提取完成 · ${pdf.numPages} 页 · ${extractedText.length} 字符`;
       $('p2w-msg').className = 'msg ok';
     } catch (err) {
-      $('p2w-msg').textContent = '失败：' + err.message;
+      $('p2w-msg').textContent = tu(LANG, '失败：') + err.message;
       $('p2w-msg').className = 'msg err';
     }
   });

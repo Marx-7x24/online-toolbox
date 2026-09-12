@@ -1,32 +1,36 @@
 ---
+import { tu } from '../../i18n/toolUi.ts';
 // 相框：上传图片，可叠加多种相框（白边/阴影/复古）
+interface Props { lang?: string }
+const { lang = 'zh' } = Astro.props;
+
 ---
 <div class="pane">
   <div>
-    <div class="field-label"><span>选择图片</span></div>
+    <div class="field-label"><span>{tu(lang, '选择图片')}</span></div>
     <input type="file" id="pf-file" accept="image/*">
-    <div class="field-label" style="margin-top:14px"><span>相框样式</span></div>
+    <div class="field-label" style="margin-top:14px"><span>{tu(lang, '相框样式')}</span></div>
     <select id="pf-style" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:6px">
-      <option value="white">白边相框</option>
-      <option value="shadow">投影相框</option>
-      <option value="retro">复古渐变</option>
-      <option value="gradient">彩色渐变（可换色）</option>
-      <option value="polaroid">拍立得（白边+底部留白）</option>
+      <option value="white">{tu(lang, '白边相框')}</option>
+      <option value="shadow">{tu(lang, '投影相框')}</option>
+      <option value="retro">{tu(lang, '复古渐变')}</option>
+      <option value="gradient">{tu(lang, '彩色渐变（可换色')}）</option>
+      <option value="polaroid">{tu(lang, '拍立得（白边+底部留白')}）</option>
     </select>
-    <div class="field-label" style="margin-top:14px"><span>边框宽度 <span id="pf-wv">40</span> px</span></div>
+    <div class="field-label" style="margin-top:14px"><span>{tu(lang, '边框宽度')} <span id="pf-wv">40</span> px</span></div>
     <input type="range" id="pf-width" min="10" max="120" value="40" style="width:100%">
-    <div class="field-label" style="margin-top:14px"><span>边框颜色</span></div>
+    <div class="field-label" style="margin-top:14px"><span>{tu(lang, '边框颜色')}</span></div>
     <input type="color" id="pf-color" value="#3e2eff" style="width:100%;height:36px;border:1px solid var(--border);border-radius:6px">
   </div>
   <div>
-    <div class="field-label"><span>预览</span></div>
+    <div class="field-label"><span>{tu(lang, '预览')}</span></div>
     <div id="pf-preview" class="pf-preview"></div>
   </div>
 </div>
 <div class="btn-row">
-  <button id="pf-run" class="primary">生成相框</button>
-  <button id="pf-dl">下载</button>
-  <button id="pf-reset">重置</button>
+  <button id="pf-run" class="primary">{tu(lang, '生成相框')}</button>
+  <button id="pf-dl">{tu(lang, '下载')}</button>
+  <button id="pf-reset">{tu(lang, '重置')}</button>
   <span id="pf-msg" class="msg"></span>
 </div>
 
@@ -36,7 +40,9 @@
   .pf-preview:empty::before { content: '尚未生成'; color: #999; }
 </style>
 
-<script>
+<script>import { tu, currentLang } from '../../i18n/toolUi.ts';
+const LANG = currentLang();
+
   const $ = (id) => document.getElementById(id);
   let sourceFile = null;
   let outBlob = null;
@@ -69,7 +75,7 @@
   }
 
   $('pf-run').addEventListener('click', async () => {
-    if (!sourceFile) { $('pf-msg').textContent = '请先选择图片'; $('pf-msg').className = 'msg err'; return; }
+    if (!sourceFile) { $('pf-msg').textContent = tu(LANG, '请先选择图片'); $('pf-msg').className = 'msg err'; return; }
     try {
       const img = await loadImg(sourceFile);
       const style = $('pf-style').value;
@@ -123,12 +129,12 @@
         ctx.fillText('Photo', cw/2, img.height + bw*2 + Math.round(img.width/22));
       }
       outBlob = await new Promise(res => canvas.toBlob(res, 'image/png'));
-      $('pf-preview').innerHTML = '<img alt="预览">';
+      $('pf-preview').innerHTML = '<img alt=tu(LANG, "预览")>';
       $('pf-preview').querySelector('img').src = URL.createObjectURL(outBlob);
       $('pf-msg').textContent = `成功 · ${cw}×${ch} · ${(outBlob.size/1024).toFixed(1)} KB`;
       $('pf-msg').className = 'msg ok';
     } catch (err) {
-      $('pf-msg').textContent = '失败：' + err.message;
+      $('pf-msg').textContent = tu(LANG, '失败：') + err.message;
       $('pf-msg').className = 'msg err';
     }
   });

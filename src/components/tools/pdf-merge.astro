@@ -1,21 +1,28 @@
 ---
+import { tu } from '../../i18n/toolUi.ts';
+
+interface Props { lang?: string }
+const { lang = 'zh' } = Astro.props;
+
 ---
 
-<div class="tip">多个 PDF 在你本地合并，文件不上传服务器，顺序可用上下按钮调整。</div>
+<div class="tip">{tu(lang, '多个 PDF 在你本地合并，文件不上传服务器，顺序可用上下按钮调整。')}</div>
 
 <div class="btn-row" style="align-items:center;">
   <input type="file" id="pm-file" accept="application/pdf" multiple style="width:auto;font-family:inherit;padding:6px;border:none;" />
 </div>
 
 <div class="btn-row">
-  <button class="primary" id="pm-go">合并并下载</button>
-  <button id="pm-clear">清空</button>
+  <button class="primary" id="pm-go">{tu(lang, '合并并下载')}</button>
+  <button id="pm-clear">{tu(lang, '清空')}</button>
 </div>
 
 <p class="msg" id="pm-msg"></p>
 <div id="pm-list"></div>
 
-<script>
+<script>import { tu, currentLang } from '../../i18n/toolUi.ts';
+const LANG = currentLang();
+
   import { PDFDocument } from 'pdf-lib';
 
   const $ = (id) => document.getElementById(id);
@@ -54,8 +61,8 @@
   };
 
   $('pm-go').onclick = async () => {
-    if (files.length < 2) { $('pm-msg').textContent = '请至少选择 2 个 PDF'; $('pm-msg').className = 'msg err'; return; }
-    $('pm-msg').textContent = '合并中…';
+    if (files.length < 2) { $('pm-msg').textContent = tu(LANG, '请至少选择 2 个 PDF'); $('pm-msg').className = 'msg err'; return; }
+    $('pm-msg').textContent = tu(LANG, '合并中…');
     $('pm-msg').className = 'msg';
     try {
       const out = await PDFDocument.create();
@@ -76,7 +83,7 @@
       $('pm-msg').textContent = `已合并 ${files.length} 个文件，共 ${out.getPageCount()} 页`;
       $('pm-msg').className = 'msg ok';
     } catch (e) {
-      $('pm-msg').textContent = '合并失败：' + (e.message || '文件可能已加密或损坏');
+      $('pm-msg').textContent = tu(LANG, '合并失败：') + (e.message || tu(LANG, '文件可能已加密或损坏'));
       $('pm-msg').className = 'msg err';
     }
   };

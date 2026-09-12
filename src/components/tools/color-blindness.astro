@@ -1,32 +1,36 @@
 ---
+import { tu } from '../../i18n/toolUi.ts';
 // 色盲模拟：用 SVG feColorMatrix 滤镜把图片转成不同色盲类型视图
+interface Props { lang?: string }
+const { lang = 'zh' } = Astro.props;
+
 ---
 <div class="pane">
   <div>
-    <div class="field-label"><span>选择图片</span></div>
+    <div class="field-label"><span>{tu(lang, '选择图片')}</span></div>
     <input type="file" id="cb-file" accept="image/*">
-    <div class="field-label" style="margin-top:14px"><span>色盲类型</span></div>
+    <div class="field-label" style="margin-top:14px"><span>{tu(lang, '色盲类型')}</span></div>
     <select id="cb-type" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:6px">
-      <option value="normal">正常（对照）</option>
-      <option value="protanopia">红色盲（Protanopia）</option>
-      <option value="deuteranopia">绿色盲（Deuteranopia）</option>
-      <option value="tritanopia">蓝色盲（Tritanopia）</option>
-      <option value="protanomaly">红色弱（Protanomaly）</option>
-      <option value="deuteranomaly">绿色弱（Deuteranomaly）</option>
-      <option value="tritanomaly">蓝色弱（Tritanomaly）</option>
-      <option value="achromatopsia">全色盲（Achromatopsia）</option>
+      <option value="normal">{tu(lang, '正常（对照')}）</option>
+      <option value="protanopia">{tu(lang, '红色盲')}（Protanopia）</option>
+      <option value="deuteranopia">{tu(lang, '绿色盲')}（Deuteranopia）</option>
+      <option value="tritanopia">{tu(lang, '蓝色盲')}（Tritanopia）</option>
+      <option value="protanomaly">{tu(lang, '红色弱')}（Protanomaly）</option>
+      <option value="deuteranomaly">{tu(lang, '绿色弱')}（Deuteranomaly）</option>
+      <option value="tritanomaly">{tu(lang, '蓝色弱')}（Tritanomaly）</option>
+      <option value="achromatopsia">{tu(lang, '全色盲')}（Achromatopsia）</option>
     </select>
-    <p style="font-size:12px;color:#999;margin-top:8px">基于 Brettel-Viénot-Mollon 模型近似，结果用于预览，不替代专业色觉检查。</p>
+    <p style="font-size:12px;color:#999;margin-top:8px">{tu(lang, '基于')} Brettel-Viénot-Mollon {tu(lang, '模型近似，结果用于预览，不替代专业色觉检查。')}</p>
   </div>
   <div>
-    <div class="field-label"><span>模拟预览</span></div>
+    <div class="field-label"><span>{tu(lang, '模拟预览')}</span></div>
     <div id="cb-preview" class="cb-preview"></div>
   </div>
 </div>
 <div class="btn-row">
-  <button id="cb-run" class="primary">生成预览</button>
-  <button id="cb-dl">下载</button>
-  <button id="cb-reset">重置</button>
+  <button id="cb-run" class="primary">{tu(lang, '生成预览')}</button>
+  <button id="cb-dl">{tu(lang, '下载')}</button>
+  <button id="cb-reset">{tu(lang, '重置')}</button>
   <span id="cb-msg" class="msg"></span>
 </div>
 
@@ -48,7 +52,9 @@
   .cb-preview:empty::before { content: '尚未生成'; color: #999; }
 </style>
 
-<script>
+<script>import { tu, currentLang } from '../../i18n/toolUi.ts';
+const LANG = currentLang();
+
   const $ = (id) => document.getElementById(id);
   let sourceFile = null;
   let outBlob = null;
@@ -66,7 +72,7 @@
   $('cb-file').addEventListener('change', (e) => sourceFile = e.target.files[0]);
 
   $('cb-run').addEventListener('click', async () => {
-    if (!sourceFile) { $('cb-msg').textContent = '请先选择图片'; $('cb-msg').className = 'msg err'; return; }
+    if (!sourceFile) { $('cb-msg').textContent = tu(LANG, '请先选择图片'); $('cb-msg').className = 'msg err'; return; }
     try {
       const bitmap = await createImageBitmap(sourceFile);
       const canvas = document.createElement('canvas');
@@ -87,12 +93,12 @@
       }
       rctx.drawImage(img, 0, 0);
       outBlob = await new Promise(res => result.toBlob(res, 'image/png'));
-      $('cb-preview').innerHTML = '<img alt="预览">';
+      $('cb-preview').innerHTML = '<img alt=tu(LANG, "预览")>';
       $('cb-preview').querySelector('img').src = URL.createObjectURL(outBlob);
       $('cb-msg').textContent = `生成成功 · ${(outBlob.size/1024).toFixed(1)} KB`;
       $('cb-msg').className = 'msg ok';
     } catch (err) {
-      $('cb-msg').textContent = '失败：' + err.message;
+      $('cb-msg').textContent = tu(LANG, '失败：') + err.message;
       $('cb-msg').className = 'msg err';
     }
   });

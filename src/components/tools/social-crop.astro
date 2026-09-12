@@ -1,37 +1,42 @@
 ---
+import { tu } from '../../i18n/toolUi.ts';
+
+interface Props { lang?: string }
+const { lang = 'zh' } = Astro.props;
+
 ---
 
-<div class="tip">按国内常用平台的尺寸预设裁剪，图片在本地处理，不上传服务器。</div>
+<div class="tip">{tu(lang, '按国内常用平台的尺寸预设裁剪，图片在本地处理，不上传服务器。')}</div>
 
 <div class="btn-row" style="align-items:center;">
   <input type="file" id="sc-file" accept="image/*" multiple style="width:auto;font-family:inherit;padding:6px;border:none;" />
 </div>
 
-<div class="field-label" style="margin-top:12px;"><span>尺寸预设</span></div>
+<div class="field-label" style="margin-top:12px;"><span>{tu(lang, '尺寸预设')}</span></div>
 <div id="sc-presets" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;"></div>
 
 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;max-width:720px;">
   <div>
-    <div class="field-label"><span>宽</span></div>
+    <div class="field-label"><span>{tu(lang, '宽')}</span></div>
     <input type="number" id="sc-w" value="1080" min="1" />
   </div>
   <div>
-    <div class="field-label"><span>高</span></div>
+    <div class="field-label"><span>{tu(lang, '高')}</span></div>
     <input type="number" id="sc-h" value="1080" min="1" />
   </div>
   <div>
-    <div class="field-label"><span>裁剪方式</span></div>
+    <div class="field-label"><span>{tu(lang, '裁剪方式')}</span></div>
     <select id="sc-mode">
-      <option value="cover">裁剪填满（可能裁掉边缘）</option>
-      <option value="contain">完整保留（补背景）</option>
+      <option value="cover">{tu(lang, '裁剪填满（可能裁掉边缘')}）</option>
+      <option value="contain">{tu(lang, '完整保留（补背景')}）</option>
     </select>
   </div>
   <div>
-    <div class="field-label"><span>背景色（补边用）</span></div>
+    <div class="field-label"><span>{tu(lang, '背景色（补边用')}）</span></div>
     <input type="color" id="sc-bg" value="#ffffff" style="width:60px;height:34px;padding:2px;" />
   </div>
   <div>
-    <div class="field-label"><span>输出格式</span></div>
+    <div class="field-label"><span>{tu(lang, '输出格式')}</span></div>
     <select id="sc-fmt">
       <option value="image/jpeg">JPEG</option>
       <option value="image/png">PNG</option>
@@ -39,34 +44,36 @@
     </select>
   </div>
   <div>
-    <div class="field-label"><span>锁定比例</span></div>
+    <div class="field-label"><span>{tu(lang, '锁定比例')}</span></div>
     <select id="sc-lock">
-      <option value="0">不锁定</option>
-      <option value="1">锁定当前比例</option>
+      <option value="0">{tu(lang, '不锁定')}</option>
+      <option value="1">{tu(lang, '锁定当前比例')}</option>
     </select>
   </div>
 </div>
 
 <div class="btn-row">
-  <button class="primary" id="sc-go">开始裁剪</button>
-  <button id="sc-dl">下载全部</button>
-  <button id="sc-clear">清空</button>
+  <button class="primary" id="sc-go">{tu(lang, '开始裁剪')}</button>
+  <button id="sc-dl">{tu(lang, '下载全部')}</button>
+  <button id="sc-clear">{tu(lang, '清空')}</button>
 </div>
 
 <p class="msg" id="sc-msg"></p>
 <div id="sc-list"></div>
 
-<script>
+<script>import { tu, currentLang } from '../../i18n/toolUi.ts';
+const LANG = currentLang();
+
   const $ = (id) => document.getElementById(id);
   let jobs = [];
 
   // 国内主流平台的常用尺寸（像素）
   const PRESETS = [
-    ['微信朋友圈', 1080, 1080], ['微信头像', 640, 640], ['微信公众号封面', 900, 383],
-    ['小红书竖图', 1080, 1440], ['小红书方图', 1080, 1080], ['抖音封面', 1080, 1440],
-    ['抖音头像', 400, 400], ['微博配图', 1080, 720], ['B站封面', 1146, 717],
-    ['淘宝主图', 800, 800], ['京东主图', 800, 800], ['公众号次图', 200, 200],
-    ['视频号封面', 1080, 1230], ['知乎封面', 1200, 675], ['一寸照', 295, 413], ['二寸照', 413, 579],
+    [tu(LANG, '微信朋友圈'), 1080, 1080], [tu(LANG, '微信头像'), 640, 640], [tu(LANG, '微信公众号封面'), 900, 383],
+    [tu(LANG, '小红书竖图'), 1080, 1440], [tu(LANG, '小红书方图'), 1080, 1080], [tu(LANG, '抖音封面'), 1080, 1440],
+    [tu(LANG, '抖音头像'), 400, 400], [tu(LANG, '微博配图'), 1080, 720], [tu(LANG, 'B站封面'), 1146, 717],
+    [tu(LANG, '淘宝主图'), 800, 800], [tu(LANG, '京东主图'), 800, 800], [tu(LANG, '公众号次图'), 200, 200],
+    [tu(LANG, '视频号封面'), 1080, 1230], [tu(LANG, '知乎封面'), 1200, 675], [tu(LANG, '一寸照'), 295, 413], [tu(LANG, '二寸照'), 413, 579],
   ];
 
   $('sc-presets').innerHTML = PRESETS.map(([n, w, h]) =>
@@ -111,9 +118,9 @@
 
   $('sc-go').onclick = async () => {
     const files = Array.from($('sc-file').files || []);
-    if (!files.length) { $('sc-msg').textContent = '请先选择图片'; $('sc-msg').className = 'msg err'; return; }
+    if (!files.length) { $('sc-msg').textContent = tu(LANG, '请先选择图片'); $('sc-msg').className = 'msg err'; return; }
     const W = +$('sc-w').value, H = +$('sc-h').value;
-    if (!W || !H) { $('sc-msg').textContent = '请填写有效的宽高'; $('sc-msg').className = 'msg err'; return; }
+    if (!W || !H) { $('sc-msg').textContent = tu(LANG, '请填写有效的宽高'); $('sc-msg').className = 'msg err'; return; }
     jobs = [];
     const fmt = $('sc-fmt').value;
 

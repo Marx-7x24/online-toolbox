@@ -1,22 +1,26 @@
 ---
+import { tu } from '../../i18n/toolUi.ts';
 // Markdown 转 HTML：基于 marked，本地转换，实时预览
 import { marked } from 'marked';
+interface Props { lang?: string }
+const { lang = 'zh' } = Astro.props;
+
 ---
 
 <div class="pane">
   <div>
-    <div class="field-label"><span>Markdown 输入</span></div>
-    <textarea id="md-in" placeholder="# 标题&#10;**加粗** 与 *斜体*&#10;- 列表项"></textarea>
+    <div class="field-label"><span>Markdown {tu(lang, '输入')}</span></div>
+    <textarea id="md-in" placeholder={tu(lang, '# 标题&#10;**加粗** 与 *斜体*&#10;- 列表项')}></textarea>
   </div>
   <div>
-    <div class="field-label"><span>HTML 预览</span></div>
+    <div class="field-label"><span>HTML {tu(lang, '预览')}</span></div>
     <div id="md-preview" class="md-preview"></div>
   </div>
 </div>
-<div class="field-label" style="margin-top:12px;"><span>HTML 代码</span></div>
+<div class="field-label" style="margin-top:12px;"><span>HTML {tu(lang, '代码')}</span></div>
 <textarea id="md-out" readonly></textarea>
 <div class="btn-row">
-  <button id="md-copy" class="primary">复制 HTML</button>
+  <button id="md-copy" class="primary">{tu(lang, '复制')} HTML</button>
   <span id="md-msg" class="msg"></span>
 </div>
 
@@ -28,7 +32,9 @@ import { marked } from 'marked';
   .md-preview blockquote { border-left: 3px solid var(--border); margin: 0; padding-left: 12px; color: var(--text-sub); }
 </style>
 
-<script>
+<script>import { tu, currentLang } from '../../i18n/toolUi.ts';
+const LANG = currentLang();
+
   const $ = (id) => document.getElementById(id);
   const input = $('md-in'), preview = $('md-preview'), output = $('md-out'), msg = $('md-msg');
 
@@ -42,7 +48,7 @@ import { marked } from 'marked';
 
   $('md-copy').addEventListener('click', async () => {
     if (!output.value) return;
-    try { await navigator.clipboard.writeText(output.value); msg.textContent = '已复制'; msg.className = 'msg ok'; }
-    catch { msg.textContent = '复制失败'; msg.className = 'msg err'; }
+    try { await navigator.clipboard.writeText(output.value); msg.textContent = tu(LANG, '已复制'); msg.className = 'msg ok'; }
+    catch { msg.textContent = tu(LANG, '复制失败'); msg.className = 'msg err'; }
   });
 </script>

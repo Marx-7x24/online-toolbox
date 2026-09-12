@@ -1,10 +1,14 @@
 ---
+import { tu } from '../../i18n/toolUi.ts';
 // 条形码生成：JsBarcode，本地渲染
+interface Props { lang?: string }
+const { lang = 'zh' } = Astro.props;
+
 ---
 <div>
-  <div class="field-label"><span>内容</span></div>
-  <input type="text" id="bc-text" value="1234567890" placeholder="要编码的内容">
-  <div class="field-label" style="margin-top:10px;"><span>格式</span></div>
+  <div class="field-label"><span>{tu(lang, '内容')}</span></div>
+  <input type="text" id="bc-text" value="1234567890" placeholder={tu(lang, '要编码的内容')}>
+  <div class="field-label" style="margin-top:10px;"><span>{tu(lang, '格式')}</span></div>
   <select id="bc-format">
     <option value="CODE128">CODE128</option>
     <option value="CODE39">CODE39</option>
@@ -13,11 +17,11 @@
     <option value="UPC">UPC</option>
     <option value="CODE93">CODE93</option>
   </select>
-  <div class="field-label" style="margin-top:10px;"><span>预览</span></div>
+  <div class="field-label" style="margin-top:10px;"><span>{tu(lang, '预览')}</span></div>
   <div class="bc-wrap"><svg id="bc-svg"></svg></div>
 </div>
 <div class="btn-row">
-  <button id="bc-dl" class="primary">下载 SVG</button>
+  <button id="bc-dl" class="primary">{tu(lang, '下载')} SVG</button>
   <span id="bc-msg" class="msg"></span>
 </div>
 
@@ -33,7 +37,9 @@
   .bc-wrap svg { max-width: 100%; }
 </style>
 
-<script>
+<script>import { tu, currentLang } from '../../i18n/toolUi.ts';
+const LANG = currentLang();
+
   import JsBarcode from 'jsbarcode';
   const $ = (id) => document.getElementById(id);
   function render() {
@@ -48,7 +54,7 @@
         height: 60,
       });
       $('bc-msg').textContent = '';
-    } catch (e) { $('bc-msg').textContent = '生成失败：' + e.message; $('bc-msg').className = 'msg err'; }
+    } catch (e) { $('bc-msg').textContent = tu(LANG, '生成失败：') + e.message; $('bc-msg').className = 'msg err'; }
   }
   $('bc-text').addEventListener('input', render);
   $('bc-format').addEventListener('change', render);

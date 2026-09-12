@@ -1,25 +1,31 @@
 ---
+import { tu } from '../../i18n/toolUi.ts';
 // 简繁转换：opencc-js，本地转换
+interface Props { lang?: string }
+const { lang = 'zh' } = Astro.props;
+
 ---
 <div class="pane">
   <div>
-    <div class="field-label"><span>输入文本</span></div>
-    <textarea id="cc-in" placeholder="粘贴中文文本"></textarea>
+    <div class="field-label"><span>{tu(lang, '输入文本')}</span></div>
+    <textarea id="cc-in" placeholder={tu(lang, '粘贴中文文本')}></textarea>
   </div>
   <div>
-    <div class="field-label"><span>转换结果</span></div>
+    <div class="field-label"><span>{tu(lang, '转换结果')}</span></div>
     <textarea id="cc-out" readonly></textarea>
   </div>
 </div>
 <div class="btn-row">
-  <button id="cc-jt" class="primary">简→繁（台湾）</button>
-  <button id="cc-jt-hk">简→繁（香港）</button>
-  <button id="cc-ft">繁→简</button>
-  <button id="cc-copy">复制</button>
+  <button id="cc-jt" class="primary">{tu(lang, '简')}→{tu(lang, '繁（台湾')}）</button>
+  <button id="cc-jt-hk">{tu(lang, '简')}→{tu(lang, '繁（香港')}）</button>
+  <button id="cc-ft">{tu(lang, '繁')}→{tu(lang, '简')}</button>
+  <button id="cc-copy">{tu(lang, '复制')}</button>
   <span id="cc-msg" class="msg"></span>
 </div>
 
-<script>
+<script>import { tu, currentLang } from '../../i18n/toolUi.ts';
+const LANG = currentLang();
+
   import OpenCC from 'opencc-js';
   const $ = (id) => document.getElementById(id);
   function convert(from, to) {
@@ -28,15 +34,15 @@
     try {
       const conv = OpenCC.Converter({ from, to });
       $('cc-out').value = conv(v);
-      $('cc-msg').textContent = '转换完成'; $('cc-msg').className = 'msg ok';
-    } catch (e) { $('cc-msg').textContent = '转换失败：' + e.message; $('cc-msg').className = 'msg err'; }
+      $('cc-msg').textContent = tu(LANG, '转换完成'); $('cc-msg').className = 'msg ok';
+    } catch (e) { $('cc-msg').textContent = tu(LANG, '转换失败：') + e.message; $('cc-msg').className = 'msg err'; }
   }
   $('cc-jt').addEventListener('click', () => convert('cn', 'tw'));
   $('cc-jt-hk').addEventListener('click', () => convert('cn', 'hk'));
   $('cc-ft').addEventListener('click', () => convert('tw', 'cn'));
   $('cc-copy').addEventListener('click', async () => {
     if (!$('cc-out').value) return;
-    try { await navigator.clipboard.writeText($('cc-out').value); $('cc-msg').textContent = '已复制'; $('cc-msg').className = 'msg ok'; }
-    catch { $('cc-msg').textContent = '复制失败'; $('cc-msg').className = 'msg err'; }
+    try { await navigator.clipboard.writeText($('cc-out').value); $('cc-msg').textContent = tu(LANG, '已复制'); $('cc-msg').className = 'msg ok'; }
+    catch { $('cc-msg').textContent = tu(LANG, '复制失败'); $('cc-msg').className = 'msg err'; }
   });
 </script>

@@ -1,33 +1,37 @@
 ---
+import { tu } from '../../i18n/toolUi.ts';
 // 批量重命名：对任意文件按规则改名并逐个下载（浏览器本地，不上传）
+interface Props { lang?: string }
+const { lang = 'zh' } = Astro.props;
+
 ---
 <div class="pane">
   <div>
-    <div class="field-label"><span>选择多个文件</span></div>
+    <div class="field-label"><span>{tu(lang, '选择多个文件')}</span></div>
     <input type="file" id="rb-files" multiple>
     <div id="rb-list" class="rb-list"></div>
   </div>
   <div>
-    <div class="field-label"><span>命名规则</span></div>
+    <div class="field-label"><span>{tu(lang, '命名规则')}</span></div>
     <select id="rb-rule" style="width:100%;padding:6px;border:1px solid var(--border-color);border-radius:6px">
-      <option value="prefix">加前缀</option>
-      <option value="suffix">加后缀（扩展名前）</option>
-      <option value="number">加序号（001/002...）</option>
-      <option value="replace">替换关键字</option>
-      <option value="upper">全部大写</option>
-      <option value="lower">全部小写</option>
+      <option value="prefix">{tu(lang, '加前缀')}</option>
+      <option value="suffix">{tu(lang, '加后缀（扩展名前')}）</option>
+      <option value="number">{tu(lang, '加序号')}（001/002...）</option>
+      <option value="replace">{tu(lang, '替换关键字')}</option>
+      <option value="upper">{tu(lang, '全部大写')}</option>
+      <option value="lower">{tu(lang, '全部小写')}</option>
     </select>
-    <div class="field-label" style="margin-top:14px"><span id="rb-extra-label">前缀文本</span></div>
-    <input type="text" id="rb-extra" value="文件_" style="width:100%;padding:6px;border:1px solid var(--border-color);border-radius:6px;box-sizing:border-box">
+    <div class="field-label" style="margin-top:14px"><span id="rb-extra-label">{tu(lang, '前缀文本')}</span></div>
+    <input type="text" id="rb-extra" value={tu(lang, '文件_')} style="width:100%;padding:6px;border:1px solid var(--border-color);border-radius:6px;box-sizing:border-box">
     <div id="rb-extra2" style="display:none;margin-top:6px">
-      <input type="text" id="rb-extra2-input" placeholder="替换为" style="width:100%;padding:6px;border:1px solid var(--border-color);border-radius:6px;box-sizing:border-box">
+      <input type="text" id="rb-extra2-input" placeholder={tu(lang, '替换为')} style="width:100%;padding:6px;border:1px solid var(--border-color);border-radius:6px;box-sizing:border-box">
     </div>
   </div>
 </div>
 <div class="btn-row">
-  <button id="rb-run" class="primary">预览新名称</button>
-  <button id="rb-dl">下载全部（逐个）</button>
-  <button id="rb-reset">重置</button>
+  <button id="rb-run" class="primary">{tu(lang, '预览新名称')}</button>
+  <button id="rb-dl">{tu(lang, '下载全部（逐个')}）</button>
+  <button id="rb-reset">{tu(lang, '重置')}</button>
   <span id="rb-msg" class="msg"></span>
 </div>
 
@@ -39,14 +43,16 @@
   .rb-list .new { color:var(--primary-color); font-weight:600; flex:1; word-break:break-all; }
 </style>
 
-<script>
+<script>import { tu, currentLang } from '../../i18n/toolUi.ts';
+const LANG = currentLang();
+
   const $ = (id) => document.getElementById(id);
   let files = [];
 
   $('rb-rule').addEventListener('change', updateForm);
   function updateForm() {
     const r = $('rb-rule').value;
-    const labels = { prefix:'前缀文本', suffix:'后缀文本', number:'起始序号', replace:'要替换的关键字', upper:'（无需参数）', lower:'（无需参数）' };
+    const labels = { prefix:tu(LANG, '前缀文本'), suffix:tu(LANG, '后缀文本'), number:tu(LANG, '起始序号'), replace:tu(LANG, '要替换的关键字'), upper:tu(LANG, '（无需参数）'), lower:tu(LANG, '（无需参数）') };
     $('rb-extra-label').textContent = labels[r];
     $('rb-extra2').style.display = (r === 'replace') ? 'block' : 'none';
     $('rb-extra').disabled = (r === 'upper' || r === 'lower');
@@ -76,7 +82,7 @@
   }
 
   $('rb-run').addEventListener('click', () => {
-    if (!files.length) { $('rb-msg').textContent='请先选择文件'; $('rb-msg').className='msg err'; return; }
+    if (!files.length) { $('rb-msg').textContent=tu(LANG, '请先选择文件'); $('rb-msg').className='msg err'; return; }
     renderPreview();
     $('rb-msg').textContent=`已预览 ${files.length} 个新名称`; $('rb-msg').className='msg ok';
   });

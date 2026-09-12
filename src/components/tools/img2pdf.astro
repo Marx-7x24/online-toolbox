@@ -1,7 +1,12 @@
 ---
+import { tu } from '../../i18n/toolUi.ts';
+
+interface Props { lang?: string }
+const { lang = 'zh' } = Astro.props;
+
 ---
 
-<div class="tip">图片与生成的 PDF 都不离开你的浏览器，适合处理敏感扫描件。</div>
+<div class="tip">{tu(lang, '图片与生成的 PDF 都不离开你的浏览器，适合处理敏感扫描件。')}</div>
 
 <div class="btn-row" style="align-items:center;">
   <input type="file" id="i2p-file" accept="image/*" multiple style="width:auto;font-family:inherit;padding:6px;border:none;" />
@@ -9,36 +14,38 @@
 
 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-top:12px;">
   <div>
-    <div class="field-label"><span>页面尺寸</span></div>
+    <div class="field-label"><span>{tu(lang, '页面尺寸')}</span></div>
     <select id="i2p-size">
-      <option value="fit">适应图片原始尺寸</option>
+      <option value="fit">{tu(lang, '适应图片原始尺寸')}</option>
       <option value="a4" selected>A4 210×297 mm</option>
       <option value="a5">A5 148×210 mm</option>
       <option value="letter">Letter 216×279 mm</option>
     </select>
   </div>
   <div>
-    <div class="field-label"><span>方向</span></div>
+    <div class="field-label"><span>{tu(lang, '方向')}</span></div>
     <select id="i2p-orient">
-      <option value="portrait">纵向</option>
-      <option value="landscape">横向</option>
-      <option value="auto">按图片自动</option>
+      <option value="portrait">{tu(lang, '纵向')}</option>
+      <option value="landscape">{tu(lang, '横向')}</option>
+      <option value="auto">{tu(lang, '按图片自动')}</option>
     </select>
   </div>
   <div>
-    <div class="field-label"><span>页边距</span><span id="i2p-m-val">20 pt</span></div>
+    <div class="field-label"><span>{tu(lang, '页边距')}</span><span id="i2p-m-val">20 pt</span></div>
     <input type="range" id="i2p-m" min="0" max="80" value="20" style="padding:0;" />
   </div>
 </div>
 
 <div class="btn-row">
-  <button class="primary" id="i2p-go">生成 PDF</button>
-  <button id="i2p-clear">清空</button>
+  <button class="primary" id="i2p-go">{tu(lang, '生成')} PDF</button>
+  <button id="i2p-clear">{tu(lang, '清空')}</button>
 </div>
 
 <p class="msg" id="i2p-msg"></p>
 
-<script>
+<script>import { tu, currentLang } from '../../i18n/toolUi.ts';
+const LANG = currentLang();
+
   import { PDFDocument } from 'pdf-lib';
 
   const $ = (id) => document.getElementById(id);
@@ -69,8 +76,8 @@
 
   $('i2p-go').onclick = async () => {
     const files = Array.from($('i2p-file').files || []);
-    if (!files.length) { $('i2p-msg').textContent = '请先选择图片'; $('i2p-msg').className = 'msg err'; return; }
-    $('i2p-msg').textContent = '处理中… 0 / ' + files.length;
+    if (!files.length) { $('i2p-msg').textContent = tu(LANG, '请先选择图片'); $('i2p-msg').className = 'msg err'; return; }
+    $('i2p-msg').textContent = tu(LANG, '处理中… 0 / ') + files.length;
     $('i2p-msg').className = 'msg';
 
     try {
@@ -115,7 +122,7 @@
       $('i2p-msg').textContent = `已生成包含 ${files.length} 页的 PDF，开始下载`;
       $('i2p-msg').className = 'msg ok';
     } catch (e) {
-      $('i2p-msg').textContent = '生成失败：' + e.message;
+      $('i2p-msg').textContent = tu(LANG, '生成失败：') + e.message;
       $('i2p-msg').className = 'msg err';
     }
   };

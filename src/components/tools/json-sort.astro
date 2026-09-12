@@ -1,24 +1,30 @@
 ---
+import { tu } from '../../i18n/toolUi.ts';
 // JSON 键名排序：递归对对象键名排序后重新格式化输出
+interface Props { lang?: string }
+const { lang = 'zh' } = Astro.props;
+
 ---
 
 <div class="pane">
   <div>
-    <div class="field-label"><span>输入 JSON</span></div>
+    <div class="field-label"><span>{tu(lang, '输入')} JSON</span></div>
     <textarea id="js-in" placeholder='{"b":1,"a":{"d":2,"c":3}}'></textarea>
   </div>
   <div>
-    <div class="field-label"><span>排序后输出</span></div>
+    <div class="field-label"><span>{tu(lang, '排序后输出')}</span></div>
     <textarea id="js-out" readonly></textarea>
   </div>
 </div>
 <div class="btn-row">
-  <button id="js-run" class="primary">排序并格式化</button>
-  <button id="js-copy">复制结果</button>
+  <button id="js-run" class="primary">{tu(lang, '排序并格式化')}</button>
+  <button id="js-copy">{tu(lang, '复制结果')}</button>
   <span id="js-msg" class="msg"></span>
 </div>
 
-<script>
+<script>import { tu, currentLang } from '../../i18n/toolUi.ts';
+const LANG = currentLang();
+
   const $ = (id) => document.getElementById(id);
   const input = $('js-in'), output = $('js-out'), msg = $('js-msg');
 
@@ -34,15 +40,15 @@
     try {
       const data = JSON.parse(input.value);
       output.value = JSON.stringify(sortDeep(data), null, 2);
-      msg.textContent = '已按键名排序'; msg.className = 'msg ok';
+      msg.textContent = tu(LANG, '已按键名排序'); msg.className = 'msg ok';
     } catch (e) {
-      msg.textContent = 'JSON 解析失败：' + e.message; msg.className = 'msg err';
+      msg.textContent = tu(LANG, 'JSON 解析失败：') + e.message; msg.className = 'msg err';
     }
   });
 
   $('js-copy').addEventListener('click', async () => {
     if (!output.value) return;
-    try { await navigator.clipboard.writeText(output.value); msg.textContent = '已复制'; msg.className = 'msg ok'; }
-    catch { msg.textContent = '复制失败'; msg.className = 'msg err'; }
+    try { await navigator.clipboard.writeText(output.value); msg.textContent = tu(LANG, '已复制'); msg.className = 'msg ok'; }
+    catch { msg.textContent = tu(LANG, '复制失败'); msg.className = 'msg err'; }
   });
 </script>

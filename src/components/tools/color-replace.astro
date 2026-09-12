@@ -1,37 +1,41 @@
 ---
+import { tu } from '../../i18n/toolUi.ts';
 // 颜色替换：把图片中某颜色（容差范围内）替换为新颜色
+interface Props { lang?: string }
+const { lang = 'zh' } = Astro.props;
+
 ---
 <div class="pane">
   <div>
-    <div class="field-label"><span>选择图片</span></div>
+    <div class="field-label"><span>{tu(lang, '选择图片')}</span></div>
     <input type="file" id="crp-file" accept="image/*">
-    <div class="field-label" style="margin-top:14px"><span>源颜色（点击下方图片取色）</span></div>
+    <div class="field-label" style="margin-top:14px"><span>{tu(lang, '源颜色（点击下方图片取色')}）</span></div>
     <div style="display:flex;gap:6px;align-items:center">
       <input type="color" id="crp-from" value="#ffffff" style="width:50px;height:32px;border:1px solid var(--border);border-radius:6px">
       <span id="crp-from-h" style="font-family:monospace">#FFFFFF</span>
-      <button id="crp-pick" type="button" style="margin-left:auto">从图片取色</button>
+      <button id="crp-pick" type="button" style="margin-left:auto">{tu(lang, '从图片取色')}</button>
     </div>
-    <div class="field-label" style="margin-top:8px"><span>目标颜色</span></div>
+    <div class="field-label" style="margin-top:8px"><span>{tu(lang, '目标颜色')}</span></div>
     <div style="display:flex;gap:6px;align-items:center">
       <input type="color" id="crp-to" value="#3e2eff" style="width:50px;height:32px;border:1px solid var(--border);border-radius:6px">
       <span id="crp-to-h" style="font-family:monospace">#3E2EFF</span>
     </div>
-    <div class="field-label" style="margin-top:14px"><span>容差 <span id="crp-tv">30</span></span></div>
+    <div class="field-label" style="margin-top:14px"><span>{tu(lang, '容差')} <span id="crp-tv">30</span></span></div>
     <input type="range" id="crp-tol" min="0" max="200" value="30" style="width:100%">
     <div id="crp-pick-stage" class="crp-pick-stage" style="display:none">
-      <p style="font-size:12px;color:#e53935;margin:8px 0">点击下方面板取色</p>
+      <p style="font-size:12px;color:#e53935;margin:8px 0">{tu(lang, '点击下方面板取色')}</p>
       <canvas id="crp-pick-canvas"></canvas>
     </div>
   </div>
   <div>
-    <div class="field-label"><span>预览</span></div>
+    <div class="field-label"><span>{tu(lang, '预览')}</span></div>
     <div id="crp-preview" class="crp-preview"></div>
   </div>
 </div>
 <div class="btn-row">
-  <button id="crp-run" class="primary">替换颜色</button>
-  <button id="crp-dl">下载</button>
-  <button id="crp-reset">重置</button>
+  <button id="crp-run" class="primary">{tu(lang, '替换颜色')}</button>
+  <button id="crp-dl">{tu(lang, '下载')}</button>
+  <button id="crp-reset">{tu(lang, '重置')}</button>
   <span id="crp-msg" class="msg"></span>
 </div>
 
@@ -43,7 +47,9 @@
   input[type="color"] { cursor: pointer; }
 </style>
 
-<script>
+<script>import { tu, currentLang } from '../../i18n/toolUi.ts';
+const LANG = currentLang();
+
   const $ = (id) => document.getElementById(id);
   let sourceFile = null;
   let outBlob = null;
@@ -73,7 +79,7 @@
   }
 
   $('crp-pick').addEventListener('click', async () => {
-    if (!sourceFile) { $('crp-msg').textContent = '请先选择图片'; $('crp-msg').className = 'msg err'; return; }
+    if (!sourceFile) { $('crp-msg').textContent = tu(LANG, '请先选择图片'); $('crp-msg').className = 'msg err'; return; }
     imgEl = await loadImg(sourceFile);
     const maxW = 600;
     const r = Math.min(1, maxW / imgEl.width);
@@ -97,7 +103,7 @@
   });
 
   $('crp-run').addEventListener('click', async () => {
-    if (!sourceFile) { $('crp-msg').textContent = '请先选择图片'; $('crp-msg').className = 'msg err'; return; }
+    if (!sourceFile) { $('crp-msg').textContent = tu(LANG, '请先选择图片'); $('crp-msg').className = 'msg err'; return; }
     if (!imgEl) imgEl = await loadImg(sourceFile);
     try {
       const canvas = document.createElement('canvas');
@@ -123,12 +129,12 @@
       }
       ctx.putImageData(data, 0, 0);
       outBlob = await new Promise(res => canvas.toBlob(res, 'image/png'));
-      $('crp-preview').innerHTML = '<img alt="预览">';
+      $('crp-preview').innerHTML = '<img alt=tu(LANG, "预览")>';
       $('crp-preview').querySelector('img').src = URL.createObjectURL(outBlob);
       $('crp-msg').textContent = `替换完成 · 容差 ${tol}`;
       $('crp-msg').className = 'msg ok';
     } catch (err) {
-      $('crp-msg').textContent = '失败：' + err.message;
+      $('crp-msg').textContent = tu(LANG, '失败：') + err.message;
       $('crp-msg').className = 'msg err';
     }
   });

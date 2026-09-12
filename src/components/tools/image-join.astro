@@ -1,53 +1,60 @@
 ---
+import { tu } from '../../i18n/toolUi.ts';
+
+interface Props { lang?: string }
+const { lang = 'zh' } = Astro.props;
+
 ---
 
-<div class="tip">多张图片拼成一张长图，全部在本地浏览器完成。</div>
+<div class="tip">{tu(lang, '多张图片拼成一张长图，全部在本地浏览器完成。')}</div>
 
 <div class="btn-row" style="align-items:center;">
   <input type="file" id="ij-file" accept="image/*" multiple style="width:auto;font-family:inherit;padding:6px;border:none;" />
-  <span style="font-size:13px;color:var(--text-hint);">按选择顺序拼接</span>
+  <span style="font-size:13px;color:var(--text-hint);">{tu(lang, '按选择顺序拼接')}</span>
 </div>
 
 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;margin-top:12px;">
   <div>
-    <div class="field-label"><span>拼接方向</span></div>
+    <div class="field-label"><span>{tu(lang, '拼接方向')}</span></div>
     <select id="ij-dir">
-      <option value="v">纵向（长图）</option>
-      <option value="h">横向</option>
+      <option value="v">{tu(lang, '纵向（长图')}）</option>
+      <option value="h">{tu(lang, '横向')}</option>
     </select>
   </div>
   <div>
-    <div class="field-label"><span>图片间距</span><span id="ij-gap-val">0 px</span></div>
+    <div class="field-label"><span>{tu(lang, '图片间距')}</span><span id="ij-gap-val">0 px</span></div>
     <input type="range" id="ij-gap" min="0" max="60" value="0" style="padding:0;" />
   </div>
   <div>
-    <div class="field-label"><span>对齐方式</span></div>
+    <div class="field-label"><span>{tu(lang, '对齐方式')}</span></div>
     <select id="ij-align">
-      <option value="start">顶/左对齐</option>
-      <option value="center" selected>居中</option>
-      <option value="end">底/右对齐</option>
+      <option value="start">{tu(lang, '顶')}/{tu(lang, '左对齐')}</option>
+      <option value="center" selected>{tu(lang, '居中')}</option>
+      <option value="end">{tu(lang, '底')}/{tu(lang, '右对齐')}</option>
     </select>
   </div>
   <div>
-    <div class="field-label"><span>背景色</span></div>
+    <div class="field-label"><span>{tu(lang, '背景色')}</span></div>
     <input type="color" id="ij-bg" value="#ffffff" style="width:60px;height:34px;padding:2px;" />
   </div>
   <div>
-    <div class="field-label"><span>统一宽度</span><span id="ij-w-val">按原图</span></div>
+    <div class="field-label"><span>{tu(lang, '统一宽度')}</span><span id="ij-w-val">{tu(lang, '按原图')}</span></div>
     <input type="range" id="ij-w" min="0" max="100" value="0" style="padding:0;" />
   </div>
 </div>
 
 <div class="btn-row">
-  <button class="primary" id="ij-go">开始拼接</button>
-  <button id="ij-dl">下载长图</button>
-  <button id="ij-clear">清空</button>
+  <button class="primary" id="ij-go">{tu(lang, '开始拼接')}</button>
+  <button id="ij-dl">{tu(lang, '下载长图')}</button>
+  <button id="ij-clear">{tu(lang, '清空')}</button>
 </div>
 
 <p class="msg" id="ij-msg"></p>
 <div id="ij-box"></div>
 
-<script>
+<script>import { tu, currentLang } from '../../i18n/toolUi.ts';
+const LANG = currentLang();
+
   const $ = (id) => document.getElementById(id);
   let outUrl = '';
 
@@ -73,8 +80,8 @@
 
   $('ij-go').onclick = async () => {
     const files = Array.from($('ij-file').files || []);
-    if (files.length < 2) { $('ij-msg').textContent = '请至少选择 2 张图片'; $('ij-msg').className = 'msg err'; return; }
-    $('ij-msg').textContent = '拼接中…';
+    if (files.length < 2) { $('ij-msg').textContent = tu(LANG, '请至少选择 2 张图片'); $('ij-msg').className = 'msg err'; return; }
+    $('ij-msg').textContent = tu(LANG, '拼接中…');
     $('ij-msg').className = 'msg';
 
     const tw = targetWidth();
@@ -112,7 +119,7 @@
         `<div style="margin-top:12px;">
           <div class="field-label"><span>拼接结果</span><span>${canvas.width} × ${canvas.height}　${(blob.size / 1024).toFixed(0)} KB</span></div>
           <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;overflow:auto;max-height:420px;display:flex;justify-content:center;">
-            <img src="${outUrl}" alt="长图" style="max-width:100%;height:auto;" />
+            <img src="${outUrl}" alt=tu(LANG, "长图") style="max-width:100%;height:auto;" />
           </div>
         </div>`;
       $('ij-msg').textContent = `已拼接 ${imgs.length} 张图片`;
@@ -121,7 +128,7 @@
   };
 
   $('ij-dl').onclick = () => {
-    if (!outUrl) { $('ij-msg').textContent = '请先拼接'; $('ij-msg').className = 'msg err'; return; }
+    if (!outUrl) { $('ij-msg').textContent = tu(LANG, '请先拼接'); $('ij-msg').className = 'msg err'; return; }
     const a = document.createElement('a');
     a.href = outUrl;
     a.download = 'joined.png';

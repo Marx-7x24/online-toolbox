@@ -1,7 +1,12 @@
 ---
+import { tu } from '../../i18n/toolUi.ts';
+
+interface Props { lang?: string }
+const { lang = 'zh' } = Astro.props;
+
 ---
 
-<div class="tip">从白纸或合同照片中提取手写签名，去掉背景输出透明 PNG，可直接贴到电子文档上。</div>
+<div class="tip">{tu(lang, '从白纸或合同照片中提取手写签名，去掉背景输出透明 PNG，可直接贴到电子文档上。')}</div>
 
 <div class="btn-row" style="align-items:center;">
   <input type="file" id="sg-file" accept="image/*" style="width:auto;font-family:inherit;padding:6px;border:none;" />
@@ -9,53 +14,55 @@
 
 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-top:12px;">
   <div>
-    <div class="field-label"><span>墨迹阈值</span><span id="sg-th-val">200</span></div>
+    <div class="field-label"><span>{tu(lang, '墨迹阈值')}</span><span id="sg-th-val">200</span></div>
     <input type="range" id="sg-th" min="80" max="245" value="200" style="padding:0;" />
-    <div style="font-size:12px;color:var(--text-hint);">调低＝只留更深的笔画</div>
+    <div style="font-size:12px;color:var(--text-hint);">{tu(lang, '调低')}＝{tu(lang, '只留更深的笔画')}</div>
   </div>
   <div>
-    <div class="field-label"><span>对比强度</span><span id="sg-gain-val">1.5</span></div>
+    <div class="field-label"><span>{tu(lang, '对比强度')}</span><span id="sg-gain-val">1.5</span></div>
     <input type="range" id="sg-gain" min="5" max="40" value="15" style="padding:0;" />
-    <div style="font-size:12px;color:var(--text-hint);">调高＝背景更干净</div>
+    <div style="font-size:12px;color:var(--text-hint);">{tu(lang, '调高')}＝{tu(lang, '背景更干净')}</div>
   </div>
   <div>
-    <div class="field-label"><span>签名颜色</span></div>
+    <div class="field-label"><span>{tu(lang, '签名颜色')}</span></div>
     <input type="color" id="sg-color" value="#000080" style="width:60px;height:34px;padding:2px;" />
-    <label style="display:block;font-size:12px;margin-top:6px;"><input type="checkbox" id="sg-recolor" checked /> 统一为纯色</label>
+    <label style="display:block;font-size:12px;margin-top:6px;"><input type="checkbox" id="sg-recolor" checked /> {tu(lang, '统一为纯色')}</label>
   </div>
   <div>
-    <div class="field-label"><span>自动裁边</span></div>
+    <div class="field-label"><span>{tu(lang, '自动裁边')}</span></div>
     <select id="sg-trim">
-      <option value="1">裁掉四周空白</option>
-      <option value="0">保持原尺寸</option>
+      <option value="1">{tu(lang, '裁掉四周空白')}</option>
+      <option value="0">{tu(lang, '保持原尺寸')}</option>
     </select>
   </div>
 </div>
 
 <div class="btn-row">
-  <button class="primary" id="sg-go">提取</button>
-  <button id="sg-dl">下载透明 PNG</button>
-  <button id="sg-clear">清空</button>
+  <button class="primary" id="sg-go">{tu(lang, '提取')}</button>
+  <button id="sg-dl">{tu(lang, '下载透明')} PNG</button>
+  <button id="sg-clear">{tu(lang, '清空')}</button>
 </div>
 
 <p class="msg" id="sg-msg"></p>
 
 <div class="pane" id="sg-preview" style="display:none;margin-top:14px;">
   <div>
-    <div class="field-label"><span>原图</span></div>
+    <div class="field-label"><span>{tu(lang, '原图')}</span></div>
     <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;display:flex;justify-content:center;overflow:auto;max-height:300px;">
-      <img id="sg-src" alt="原图" style="max-width:100%;height:auto;" />
+      <img id="sg-src" alt={tu(lang, '原图')} style="max-width:100%;height:auto;" />
     </div>
   </div>
   <div>
-    <div class="field-label"><span>提取结果（棋盘格＝透明）</span></div>
+    <div class="field-label"><span>{tu(lang, '提取结果（棋盘格')}＝{tu(lang, '透明')}）</span></div>
     <div style="border:1px solid var(--border);border-radius:8px;padding:12px;display:flex;justify-content:center;overflow:auto;max-height:300px;background-color:#fff;background-image:linear-gradient(45deg,#e5e5e5 25%,transparent 25%),linear-gradient(-45deg,#e5e5e5 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#e5e5e5 75%),linear-gradient(-45deg,transparent 75%,#e5e5e5 75%);background-size:16px 16px;background-position:0 0,0 8px,8px -8px,-8px 0;">
-      <img id="sg-out" alt="签名" style="max-width:100%;height:auto;" />
+      <img id="sg-out" alt={tu(lang, '签名')} style="max-width:100%;height:auto;" />
     </div>
   </div>
 </div>
 
-<script>
+<script>import { tu, currentLang } from '../../i18n/toolUi.ts';
+const LANG = currentLang();
+
   const $ = (id) => document.getElementById(id);
   let outUrl = '';
 
@@ -121,8 +128,8 @@
 
   $('sg-go').onclick = () => {
     const file = $('sg-file').files[0];
-    if (!file) { $('sg-msg').textContent = '请先选择图片'; $('sg-msg').className = 'msg err'; return; }
-    $('sg-msg').textContent = '处理中…';
+    if (!file) { $('sg-msg').textContent = tu(LANG, '请先选择图片'); $('sg-msg').className = 'msg err'; return; }
+    $('sg-msg').textContent = tu(LANG, '处理中…');
     $('sg-msg').className = 'msg';
     const img = new Image();
     img.onload = () => {
@@ -137,12 +144,12 @@
         $('sg-msg').className = 'msg ok';
       }, 'image/png');
     };
-    img.onerror = () => { $('sg-msg').textContent = '无法读取该图片'; $('sg-msg').className = 'msg err'; };
+    img.onerror = () => { $('sg-msg').textContent = tu(LANG, '无法读取该图片'); $('sg-msg').className = 'msg err'; };
     img.src = URL.createObjectURL(file);
   };
 
   $('sg-dl').onclick = () => {
-    if (!outUrl) { $('sg-msg').textContent = '请先提取'; $('sg-msg').className = 'msg err'; return; }
+    if (!outUrl) { $('sg-msg').textContent = tu(LANG, '请先提取'); $('sg-msg').className = 'msg err'; return; }
     const a = document.createElement('a');
     a.href = outUrl;
     a.download = 'signature.png';

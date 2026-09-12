@@ -1,29 +1,33 @@
 ---
+import { tu } from '../../i18n/toolUi.ts';
 // PDF 转图片：每页渲染为 PNG/JPG，懒加载 pdfjs-dist
+interface Props { lang?: string }
+const { lang = 'zh' } = Astro.props;
+
 ---
 <div class="pane">
   <div>
-    <div class="field-label"><span>选择 PDF 文件</span></div>
+    <div class="field-label"><span>{tu(lang, '选择 PDF 文件')}</span></div>
     <input type="file" id="pi-file" accept="application/pdf">
-    <div class="field-label" style="margin-top:14px"><span>输出格式</span></div>
+    <div class="field-label" style="margin-top:14px"><span>{tu(lang, '输出格式')}</span></div>
     <select id="pi-fmt" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:6px">
-      <option value="image/png">PNG（无损）</option>
-      <option value="image/jpeg">JPG（较小）</option>
-      <option value="image/webp">WebP（推荐）</option>
+      <option value="image/png">PNG（{tu(lang, '无损')}）</option>
+      <option value="image/jpeg">JPG（{tu(lang, '较小')}）</option>
+      <option value="image/webp">WebP（{tu(lang, '推荐')}）</option>
     </select>
-    <div class="field-label" style="margin-top:14px"><span>分辨率 <span id="pi-sv">2.0</span>×（倍数）</span></div>
+    <div class="field-label" style="margin-top:14px"><span>{tu(lang, '分辨率')} <span id="pi-sv">2.0</span>×（{tu(lang, '倍数')}）</span></div>
     <input type="range" id="pi-scale" min="1" max="4" step="0.5" value="2" style="width:100%">
-    <p style="font-size:12px;color:#999;margin-top:8px">每页转一张图，逐页下载（无 ZIP 库时）。分辨率越高越清晰，但文件越大。</p>
+    <p style="font-size:12px;color:#999;margin-top:8px">{tu(lang, '每页转一张图，逐页下载（无 ZIP 库时）。分辨率越高越清晰，但文件越大。')}</p>
   </div>
   <div>
-    <div class="field-label"><span>页面缩略</span></div>
+    <div class="field-label"><span>{tu(lang, '页面缩略')}</span></div>
     <div id="pi-thumbs" class="pi-thumbs"></div>
   </div>
 </div>
 <div class="btn-row">
-  <button id="pi-run" class="primary">开始转换</button>
-  <button id="pi-dl">下载全部</button>
-  <button id="pi-reset">重置</button>
+  <button id="pi-run" class="primary">{tu(lang, '开始转换')}</button>
+  <button id="pi-dl">{tu(lang, '下载全部')}</button>
+  <button id="pi-reset">{tu(lang, '重置')}</button>
   <span id="pi-msg" class="msg"></span>
 </div>
 
@@ -33,7 +37,9 @@
   .pi-thumbs:empty::before { content: '尚未转换'; color: #999; }
 </style>
 
-<script>
+<script>import { tu, currentLang } from '../../i18n/toolUi.ts';
+const LANG = currentLang();
+
   const $ = (id) => document.getElementById(id);
   let sourceFile = null;
   let pageBlobs = [];
@@ -56,8 +62,8 @@
   }
 
   $('pi-run').addEventListener('click', async () => {
-    if (!sourceFile) { $('pi-msg').textContent = '请先选择 PDF'; $('pi-msg').className = 'msg err'; return; }
-    $('pi-msg').textContent = '加载渲染器…'; $('pi-msg').className = 'msg';
+    if (!sourceFile) { $('pi-msg').textContent = tu(LANG, '请先选择 PDF'); $('pi-msg').className = 'msg err'; return; }
+    $('pi-msg').textContent = tu(LANG, '加载渲染器…'); $('pi-msg').className = 'msg';
     pageBlobs = [];
     try {
       const pdfjs = await loadPdfJs();
@@ -85,7 +91,7 @@
       $('pi-msg').textContent = `完成 · ${pdf.numPages} 页`;
       $('pi-msg').className = 'msg ok';
     } catch (err) {
-      $('pi-msg').textContent = '失败：' + err.message;
+      $('pi-msg').textContent = tu(LANG, '失败：') + err.message;
       $('pi-msg').className = 'msg err';
     }
   });

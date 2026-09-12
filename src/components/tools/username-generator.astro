@@ -1,17 +1,21 @@
 ---
+import { tu } from '../../i18n/toolUi.ts';
 // 随机用户名生成：内置词表，本地生成
+interface Props { lang?: string }
+const { lang = 'zh' } = Astro.props;
+
 ---
 <div>
-  <div class="field-label"><span>生成数量</span></div>
+  <div class="field-label"><span>{tu(lang, '生成数量')}</span></div>
   <input type="number" id="ug-n" min="1" max="20" value="5">
-  <label class="chk"><input type="checkbox" id="ug-num" checked> 末尾加数字</label>
-  <label class="chk"><input type="checkbox" id="ug-sep" checked> 单词间加分隔（_）</label>
-  <div class="field-label" style="margin-top:12px;"><span>结果</span></div>
-  <div id="ug-out" class="ug-out">点击生成</div>
+  <label class="chk"><input type="checkbox" id="ug-num" checked> {tu(lang, '末尾加数字')}</label>
+  <label class="chk"><input type="checkbox" id="ug-sep" checked> {tu(lang, '单词间加分隔')}（_）</label>
+  <div class="field-label" style="margin-top:12px;"><span>{tu(lang, '结果')}</span></div>
+  <div id="ug-out" class="ug-out">{tu(lang, '点击生成')}</div>
 </div>
 <div class="btn-row">
-  <button id="ug-gen" class="primary">生成</button>
-  <button id="ug-copy">复制</button>
+  <button id="ug-gen" class="primary">{tu(lang, '生成')}</button>
+  <button id="ug-copy">{tu(lang, '复制')}</button>
   <span id="ug-msg" class="msg"></span>
 </div>
 
@@ -20,7 +24,9 @@
   .ug-out { border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; min-height: 80px; line-height: 2; background: var(--bg-soft); font-family: ui-monospace, Menlo, Consolas, monospace; word-break: break-all; }
 </style>
 
-<script>
+<script>import { tu, currentLang } from '../../i18n/toolUi.ts';
+const LANG = currentLang();
+
   const $ = (id) => document.getElementById(id);
   const ADJ = ['happy', 'cool', 'tiny', 'brave', 'calm', 'wild', 'swift', 'lucky', 'silent', 'clever', 'gentle', 'bold', 'misty', 'sunny', 'rapid', 'quiet', 'fuzzy', 'iron', 'golden', 'vivid'];
   const NOUN = ['tiger', 'river', 'cloud', 'star', 'wolf', 'maple', 'ember', 'comet', 'pine', 'lotus', 'falcon', 'reef', 'nova', 'pixel', 'quartz', 'willow', 'raven', 'spark', 'cedar', 'frost'];
@@ -39,9 +45,9 @@
   }
   $('ug-gen').addEventListener('click', gen);
   $('ug-copy').addEventListener('click', async () => {
-    if (!$('ug-out').textContent || $('ug-out').textContent === '点击生成') return;
-    try { await navigator.clipboard.writeText($('ug-out').textContent); $('ug-msg').textContent = '已复制'; $('ug-msg').className = 'msg ok'; }
-    catch { $('ug-msg').textContent = '复制失败'; $('ug-msg').className = 'msg err'; }
+    if (!$('ug-out').textContent || $('ug-out').textContent === tu(LANG, '点击生成')) return;
+    try { await navigator.clipboard.writeText($('ug-out').textContent); $('ug-msg').textContent = tu(LANG, '已复制'); $('ug-msg').className = 'msg ok'; }
+    catch { $('ug-msg').textContent = tu(LANG, '复制失败'); $('ug-msg').className = 'msg err'; }
   });
   gen();
 </script>

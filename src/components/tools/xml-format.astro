@@ -1,41 +1,48 @@
 ---
+import { tu } from '../../i18n/toolUi.ts';
+
+interface Props { lang?: string }
+const { lang = 'zh' } = Astro.props;
+
 ---
 
 <div class="pane">
   <div>
-    <div class="field-label"><span>输入 XML</span></div>
+    <div class="field-label"><span>{tu(lang, '输入')} XML</span></div>
     <textarea id="xf-in" placeholder='<root><item id="1">内容</item></root>' style="min-height:200px;" spellcheck="false"></textarea>
   </div>
   <div>
-    <div class="field-label"><span>输出</span></div>
-    <textarea id="xf-out" placeholder="格式化结果" style="min-height:200px;" spellcheck="false"></textarea>
+    <div class="field-label"><span>{tu(lang, '输出')}</span></div>
+    <textarea id="xf-out" placeholder={tu(lang, '格式化结果')} style="min-height:200px;" spellcheck="false"></textarea>
   </div>
 </div>
 
 <div style="display:flex;gap:14px;flex-wrap:wrap;margin-top:12px;font-size:14px;">
-  <label><input type="checkbox" id="xf-validate" checked /> 检查标签闭合</label>
-  <label style="display:flex;align-items:center;gap:6px;">缩进
+  <label><input type="checkbox" id="xf-validate" checked /> {tu(lang, '检查标签闭合')}</label>
+  <label style="display:flex;align-items:center;gap:6px;">{tu(lang, '缩进')}
     <select id="xf-indent" style="width:auto;padding:4px 8px;">
-      <option value="2" selected>2 空格</option>
-      <option value="4">4 空格</option>
-      <option value="tab">制表符</option>
+      <option value="2" selected>2 {tu(lang, '空格')}</option>
+      <option value="4">4 {tu(lang, '空格')}</option>
+      <option value="tab">{tu(lang, '制表符')}</option>
     </select>
   </label>
 </div>
 
 <div class="btn-row">
-  <button class="primary" id="xf-fmt">格式化</button>
-  <button id="xf-min">压缩</button>
-  <button id="xf-escape">XML 转义</button>
-  <button id="xf-unescape">XML 反转义</button>
-  <button id="xf-copy">复制结果</button>
-  <button id="xf-clear">清空</button>
+  <button class="primary" id="xf-fmt">{tu(lang, '格式化')}</button>
+  <button id="xf-min">{tu(lang, '压缩')}</button>
+  <button id="xf-escape">XML {tu(lang, '转义')}</button>
+  <button id="xf-unescape">XML {tu(lang, '反转义')}</button>
+  <button id="xf-copy">{tu(lang, '复制结果')}</button>
+  <button id="xf-clear">{tu(lang, '清空')}</button>
 </div>
 
 <p class="msg" id="xf-msg"></p>
 <div id="xf-stat"></div>
 
-<script>
+<script>import { tu, currentLang } from '../../i18n/toolUi.ts';
+const LANG = currentLang();
+
   const $ = (id) => document.getElementById(id);
 
   function indentStr() {
@@ -104,7 +111,7 @@
   }
 
   function fail(e) {
-    $('xf-msg').textContent = '处理失败：' + e.message;
+    $('xf-msg').textContent = tu(LANG, '处理失败：') + e.message;
     $('xf-msg').className = 'msg err';
     $('xf-out').value = '';
   }
@@ -118,34 +125,34 @@
 
   $('xf-fmt').onclick = () => {
     const v = $('xf-in').value.trim();
-    if (!v) { $('xf-msg').textContent = '请先输入 XML'; $('xf-msg').className = 'msg err'; return; }
-    try { ok(format(v), '格式化完成'); } catch (e) { fail(e); }
+    if (!v) { $('xf-msg').textContent = tu(LANG, '请先输入 XML'); $('xf-msg').className = 'msg err'; return; }
+    try { ok(format(v), tu(LANG, '格式化完成')); } catch (e) { fail(e); }
   };
 
   $('xf-min').onclick = () => {
     const v = $('xf-in').value.trim();
-    if (!v) { $('xf-msg').textContent = '请先输入 XML'; $('xf-msg').className = 'msg err'; return; }
+    if (!v) { $('xf-msg').textContent = tu(LANG, '请先输入 XML'); $('xf-msg').className = 'msg err'; return; }
     try {
-      ok(v.replace(/>\s+</g, '><').replace(/\s{2,}/g, ' ').replace(/<!--[\s\S]*?-->/g, '').trim(), '压缩完成');
+      ok(v.replace(/>\s+</g, '><').replace(/\s{2,}/g, ' ').replace(/<!--[\s\S]*?-->/g, '').trim(), tu(LANG, '压缩完成'));
     } catch (e) { fail(e); }
   };
 
   $('xf-escape').onclick = () => {
     const v = $('xf-in').value;
-    if (!v) { $('xf-msg').textContent = '请先输入内容'; $('xf-msg').className = 'msg err'; return; }
-    ok(v.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&apos;'), '转义完成');
+    if (!v) { $('xf-msg').textContent = tu(LANG, '请先输入内容'); $('xf-msg').className = 'msg err'; return; }
+    ok(v.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&apos;'), tu(LANG, '转义完成'));
   };
 
   $('xf-unescape').onclick = () => {
     const v = $('xf-in').value;
-    if (!v) { $('xf-msg').textContent = '请先输入内容'; $('xf-msg').className = 'msg err'; return; }
-    ok(v.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&amp;/g, '&'), '反转义完成');
+    if (!v) { $('xf-msg').textContent = tu(LANG, '请先输入内容'); $('xf-msg').className = 'msg err'; return; }
+    ok(v.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&amp;/g, '&'), tu(LANG, '反转义完成'));
   };
 
   $('xf-copy').onclick = async () => {
     if (!$('xf-out').value) return;
     await navigator.clipboard.writeText($('xf-out').value);
-    $('xf-msg').textContent = '已复制';
+    $('xf-msg').textContent = tu(LANG, '已复制');
     $('xf-msg').className = 'msg ok';
   };
 

@@ -1,24 +1,30 @@
 ---
+import { tu } from '../../i18n/toolUi.ts';
 // 全角半角转换：本地字符映射
+interface Props { lang?: string }
+const { lang = 'zh' } = Astro.props;
+
 ---
 <div class="pane">
   <div>
-    <div class="field-label"><span>输入文本</span></div>
-    <textarea id="fw-in" placeholder="粘贴需要转换的中英文文本"></textarea>
+    <div class="field-label"><span>{tu(lang, '输入文本')}</span></div>
+    <textarea id="fw-in" placeholder={tu(lang, '粘贴需要转换的中英文文本')}></textarea>
   </div>
   <div>
-    <div class="field-label"><span>转换结果</span></div>
+    <div class="field-label"><span>{tu(lang, '转换结果')}</span></div>
     <textarea id="fw-out" readonly></textarea>
   </div>
 </div>
 <div class="btn-row">
-  <button id="fw-tohalf" class="primary">转半角</button>
-  <button id="fw-tofull">转全角</button>
-  <button id="fw-copy">复制</button>
+  <button id="fw-tohalf" class="primary">{tu(lang, '转半角')}</button>
+  <button id="fw-tofull">{tu(lang, '转全角')}</button>
+  <button id="fw-copy">{tu(lang, '复制')}</button>
   <span id="fw-msg" class="msg"></span>
 </div>
 
-<script>
+<script>import { tu, currentLang } from '../../i18n/toolUi.ts';
+const LANG = currentLang();
+
   const $ = (id) => document.getElementById(id);
   function toHalf(s) {
     let r = '';
@@ -45,7 +51,7 @@
   $('fw-tofull').addEventListener('click', () => run(toFull));
   $('fw-copy').addEventListener('click', async () => {
     if (!$('fw-out').value) return;
-    try { await navigator.clipboard.writeText($('fw-out').value); $('fw-msg').textContent = '已复制'; $('fw-msg').className = 'msg ok'; }
-    catch { $('fw-msg').textContent = '复制失败'; $('fw-msg').className = 'msg err'; }
+    try { await navigator.clipboard.writeText($('fw-out').value); $('fw-msg').textContent = tu(LANG, '已复制'); $('fw-msg').className = 'msg ok'; }
+    catch { $('fw-msg').textContent = tu(LANG, '复制失败'); $('fw-msg').className = 'msg err'; }
   });
 </script>

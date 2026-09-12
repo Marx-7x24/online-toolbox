@@ -1,11 +1,15 @@
 ---
+import { tu } from '../../i18n/toolUi.ts';
 // 图片 EXIF 清除：Canvas 重编码，本地处理
+interface Props { lang?: string }
+const { lang = 'zh' } = Astro.props;
+
 ---
 <div>
-  <div class="field-label"><span>上传图片（清除拍摄信息后下载）</span></div>
+  <div class="field-label"><span>{tu(lang, '上传图片（清除拍摄信息后下载')}）</span></div>
   <input type="file" id="es-file" accept="image/*" multiple>
-  <div class="field-label" style="margin-top:12px;"><span>结果</span></div>
-  <div id="es-out" class="es-out">尚未处理</div>
+  <div class="field-label" style="margin-top:12px;"><span>{tu(lang, '结果')}</span></div>
+  <div id="es-out" class="es-out">{tu(lang, '尚未处理')}</div>
 </div>
 
 <style>
@@ -15,13 +19,15 @@
   .es-out .ok { color: #2f9e44; }
 </style>
 
-<script>
+<script>import { tu, currentLang } from '../../i18n/toolUi.ts';
+const LANG = currentLang();
+
   const $ = (id) => document.getElementById(id);
   function fmt(n) { return n > 1048576 ? (n / 1048576).toFixed(2) + 'MB' : (n / 1024).toFixed(1) + 'KB'; }
   function loadImg(file) { return new Promise((res, rej) => { const url = URL.createObjectURL(file); const img = new Image(); img.onload = () => res(img); img.onerror = rej; img.src = url; }); }
   $('es-file').addEventListener('change', async (e) => {
     const files = [...e.target.files]; if (!files.length) return;
-    const out = $('es-out'); out.innerHTML = '处理中…'; out.innerHTML = '';
+    const out = $('es-out'); out.innerHTML = tu(LANG, '处理中…'); out.innerHTML = '';
     for (const f of files) {
       try {
         const img = await loadImg(f);
@@ -32,7 +38,7 @@
         const blob = await new Promise((res) => canvas.toBlob(res, mime, 0.95));
         const url = URL.createObjectURL(blob);
         const div = document.createElement('div'); div.className = 'row';
-        const a = document.createElement('a'); a.href = url; a.download = 'clean-' + f.name; a.textContent = '下载';
+        const a = document.createElement('a'); a.href = url; a.download = 'clean-' + f.name; a.textContent = tu(LANG, '下载');
         const span = document.createElement('span'); span.innerHTML = `${f.name} <span class="ok">已清除元数据</span> (${fmt(f.size)}→${fmt(blob.size)}) `;
         div.appendChild(span); div.appendChild(a); out.appendChild(div);
       } catch (err) {

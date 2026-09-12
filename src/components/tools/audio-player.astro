@@ -1,35 +1,39 @@
 ---
+import { tu } from '../../i18n/toolUi.ts';
 // 本地音乐播放器：播放本地音频文件，播放列表/倍速/循环，文件不出浏览器
+interface Props { lang?: string }
+const { lang = 'zh' } = Astro.props;
+
 ---
 <div class="pane">
   <div>
-    <div class="field-label"><span>添加音频文件（可多选）</span></div>
+    <div class="field-label"><span>{tu(lang, '添加音频文件（可多选')}）</span></div>
     <input type="file" id="ap-file" accept="audio/*" multiple>
     <div id="ap-list" style="margin-top:12px;display:flex;flex-direction:column;gap:4px;max-height:300px;overflow-y:auto"></div>
   </div>
   <div>
-    <div class="field-label"><span>正在播放</span></div>
-    <div id="ap-now" style="padding:14px;background:rgba(0,0,0,.03);border-radius:8px;font-size:15px;font-weight:600;word-break:break-all">未选择文件</div>
+    <div class="field-label"><span>{tu(lang, '正在播放')}</span></div>
+    <div id="ap-now" style="padding:14px;background:rgba(0,0,0,.03);border-radius:8px;font-size:15px;font-weight:600;word-break:break-all">{tu(lang, '未选择文件')}</div>
     <audio id="ap-audio" controls style="width:100%;margin-top:10px"></audio>
     <div style="display:flex;gap:12px;align-items:center;margin-top:10px;font-size:14px;flex-wrap:wrap">
-      <label>倍速
+      <label>{tu(lang, '倍速')}
         <select id="ap-rate" style="padding:5px;border:1px solid var(--border-color);border-radius:5px;background:#fff">
           <option value="0.5">0.5×</option><option value="0.75">0.75×</option>
           <option value="1" selected>1.0×</option><option value="1.25">1.25×</option>
           <option value="1.5">1.5×</option><option value="2">2.0×</option>
         </select>
       </label>
-      <label>循环
+      <label>{tu(lang, '循环')}
         <select id="ap-loop" style="padding:5px;border:1px solid var(--border-color);border-radius:5px;background:#fff">
-          <option value="list">列表循环</option>
-          <option value="one">单曲循环</option>
-          <option value="none">不循环</option>
+          <option value="list">{tu(lang, '列表循环')}</option>
+          <option value="one">{tu(lang, '单曲循环')}</option>
+          <option value="none">{tu(lang, '不循环')}</option>
         </select>
       </label>
-      <button id="ap-prev">⏮ 上一首</button>
-      <button id="ap-next">⏭ 下一首</button>
+      <button id="ap-prev">⏮ {tu(lang, '上一首')}</button>
+      <button id="ap-next">⏭ {tu(lang, '下一首')}</button>
     </div>
-    <div style="margin-top:10px;font-size:12px;color:var(--text-sub)">文件仅在浏览器本地播放，不会上传。</div>
+    <div style="margin-top:10px;font-size:12px;color:var(--text-sub)">{tu(lang, '文件仅在浏览器本地播放，不会上传。')}</div>
   </div>
 </div>
 

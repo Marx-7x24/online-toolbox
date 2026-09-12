@@ -1,39 +1,45 @@
 ---
+import { tu } from '../../i18n/toolUi.ts';
 // 分贝噪音测试仪：getUserMedia + AnalyserNode 实时测量环境噪音
+interface Props { lang?: string }
+const { lang = 'zh' } = Astro.props;
+
 ---
 <div class="pane">
   <div>
     <div style="text-align:center;padding:20px 0">
       <div id="db-val" style="font-size:64px;font-weight:700;color:var(--primary-color);font-variant-numeric:tabular-nums">--</div>
-      <div style="font-size:13px;color:var(--text-sub)">dB SPL（近似值）</div>
+      <div style="font-size:13px;color:var(--text-sub)">dB SPL（{tu(lang, '近似值')}）</div>
     </div>
     <div style="height:16px;background:rgba(0,0,0,.06);border-radius:8px;overflow:hidden">
       <div id="db-bar" style="height:100%;width:0%;background:linear-gradient(90deg,#27ae60,#f1c40f,#e74c3c);border-radius:8px;transition:width .1s"></div>
     </div>
     <div class="btn-row" style="margin-top:16px;justify-content:center">
-      <button id="db-start" class="primary">开始测量</button>
-      <button id="db-stop">停止</button>
+      <button id="db-start" class="primary">{tu(lang, '开始测量')}</button>
+      <button id="db-stop">{tu(lang, '停止')}</button>
     </div>
     <p class="msg" id="db-msg"></p>
   </div>
   <div>
-    <div class="field-label"><span>统计</span></div>
+    <div class="field-label"><span>{tu(lang, '统计')}</span></div>
     <table style="width:100%;border-collapse:collapse;font-size:15px">
-      <tr style="border-bottom:1px solid var(--border-color)"><td style="padding:8px 4px;color:var(--text-sub)">最大值</td><td id="db-max" style="padding:8px 4px;text-align:right;font-weight:600">-</td></tr>
-      <tr style="border-bottom:1px solid var(--border-color)"><td style="padding:8px 4px;color:var(--text-sub)">平均值</td><td id="db-avg" style="padding:8px 4px;text-align:right;font-weight:600">-</td></tr>
-      <tr><td style="padding:8px 4px;color:var(--text-sub)">测量时长</td><td id="db-time" style="padding:8px 4px;text-align:right;font-weight:600">-</td></tr>
+      <tr style="border-bottom:1px solid var(--border-color)"><td style="padding:8px 4px;color:var(--text-sub)">{tu(lang, '最大值')}</td><td id="db-max" style="padding:8px 4px;text-align:right;font-weight:600">-</td></tr>
+      <tr style="border-bottom:1px solid var(--border-color)"><td style="padding:8px 4px;color:var(--text-sub)">{tu(lang, '平均值')}</td><td id="db-avg" style="padding:8px 4px;text-align:right;font-weight:600">-</td></tr>
+      <tr><td style="padding:8px 4px;color:var(--text-sub)">{tu(lang, '测量时长')}</td><td id="db-time" style="padding:8px 4px;text-align:right;font-weight:600">-</td></tr>
     </table>
-    <div class="field-label" style="margin-top:14px"><span>参考对照</span></div>
+    <div class="field-label" style="margin-top:14px"><span>{tu(lang, '参考对照')}</span></div>
     <div style="font-size:13px;color:var(--text-sub);line-height:1.9">
-      20dB 叶落声｜40dB 图书馆｜60dB 正常交谈<br>
-      70dB 繁忙街道｜85dB 地铁（长期有损听力）<br>
-      100dB 工厂车间｜120dB 飞机起飞（痛阈）
+      20dB {tu(lang, '叶落声')}｜40dB {tu(lang, '图书馆')}｜60dB {tu(lang, '正常交谈')}<br>
+      70dB {tu(lang, '繁忙街道')}｜85dB {tu(lang, '地铁（长期有损听力')}）<br>
+      100dB {tu(lang, '工厂车间')}｜120dB {tu(lang, '飞机起飞（痛阈')}）
     </div>
-    <div style="margin-top:10px;font-size:12px;color:var(--text-sub)">数值基于 RMS 声压级估算（麦克风校准因设备而异，仅供相对参考）。音频仅在本地分析，不会上传。</div>
+    <div style="margin-top:10px;font-size:12px;color:var(--text-sub)">{tu(lang, '数值基于 RMS 声压级估算（麦克风校准因设备而异，仅供相对参考）。音频仅在本地分析，不会上传。')}</div>
   </div>
 </div>
 
-<script>
+<script>import { tu, currentLang } from '../../i18n/toolUi.ts';
+const LANG = currentLang();
+
 const $ = (id) => document.getElementById(id);
 let stream = null, ctx = null, analyser = null, rafId = null;
 let maxDb = -Infinity, sumDb = 0, n = 0, startTime = 0;
@@ -59,7 +65,7 @@ function loop(){
   $('db-max').textContent = Math.round(maxDb) + ' dB';
   $('db-avg').textContent = Math.round(sumDb / n) + ' dB';
   const sec = Math.floor((now - startTime) / 1000);
-  $('db-time').textContent = Math.floor(sec / 60) + '分' + (sec % 60) + '秒';
+  $('db-time').textContent = Math.floor(sec / 60) + tu(LANG, '分') + (sec % 60) + tu(LANG, '秒');
   rafId = requestAnimationFrame(loop);
 }
 async function start(){
@@ -71,10 +77,10 @@ async function start(){
     analyser.fftSize = 2048;
     src.connect(analyser);
     maxDb = -Infinity; sumDb = 0; n = 0; startTime = performance.now();
-    $('db-msg').textContent = '测量中…'; $('db-msg').className = 'msg ok';
+    $('db-msg').textContent = tu(LANG, '测量中…'); $('db-msg').className = 'msg ok';
     loop();
   } catch (e){
-    $('db-msg').textContent = '无法访问麦克风：' + (e.message || e);
+    $('db-msg').textContent = tu(LANG, '无法访问麦克风：') + (e.message || e);
     $('db-msg').className = 'msg err';
   }
 }
@@ -83,7 +89,7 @@ function stop(){
   if (stream) stream.getTracks().forEach(t => t.stop());
   if (ctx) ctx.close();
   stream = null; ctx = null; rafId = null;
-  $('db-msg').textContent = '已停止'; $('db-msg').className = 'msg';
+  $('db-msg').textContent = tu(LANG, '已停止'); $('db-msg').className = 'msg';
 }
 $('db-start').addEventListener('click', () => { if (!rafId) start(); });
 $('db-stop').addEventListener('click', stop);

@@ -1,42 +1,49 @@
 ---
+import { tu } from '../../i18n/toolUi.ts';
+
+interface Props { lang?: string }
+const { lang = 'zh' } = Astro.props;
+
 ---
 
 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;">
   <div>
-    <div class="field-label"><span>开始日期</span></div>
+    <div class="field-label"><span>{tu(lang, '开始日期')}</span></div>
     <input type="date" id="dd-start" />
-    <div class="field-label" style="margin-top:10px;"><span>开始时间（可选）</span></div>
+    <div class="field-label" style="margin-top:10px;"><span>{tu(lang, '开始时间（可选')}）</span></div>
     <input type="time" id="dd-st" />
   </div>
   <div>
-    <div class="field-label"><span>结束日期</span></div>
+    <div class="field-label"><span>{tu(lang, '结束日期')}</span></div>
     <input type="date" id="dd-end" />
-    <div class="field-label" style="margin-top:10px;"><span>结束时间（可选）</span></div>
+    <div class="field-label" style="margin-top:10px;"><span>{tu(lang, '结束时间（可选')}）</span></div>
     <input type="time" id="dd-et" />
   </div>
 </div>
 
 <div class="btn-row">
-  <button class="primary" id="dd-go">计算间隔</button>
-  <button id="dd-today">结束设为今天</button>
+  <button class="primary" id="dd-go">{tu(lang, '计算间隔')}</button>
+  <button id="dd-today">{tu(lang, '结束设为今天')}</button>
 </div>
 
 <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:16px;align-items:flex-end;">
   <div style="min-width:150px;">
-    <div class="field-label"><span>日期推算</span></div>
+    <div class="field-label"><span>{tu(lang, '日期推算')}</span></div>
     <input type="number" id="dd-days" value="100" />
   </div>
-  <button id="dd-add">之后</button>
-  <button id="dd-sub">之前</button>
+  <button id="dd-add">{tu(lang, '之后')}</button>
+  <button id="dd-sub">{tu(lang, '之前')}</button>
   <label style="font-size:13px;display:flex;align-items:center;gap:6px;padding-bottom:8px;">
-    <input type="checkbox" id="dd-workday" /> 按工作日推算（跳过周末）
+    <input type="checkbox" id="dd-workday" /> {tu(lang, '按工作日推算（跳过周末')}）
   </label>
 </div>
 
 <p class="msg" id="dd-msg"></p>
 <div id="dd-out"></div>
 
-<script>
+<script>import { tu, currentLang } from '../../i18n/toolUi.ts';
+const LANG = currentLang();
+
   const $ = (id) => document.getElementById(id);
 
   function pad(n) { return String(n).padStart(2, '0'); }
@@ -68,7 +75,7 @@
   function run() {
     const a = toDate($('dd-start').value, $('dd-st').value);
     const b = toDate($('dd-end').value, $('dd-et').value);
-    if (!a || !b) { $('dd-msg').textContent = '请选择起止日期'; $('dd-msg').className = 'msg err'; return; }
+    if (!a || !b) { $('dd-msg').textContent = tu(LANG, '请选择起止日期'); $('dd-msg').className = 'msg err'; return; }
 
     const ms = b - a;
     const negative = ms < 0;
@@ -87,8 +94,8 @@
 
     $('dd-out').innerHTML =
       '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:14px;">' +
-      [['相差天数', (negative ? '-' : '') + days], ['工作日', wd], ['周末', weekend],
-       ['折合月数', totalMonths]]
+      [[tu(LANG, '相差天数'), (negative ? '-' : '') + days], [tu(LANG, '工作日'), wd], [tu(LANG, '周末'), weekend],
+       [tu(LANG, '折合月数'), totalMonths]]
         .map(([k, v]) => `<div style="background:var(--bg);border-radius:10px;padding:12px;">
           <div style="font-size:12px;color:var(--text-sub);">${k}</div>
           <div style="font-size:20px;font-weight:500;">${v}</div></div>`).join('') +
@@ -98,9 +105,9 @@
         <tr><th>完整时长</th><td>${days} 天 ${hours} 小时 ${minutes} 分钟</td></tr>
         <tr><th>折算</th><td>${years} 年 ${months} 个月（约）</td></tr>
         <tr><th>总小时</th><td>${Math.floor(absMs / 3600000)} 小时</td></tr>
-        <tr><th>起止星期</th><td>${'日一二三四五六'[start.getDay()]} → ${'日一二三四五六'[end.getDay()]}</td></tr>
+        <tr><th>起止星期</th><td>${tu(LANG, '日一二三四五六')[start.getDay()]} → ${tu(LANG, '日一二三四五六')[end.getDay()]}</td></tr>
       </table>`;
-    $('dd-msg').textContent = '计算完成';
+    $('dd-msg').textContent = tu(LANG, '计算完成');
     $('dd-msg').className = 'msg ok';
   }
 
@@ -119,7 +126,7 @@
     } else {
       d.setDate(d.getDate() + sign * n);
     }
-    $('dd-msg').textContent = `${fmt(base)} ${sign > 0 ? '之后' : '之前'} ${n} ${$('dd-workday').checked ? '个工作日' : '天'} = ${fmt(d)}（星期${'日一二三四五六'[d.getDay()]}）`;
+    $('dd-msg').textContent = `${fmt(base)} ${sign > 0 ? '之后' : tu(LANG, '之前')} ${n} ${$('dd-workday').checked ? '个工作日' : tu(LANG, '天')} = ${fmt(d)}（星期${tu(LANG, '日一二三四五六')[d.getDay()]}）`;
     $('dd-msg').className = 'msg ok';
   }
 

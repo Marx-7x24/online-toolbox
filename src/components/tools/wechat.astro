@@ -1,58 +1,62 @@
 ---
+import { tu } from '../../i18n/toolUi.ts';
 // 微信聊天模拟器（单聊）：纯前端构造对话（头像/昵称/左右气泡/时间），Canvas 导出 PNG
+interface Props { lang?: string }
+const { lang = 'zh' } = Astro.props;
+
 ---
 <div class="pane">
   <div>
-    <div class="field-label"><span>对方昵称</span></div>
-    <input type="text" id="wc-other-name" value="小美" style="width:100%;padding:7px;border:1px solid var(--border-color);border-radius:6px;box-sizing:border-box">
+    <div class="field-label"><span>{tu(lang, '对方昵称')}</span></div>
+    <input type="text" id="wc-other-name" value={tu(lang, '小美')} style="width:100%;padding:7px;border:1px solid var(--border-color);border-radius:6px;box-sizing:border-box">
     <div style="display:flex;gap:8px;align-items:center;margin-top:8px">
       <input type="color" id="wc-other-color" value="#10AEFF" style="width:42px;height:32px;border:1px solid var(--border-color);border-radius:6px">
       <input type="file" id="wc-other-avatar" accept="image/*">
     </div>
 
-    <div class="field-label" style="margin-top:14px"><span>我的昵称</span></div>
-    <input type="text" id="wc-me-name" value="我" style="width:100%;padding:7px;border:1px solid var(--border-color);border-radius:6px;box-sizing:border-box">
+    <div class="field-label" style="margin-top:14px"><span>{tu(lang, '我的昵称')}</span></div>
+    <input type="text" id="wc-me-name" value={tu(lang, '我')} style="width:100%;padding:7px;border:1px solid var(--border-color);border-radius:6px;box-sizing:border-box">
     <div style="display:flex;gap:8px;align-items:center;margin-top:8px">
       <input type="color" id="wc-me-color" value="#07C160" style="width:42px;height:32px;border:1px solid var(--border-color);border-radius:6px">
       <input type="file" id="wc-me-avatar" accept="image/*">
     </div>
 
-    <div class="field-label" style="margin-top:16px"><span>手机时间</span></div>
+    <div class="field-label" style="margin-top:16px"><span>{tu(lang, '手机时间')}</span></div>
     <input type="text" id="wc-sb-time" value="14:30" style="width:100%;padding:7px;border:1px solid var(--border-color);border-radius:6px;box-sizing:border-box">
-    <div class="field-label" style="margin-top:12px"><span>信号强度</span></div>
+    <div class="field-label" style="margin-top:12px"><span>{tu(lang, '信号强度')}</span></div>
     <select id="wc-sb-signal" style="width:100%;padding:7px;border:1px solid var(--border-color);border-radius:6px;background:#fff">
-      <option value="1">1 格</option><option value="2">2 格</option><option value="3">3 格</option><option value="4" selected>4 格</option>
+      <option value="1">1 {tu(lang, '格')}</option><option value="2">2 {tu(lang, '格')}</option><option value="3">3 {tu(lang, '格')}</option><option value="4" selected>4 {tu(lang, '格')}</option>
     </select>
-    <div class="field-label" style="margin-top:12px"><span>手机网络</span></div>
+    <div class="field-label" style="margin-top:12px"><span>{tu(lang, '手机网络')}</span></div>
     <select id="wc-sb-net" style="width:100%;padding:7px;border:1px solid var(--border-color);border-radius:6px;background:#fff">
       <option value="5G" selected>5G</option><option value="4G">4G</option>
     </select>
-    <div class="field-label" style="margin-top:12px"><span>剩余电量</span></div>
+    <div class="field-label" style="margin-top:12px"><span>{tu(lang, '剩余电量')}</span></div>
     <input type="range" id="wc-sb-bat" min="0" max="100" value="80" style="width:100%">
 
-    <div class="field-label" style="margin-top:16px"><span>消息内容</span></div>
-    <textarea id="wc-text" placeholder="输入一条消息…" style="width:100%;height:64px;padding:8px;border:1px solid var(--border-color);border-radius:6px;box-sizing:border-box;font-size:14px;resize:vertical"></textarea>
+    <div class="field-label" style="margin-top:16px"><span>{tu(lang, '消息内容')}</span></div>
+    <textarea id="wc-text" placeholder={tu(lang, '输入一条消息…')} style="width:100%;height:64px;padding:8px;border:1px solid var(--border-color);border-radius:6px;box-sizing:border-box;font-size:14px;resize:vertical"></textarea>
     <div style="display:flex;gap:14px;align-items:center;margin-top:8px">
-      <label><input type="radio" name="wc-side" value="other" checked> 对方</label>
-      <label><input type="radio" name="wc-side" value="me"> 我</label>
+      <label><input type="radio" name="wc-side" value="other" checked> {tu(lang, '对方')}</label>
+      <label><input type="radio" name="wc-side" value="me"> {tu(lang, '我')}</label>
     </div>
-    <div class="field-label" style="margin-top:8px"><span>时间（可选，如 14:30）</span></div>
-    <input type="text" id="wc-time" placeholder="留空则不显示" style="width:100%;padding:7px;border:1px solid var(--border-color);border-radius:6px;box-sizing:border-box">
+    <div class="field-label" style="margin-top:8px"><span>{tu(lang, '时间（可选，如')} 14:30）</span></div>
+    <input type="text" id="wc-time" placeholder={tu(lang, '留空则不显示')} style="width:100%;padding:7px;border:1px solid var(--border-color);border-radius:6px;box-sizing:border-box">
     <div class="btn-row" style="margin-top:10px">
-      <button id="wc-add" class="primary">添加消息</button>
-      <button id="wc-undo">撤销</button>
-      <button id="wc-clear">清空</button>
+      <button id="wc-add" class="primary">{tu(lang, '添加消息')}</button>
+      <button id="wc-undo">{tu(lang, '撤销')}</button>
+      <button id="wc-clear">{tu(lang, '清空')}</button>
     </div>
   </div>
   <div>
-    <div class="field-label"><span>预览</span></div>
+    <div class="field-label"><span>{tu(lang, '预览')}</span></div>
     <div id="wc-screen" style="max-width:320px;margin:0 auto;background:#ededed;border-radius:14px;overflow:hidden;box-shadow:0 4px 18px rgba(0,0,0,.12)">
       <div class="sb-statusbar"><span class="sb-time">14:30</span><span class="sb-right"><span class="sb-signal"></span><span class="sb-net">5G</span><span class="sb-battery"><i></i></span></span></div>
       <div id="wc-header" style="background:#ededed;padding:10px 12px;font-size:15px;font-weight:600;text-align:center;color:#111;border-bottom:1px solid #d9d9d9"></div>
       <div id="wc-chat" style="padding:12px 10px;min-height:300px;display:flex;flex-direction:column;gap:12px"></div>
     </div>
     <div class="btn-row" style="justify-content:center">
-      <button id="wc-export" class="primary">生成图片截图</button>
+      <button id="wc-export" class="primary">{tu(lang, '生成图片截图')}</button>
     </div>
     <p class="msg" id="wc-msg"></p>
   </div>
@@ -68,13 +72,15 @@
   .wc-time { text-align:center;font-size:12px;color:#9aa0a6; }
 </style>
 
-<script>
+<script>import { tu, currentLang } from '../../i18n/toolUi.ts';
+const LANG = currentLang();
+
   import { bindStatusBar } from '../../scripts/statusbar.js';
   const $ = (id) => document.getElementById(id);
   let msgs = [];
   const avatars = { me:null, other:null };
   const AV = { me:()=>$('wc-me-color').value, other:()=>$('wc-other-color').value };
-  const NM = { me:()=>$('wc-me-name').value||'我', other:()=>$('wc-other-name').value||'对方' };
+  const NM = { me:()=>$('wc-me-name').value||tu(LANG, '我'), other:()=>$('wc-other-name').value||tu(LANG, '对方') };
 
   function readAvatar(side, input){
     const f = input.files[0]; if(!f) return;
@@ -101,17 +107,17 @@
     box.scrollTop = box.scrollHeight;
   }
   function add(){
-    const text = $('wc-text').value.trim(); if(!text){ $('wc-msg').textContent='请输入消息内容'; $('wc-msg').className='msg err'; return; }
+    const text = $('wc-text').value.trim(); if(!text){ $('wc-msg').textContent=tu(LANG, '请输入消息内容'); $('wc-msg').className='msg err'; return; }
     const side = document.querySelector('input[name=wc-side]:checked').value;
     const time = $('wc-time').value.trim();
     msgs.push({ side, text, time });
     $('wc-text').value=''; $('wc-time').value='';
-    render(); $('wc-msg').textContent='已添加'; $('wc-msg').className='msg ok';
+    render(); $('wc-msg').textContent=tu(LANG, '已添加'); $('wc-msg').className='msg ok';
   }
   $('wc-add').addEventListener('click', add);
   $('wc-text').addEventListener('keydown', e=>{ if(e.key==='Enter'&&(e.ctrlKey||e.metaKey)) add(); });
   $('wc-undo').addEventListener('click', ()=>{ msgs.pop(); render(); });
-  $('wc-clear').addEventListener('click', ()=>{ if(msgs.length&&confirm('清空全部消息？')){ msgs=[]; render(); } });
+  $('wc-clear').addEventListener('click', ()=>{ if(msgs.length&&confirm(tu(LANG, '清空全部消息？'))){ msgs=[]; render(); } });
 
   // ---- Canvas 导出 ----
   function wrapText(ctx, text, maxW){
@@ -139,7 +145,7 @@
     ctx.restore();
   }
   $('wc-export').addEventListener('click', () => {
-    if (!msgs.length){ $('wc-msg').textContent='请先添加消息'; $('wc-msg').className='msg err'; return; }
+    if (!msgs.length){ $('wc-msg').textContent=tu(LANG, '请先添加消息'); $('wc-msg').className='msg err'; return; }
     const W=375, pad=10, av=38, gap=12, bubbleMax=210, fs=15, bw=10, bh=8;
     const cnv = document.createElement('canvas'); const ctx = cnv.getContext('2d');
     ctx.font = `${fs}px "PingFang SC","Microsoft YaHei",sans-serif`;
@@ -176,7 +182,7 @@
     });
     cnv.toBlob(b=>{
       const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download='wechat-chat.png'; a.click();
-      $('wc-msg').textContent='已导出 wechat-chat.png'; $('wc-msg').className='msg ok';
+      $('wc-msg').textContent=tu(LANG, '已导出 wechat-chat.png'); $('wc-msg').className='msg ok';
     });
   });
   render();

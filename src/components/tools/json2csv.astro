@@ -1,46 +1,53 @@
 ---
+import { tu } from '../../i18n/toolUi.ts';
+
+interface Props { lang?: string }
+const { lang = 'zh' } = Astro.props;
+
 ---
 
-<div class="tip">输入 JSON 对象数组，转成 CSV 或 Markdown 表格。全部在本地处理。</div>
+<div class="tip">{tu(lang, '输入 JSON 对象数组，转成 CSV 或 Markdown 表格。全部在本地处理。')}</div>
 
-<div class="field-label"><span>JSON 数据（对象数组）</span></div>
+<div class="field-label"><span>JSON {tu(lang, '数据（对象数组')}）</span></div>
 <textarea id="jc-in" placeholder='[{"name":"张三","age":28,"city":"北京"},{"name":"李四","age":32,"city":"上海"}]' style="min-height:160px;" spellcheck="false"></textarea>
 
 <div style="display:flex;gap:14px;flex-wrap:wrap;margin-top:12px;font-size:14px;">
-  <label><input type="checkbox" id="jc-header" checked /> 包含表头</label>
-  <label><input type="checkbox" id="jc-bom" checked /> CSV 带 BOM（Excel 不乱码）</label>
-  <label style="display:flex;align-items:center;gap:6px;">分隔符
+  <label><input type="checkbox" id="jc-header" checked /> {tu(lang, '包含表头')}</label>
+  <label><input type="checkbox" id="jc-bom" checked /> CSV {tu(lang, '带 BOM（Excel 不乱码')}）</label>
+  <label style="display:flex;align-items:center;gap:6px;">{tu(lang, '分隔符')}
     <select id="jc-sep" style="width:auto;padding:4px 8px;">
-      <option value="," selected>逗号</option>
-      <option value="\t">制表符</option>
-      <option value=";">分号</option>
+      <option value="," selected>{tu(lang, '逗号')}</option>
+      <option value="\t">{tu(lang, '制表符')}</option>
+      <option value=";">{tu(lang, '分号')}</option>
     </select>
   </label>
 </div>
 
 <div class="btn-row">
-  <button class="primary" id="jc-csv">转 CSV</button>
-  <button id="jc-md">转 Markdown 表格</button>
-  <button id="jc-sql">转 SQL INSERT</button>
-  <button id="jc-sample">填入示例</button>
-  <button id="jc-copy">复制结果</button>
-  <button id="jc-dl">下载 CSV</button>
-  <button id="jc-clear">清空</button>
+  <button class="primary" id="jc-csv">{tu(lang, '转')} CSV</button>
+  <button id="jc-md">{tu(lang, '转 Markdown 表格')}</button>
+  <button id="jc-sql">{tu(lang, '转')} SQL INSERT</button>
+  <button id="jc-sample">{tu(lang, '填入示例')}</button>
+  <button id="jc-copy">{tu(lang, '复制结果')}</button>
+  <button id="jc-dl">{tu(lang, '下载')} CSV</button>
+  <button id="jc-clear">{tu(lang, '清空')}</button>
 </div>
 
 <p class="msg" id="jc-msg"></p>
 <div id="jc-preview"></div>
 
-<script>
+<script>import { tu, currentLang } from '../../i18n/toolUi.ts';
+const LANG = currentLang();
+
   const $ = (id) => document.getElementById(id);
 
   function parse() {
     const raw = $('jc-in').value.trim();
-    if (!raw) throw new Error('请先输入 JSON 数据');
+    if (!raw) throw new Error(tu(LANG, '请先输入 JSON 数据'));
     const data = JSON.parse(raw);
     const arr = Array.isArray(data) ? data : [data];
-    if (!arr.length) throw new Error('数据为空');
-    if (typeof arr[0] !== 'object' || arr[0] === null) throw new Error('数组元素必须是对象');
+    if (!arr.length) throw new Error(tu(LANG, '数据为空'));
+    if (typeof arr[0] !== 'object' || arr[0] === null) throw new Error(tu(LANG, '数组元素必须是对象'));
     const cols = [];
     for (const row of arr) {
       for (const k of Object.keys(row)) if (!cols.includes(k)) cols.push(k);
@@ -100,7 +107,7 @@
     const { arr, cols } = parse();
     let table = '';
     if (arr.length) {
-      table = '<div class="field-label" style="margin-top:16px;"><span>表格预览</span><span>' + arr.length + ' 行 × ' + cols.length + ' 列</span></div>' +
+      table = '<div class="field-label" style="margin-top:16px;"><span>表格预览</span><span>' + arr.length + tu(LANG, ' 行 × ') + cols.length + ' 列</span></div>' +
         '<div style="max-height:300px;overflow:auto;"><table class="result-table"><tr>' +
         cols.map((c) => `<th>${c.replace(/</g, '&lt;')}</th>`).join('') +
         '</tr>' +
@@ -117,24 +124,24 @@
     try {
       const text = fn();
       preview(text, label);
-      $('jc-msg').textContent = label + '完成';
+      $('jc-msg').textContent = label + tu(LANG, '完成');
       $('jc-msg').className = 'msg ok';
     } catch (e) {
       $('jc-preview').innerHTML = '';
-      $('jc-msg').textContent = '转换失败：' + e.message;
+      $('jc-msg').textContent = tu(LANG, '转换失败：') + e.message;
       $('jc-msg').className = 'msg err';
     }
   }
 
   $('jc-csv').onclick = () => run(toCsv, 'CSV');
-  $('jc-md').onclick = () => run(toMd, 'Markdown 表格');
-  $('jc-sql').onclick = () => run(toSql, 'SQL 语句');
+  $('jc-md').onclick = () => run(toMd, tu(LANG, 'Markdown 表格'));
+  $('jc-sql').onclick = () => run(toSql, tu(LANG, 'SQL 语句'));
 
   $('jc-copy').onclick = async () => {
     const ta = $('jc-preview').querySelector('textarea');
     if (!ta) return;
     await navigator.clipboard.writeText(ta.value);
-    $('jc-msg').textContent = '已复制';
+    $('jc-msg').textContent = tu(LANG, '已复制');
     $('jc-msg').className = 'msg ok';
   };
 
@@ -148,20 +155,20 @@
       a.download = 'data.csv';
       a.click();
       setTimeout(() => URL.revokeObjectURL(url), 3000);
-      $('jc-msg').textContent = '已下载 CSV';
+      $('jc-msg').textContent = tu(LANG, '已下载 CSV');
       $('jc-msg').className = 'msg ok';
     } catch (e) {
-      $('jc-msg').textContent = '下载失败：' + e.message;
+      $('jc-msg').textContent = tu(LANG, '下载失败：') + e.message;
       $('jc-msg').className = 'msg err';
     }
   };
 
   $('jc-sample').onclick = () => {
     $('jc-in').value = JSON.stringify([
-      { name: '张三', age: 28, city: '北京', dept: '技术部' },
-      { name: '李四', age: 32, city: '上海', dept: '市场部' },
-      { name: '王五', age: 25, city: '广州', dept: '技术部' },
-      { name: '赵六', age: 41, city: '深圳', dept: '财务部' },
+      { name: tu(LANG, '张三'), age: 28, city: tu(LANG, '北京'), dept: tu(LANG, '技术部') },
+      { name: tu(LANG, '李四'), age: 32, city: tu(LANG, '上海'), dept: tu(LANG, '市场部') },
+      { name: tu(LANG, '王五'), age: 25, city: tu(LANG, '广州'), dept: tu(LANG, '技术部') },
+      { name: tu(LANG, '赵六'), age: 41, city: tu(LANG, '深圳'), dept: tu(LANG, '财务部') },
     ], null, 2);
     run(toCsv, 'CSV');
   };

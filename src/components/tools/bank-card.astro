@@ -1,29 +1,36 @@
 ---
+import { tu } from '../../i18n/toolUi.ts';
+
+interface Props { lang?: string }
+const { lang = 'zh' } = Astro.props;
+
 ---
 
-<div class="tip">用 Luhn 算法校验卡号是否合法，并识别卡组织。不做任何联网查询。</div>
+<div class="tip">{tu(lang, '用 Luhn 算法校验卡号是否合法，并识别卡组织。不做任何联网查询。')}</div>
 
 <div style="max-width:460px;">
-  <div class="field-label"><span>银行卡号</span></div>
-  <input type="text" id="bc-in" placeholder="输入卡号，可含空格" maxlength="30" spellcheck="false" />
+  <div class="field-label"><span>{tu(lang, '银行卡号')}</span></div>
+  <input type="text" id="bc-in" placeholder={tu(lang, '输入卡号，可含空格')} maxlength="30" spellcheck="false" />
 </div>
 
 <div class="btn-row">
-  <button class="primary" id="bc-go">校验</button>
-  <button id="bc-batch">批量校验</button>
-  <button id="bc-gen">生成测试卡号</button>
-  <button id="bc-clear">清空</button>
+  <button class="primary" id="bc-go">{tu(lang, '校验')}</button>
+  <button id="bc-batch">{tu(lang, '批量校验')}</button>
+  <button id="bc-gen">{tu(lang, '生成测试卡号')}</button>
+  <button id="bc-clear">{tu(lang, '清空')}</button>
 </div>
 
 <div id="bc-batch-box" style="display:none;max-width:560px;">
-  <div class="field-label"><span>批量卡号（每行一个）</span></div>
-  <textarea id="bc-list" placeholder="每行一个卡号" style="min-height:120px;" spellcheck="false"></textarea>
+  <div class="field-label"><span>{tu(lang, '批量卡号（每行一个')}）</span></div>
+  <textarea id="bc-list" placeholder={tu(lang, '每行一个卡号')} style="min-height:120px;" spellcheck="false"></textarea>
 </div>
 
 <p class="msg" id="bc-msg"></p>
 <div id="bc-out"></div>
 
-<script>
+<script>import { tu, currentLang } from '../../i18n/toolUi.ts';
+const LANG = currentLang();
+
   const $ = (id) => document.getElementById(id);
 
   function luhn(num) {
@@ -43,22 +50,22 @@
 
   function brand(num) {
     const n = num.replace(/\D/g, '');
-    if (/^62/.test(n)) return { name: '中国银联 UnionPay', len: [16, 17, 18, 19] };
+    if (/^62/.test(n)) return { name: tu(LANG, '中国银联 UnionPay'), len: [16, 17, 18, 19] };
     if (/^4/.test(n)) return { name: 'Visa', len: [13, 16, 19] };
-    if (/^(5[1-5]|2(2[2-9]|[3-6]\d|7[01]|720))/.test(n)) return { name: 'MasterCard 万事达', len: [16] };
-    if (/^3[47]/.test(n)) return { name: 'American Express 运通', len: [15] };
+    if (/^(5[1-5]|2(2[2-9]|[3-6]\d|7[01]|720))/.test(n)) return { name: tu(LANG, 'MasterCard 万事达'), len: [16] };
+    if (/^3[47]/.test(n)) return { name: tu(LANG, 'American Express 运通'), len: [15] };
     if (/^(35(2[89]|[3-8]\d))/.test(n)) return { name: 'JCB', len: [16, 17, 18, 19] };
-    if (/^(30[0-5]|36|38)/.test(n)) return { name: 'Diners Club 大来', len: [14, 16] };
+    if (/^(30[0-5]|36|38)/.test(n)) return { name: tu(LANG, 'Diners Club 大来'), len: [14, 16] };
     if (/^(6011|64[4-9]|65)/.test(n)) return { name: 'Discover', len: [16, 19] };
-    if (/^9/.test(n)) return { name: '国内 prepaid 卡（部分）', len: [16, 19] };
-    return { name: '未知卡组织', len: [16, 19] };
+    if (/^9/.test(n)) return { name: tu(LANG, '国内 prepaid 卡（部分）'), len: [16, 19] };
+    return { name: tu(LANG, '未知卡组织'), len: [16, 19] };
   }
 
   function check(raw) {
     const clean = raw.replace(/[\s-]/g, '');
     const r = { raw, clean, ok: false };
     if (!/^\d{12,19}$/.test(clean)) {
-      r.reason = '卡号应为 12–19 位数字';
+      r.reason = tu(LANG, '卡号应为 12–19 位数字');
       return r;
     }
     r.ok = true;
@@ -77,7 +84,7 @@
       ? [$('bc-in').value.trim()].filter(Boolean)
       : $('bc-list').value.split(/\r?\n/).map((s) => s.trim()).filter(Boolean);
 
-    if (!nums.length) { $('bc-msg').textContent = '请输入卡号'; $('bc-msg').className = 'msg err'; return; }
+    if (!nums.length) { $('bc-msg').textContent = tu(LANG, '请输入卡号'); $('bc-msg').className = 'msg err'; return; }
     const rows = nums.map(check);
     const okCount = rows.filter((r) => r.ok && r.luhn).length;
 
@@ -105,7 +112,7 @@
         }).join('') + '</table>';
 
     $('bc-msg').textContent = single
-      ? (rows[0].ok ? (rows[0].luhn ? '校验通过' : '校验未通过') : rows[0].reason)
+      ? (rows[0].ok ? (rows[0].luhn ? '校验通过' : tu(LANG, '校验未通过')) : rows[0].reason)
       : `共 ${rows.length} 个，通过 ${okCount} 个`;
     $('bc-msg').className = (single ? rows[0].ok && rows[0].luhn : okCount > 0) ? 'msg ok' : 'msg err';
   }
@@ -133,7 +140,7 @@
     const box = $('bc-batch-box');
     const show = box.style.display === 'none';
     box.style.display = show ? 'block' : 'none';
-    $('bc-batch').textContent = show ? '单个校验' : '批量校验';
+    $('bc-batch').textContent = show ? '单个校验' : tu(LANG, '批量校验');
     $('bc-out').innerHTML = '';
     $('bc-msg').textContent = '';
   };

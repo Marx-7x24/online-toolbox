@@ -1,24 +1,30 @@
 ---
+import { tu } from '../../i18n/toolUi.ts';
 // 文本行号标注：本地处理
+interface Props { lang?: string }
+const { lang = 'zh' } = Astro.props;
+
 ---
 <div class="pane">
   <div>
-    <div class="field-label"><span>输入文本</span></div>
-    <textarea id="ln-in" placeholder="粘贴多行文本"></textarea>
+    <div class="field-label"><span>{tu(lang, '输入文本')}</span></div>
+    <textarea id="ln-in" placeholder={tu(lang, '粘贴多行文本')}></textarea>
   </div>
   <div>
-    <div class="field-label"><span>结果</span></div>
+    <div class="field-label"><span>{tu(lang, '结果')}</span></div>
     <textarea id="ln-out" readonly></textarea>
   </div>
 </div>
 <div class="btn-row">
-  <button id="ln-add" class="primary">添加行号</button>
-  <button id="ln-rm">去除行号</button>
-  <button id="ln-copy">复制</button>
+  <button id="ln-add" class="primary">{tu(lang, '添加行号')}</button>
+  <button id="ln-rm">{tu(lang, '去除行号')}</button>
+  <button id="ln-copy">{tu(lang, '复制')}</button>
   <span id="ln-msg" class="msg"></span>
 </div>
 
-<script>
+<script>import { tu, currentLang } from '../../i18n/toolUi.ts';
+const LANG = currentLang();
+
   const $ = (id) => document.getElementById(id);
   function pad(n, w) { return String(n).padStart(w, ' '); }
   $('ln-add').addEventListener('click', () => {
@@ -34,11 +40,11 @@
     if (!v) { $('ln-out').value = ''; return; }
     const out = v.split('\n').map((l) => l.replace(/^\s*\d+[\.、)\]\s]\s*/, '')).join('\n');
     $('ln-out').value = out;
-    $('ln-msg').textContent = '已去除行号前缀'; $('ln-msg').className = 'msg ok';
+    $('ln-msg').textContent = tu(LANG, '已去除行号前缀'); $('ln-msg').className = 'msg ok';
   });
   $('ln-copy').addEventListener('click', async () => {
     if (!$('ln-out').value) return;
-    try { await navigator.clipboard.writeText($('ln-out').value); $('ln-msg').textContent = '已复制'; $('ln-msg').className = 'msg ok'; }
-    catch { $('ln-msg').textContent = '复制失败'; $('ln-msg').className = 'msg err'; }
+    try { await navigator.clipboard.writeText($('ln-out').value); $('ln-msg').textContent = tu(LANG, '已复制'); $('ln-msg').className = 'msg ok'; }
+    catch { $('ln-msg').textContent = tu(LANG, '复制失败'); $('ln-msg').className = 'msg err'; }
   });
 </script>

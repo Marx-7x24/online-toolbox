@@ -1,27 +1,31 @@
 ---
+import { tu } from '../../i18n/toolUi.ts';
 // PDF 页面裁剪：pdf-lib，本地处理
+interface Props { lang?: string }
+const { lang = 'zh' } = Astro.props;
+
 ---
 <div class="pane">
   <div>
-    <div class="field-label"><span>上传 PDF</span></div>
+    <div class="field-label"><span>{tu(lang, '上传')} PDF</span></div>
     <input type="file" id="pc-file" accept="application/pdf">
-    <div class="field-label" style="margin-top:10px;"><span>裁剪边距（pt，1pt≈0.35mm）</span></div>
-    <div class="pc-m"><label>上 <input type="number" id="pc-t" value="36"></label><label>下 <input type="number" id="pc-b" value="36"></label></div>
-    <div class="pc-m"><label>左 <input type="number" id="pc-l" value="36"></label><label>右 <input type="number" id="pc-r" value="36"></label></div>
-    <div class="field-label" style="margin-top:10px;"><span>状态</span></div>
-    <div id="pc-status" class="pc-status">尚未选择文件</div>
+    <div class="field-label" style="margin-top:10px;"><span>{tu(lang, '裁剪边距')}（pt，1pt≈0.35mm）</span></div>
+    <div class="pc-m"><label>{tu(lang, '上')} <input type="number" id="pc-t" value="36"></label><label>{tu(lang, '下')} <input type="number" id="pc-b" value="36"></label></div>
+    <div class="pc-m"><label>{tu(lang, '左')} <input type="number" id="pc-l" value="36"></label><label>{tu(lang, '右')} <input type="number" id="pc-r" value="36"></label></div>
+    <div class="field-label" style="margin-top:10px;"><span>{tu(lang, '状态')}</span></div>
+    <div id="pc-status" class="pc-status">{tu(lang, '尚未选择文件')}</div>
   </div>
   <div>
-    <div class="field-label"><span>说明</span></div>
+    <div class="field-label"><span>{tu(lang, '说明')}</span></div>
     <div class="pc-help">
-      按边距裁剪每页四周，保留中间内容区域。<br>
-      例如边距 36pt 会从四周各切掉约 12.7mm。<br>
-      全部本地处理，文件不上传。
+      {tu(lang, '按边距裁剪每页四周，保留中间内容区域。')}<br>
+      {tu(lang, '例如边距 36pt 会从四周各切掉约 12.7mm。')}<br>
+      {tu(lang, '全部本地处理，文件不上传。')}
     </div>
   </div>
 </div>
 <div class="btn-row">
-  <button id="pc-run" class="primary">裁剪并下载</button>
+  <button id="pc-run" class="primary">{tu(lang, '裁剪并下载')}</button>
   <span id="pc-msg" class="msg"></span>
 </div>
 
@@ -32,7 +36,9 @@
   .pc-status, .pc-help { border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; min-height: 120px; color: var(--text-sub); background: var(--bg-soft); line-height: 1.7; }
 </style>
 
-<script>
+<script>import { tu, currentLang } from '../../i18n/toolUi.ts';
+const LANG = currentLang();
+
   import { PDFDocument } from 'pdf-lib';
   const $ = (id) => document.getElementById(id);
   let bytes = null;
@@ -44,7 +50,7 @@
     $('pc-status').textContent = `已载入，共 ${doc.getPageCount()} 页`;
   });
   $('pc-run').addEventListener('click', async () => {
-    if (!bytes) { $('pc-msg').textContent = '请先选择 PDF 文件'; $('pc-msg').className = 'msg err'; return; }
+    if (!bytes) { $('pc-msg').textContent = tu(LANG, '请先选择 PDF 文件'); $('pc-msg').className = 'msg err'; return; }
     try {
       const doc = await PDFDocument.load(bytes);
       const t = +$('pc-t').value || 0, b = +$('pc-b').value || 0, l = +$('pc-l').value || 0, r = +$('pc-r').value || 0;
@@ -59,7 +65,7 @@
       const blob = new Blob([data], { type: 'application/pdf' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a'); a.href = url; a.download = 'cropped.pdf'; a.click();
-      $('pc-msg').textContent = '已裁剪下载'; $('pc-msg').className = 'msg ok';
-    } catch (err) { $('pc-msg').textContent = '处理失败：' + err.message; $('pc-msg').className = 'msg err'; }
+      $('pc-msg').textContent = tu(LANG, '已裁剪下载'); $('pc-msg').className = 'msg ok';
+    } catch (err) { $('pc-msg').textContent = tu(LANG, '处理失败：') + err.message; $('pc-msg').className = 'msg err'; }
   });
 </script>

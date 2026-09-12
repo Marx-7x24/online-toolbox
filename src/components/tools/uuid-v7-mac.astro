@@ -1,20 +1,26 @@
 ---
+import { tu } from '../../i18n/toolUi.ts';
 // UUID v7 与随机 MAC：Web Crypto，本地生成
+interface Props { lang?: string }
+const { lang = 'zh' } = Astro.props;
+
 ---
 <div>
-  <div class="field-label"><span>UUID v7（按时间排序）</span></div>
+  <div class="field-label"><span>UUID v7（{tu(lang, '按时间排序')}）</span></div>
   <textarea id="uu-out" readonly rows="3"></textarea>
-  <div class="field-label" style="margin-top:10px;"><span>随机 MAC 地址</span></div>
+  <div class="field-label" style="margin-top:10px;"><span>{tu(lang, '随机 MAC 地址')}</span></div>
   <textarea id="uu-mac" readonly rows="3"></textarea>
 </div>
 <div class="btn-row">
-  <button id="uu-gen" class="primary">生成 1 个</button>
-  <button id="uu-gen5">生成 5 个</button>
-  <button id="uu-copy">复制 UUID</button>
+  <button id="uu-gen" class="primary">{tu(lang, '生成 1 个')}</button>
+  <button id="uu-gen5">{tu(lang, '生成 5 个')}</button>
+  <button id="uu-copy">{tu(lang, '复制')} UUID</button>
   <span id="uu-msg" class="msg"></span>
 </div>
 
-<script>
+<script>import { tu, currentLang } from '../../i18n/toolUi.ts';
+const LANG = currentLang();
+
   const $ = (id) => document.getElementById(id);
   function uuidv7() {
     const ts = Date.now();
@@ -49,8 +55,8 @@
   $('uu-gen5').addEventListener('click', () => gen(5));
   $('uu-copy').addEventListener('click', async () => {
     if (!$('uu-out').value) return;
-    try { await navigator.clipboard.writeText($('uu-out').value); $('uu-msg').textContent = '已复制'; $('uu-msg').className = 'msg ok'; }
-    catch { $('uu-msg').textContent = '复制失败'; $('uu-msg').className = 'msg err'; }
+    try { await navigator.clipboard.writeText($('uu-out').value); $('uu-msg').textContent = tu(LANG, '已复制'); $('uu-msg').className = 'msg ok'; }
+    catch { $('uu-msg').textContent = tu(LANG, '复制失败'); $('uu-msg').className = 'msg err'; }
   });
   gen(1);
 </script>

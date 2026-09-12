@@ -1,40 +1,46 @@
 ---
+import { tu } from '../../i18n/toolUi.ts';
 // 油耗单位换算：L/100km ↔ mpg(US/UK) ↔ km/L（倒数关系）
+interface Props { lang?: string }
+const { lang = 'zh' } = Astro.props;
+
 ---
 <div class="pane">
   <div>
-    <div class="field-label"><span>数值</span></div>
+    <div class="field-label"><span>{tu(lang, '数值')}</span></div>
     <input type="number" id="fc-val" value="8" step="any" style="width:100%;padding:8px;border:1px solid var(--border-color);border-radius:6px;box-sizing:border-box;font-size:16px">
-    <div class="field-label" style="margin-top:12px"><span>从</span></div>
+    <div class="field-label" style="margin-top:12px"><span>{tu(lang, '从')}</span></div>
     <select id="fc-from" style="width:100%;padding:8px;border:1px solid var(--border-color);border-radius:6px;background:#fff">
-      <option value="l100" selected>升/百公里 (L/100km)</option>
-      <option value="mpgus">英里/加仑 美制 (MPG US)</option>
-      <option value="mpguk">英里/加仑 英制 (MPG UK)</option>
-      <option value="kml">公里/升 (km/L)</option>
+      <option value="l100" selected>{tu(lang, '升')}/{tu(lang, '百公里')} (L/100km)</option>
+      <option value="mpgus">{tu(lang, '英里')}/{tu(lang, '加仑 美制')} (MPG US)</option>
+      <option value="mpguk">{tu(lang, '英里')}/{tu(lang, '加仑 英制')} (MPG UK)</option>
+      <option value="kml">{tu(lang, '公里')}/{tu(lang, '升')} (km/L)</option>
     </select>
-    <div class="field-label" style="margin-top:12px"><span>到</span></div>
+    <div class="field-label" style="margin-top:12px"><span>{tu(lang, '到')}</span></div>
     <select id="fc-to" style="width:100%;padding:8px;border:1px solid var(--border-color);border-radius:6px;background:#fff">
-      <option value="mpgus" selected>英里/加仑 美制 (MPG US)</option>
-      <option value="l100">升/百公里 (L/100km)</option>
-      <option value="mpguk">英里/加仑 英制 (MPG UK)</option>
-      <option value="kml">公里/升 (km/L)</option>
+      <option value="mpgus" selected>{tu(lang, '英里')}/{tu(lang, '加仑 美制')} (MPG US)</option>
+      <option value="l100">{tu(lang, '升')}/{tu(lang, '百公里')} (L/100km)</option>
+      <option value="mpguk">{tu(lang, '英里')}/{tu(lang, '加仑 英制')} (MPG UK)</option>
+      <option value="kml">{tu(lang, '公里')}/{tu(lang, '升')} (km/L)</option>
     </select>
     <div style="margin-top:16px;padding:14px;background:rgba(0,0,0,.03);border-radius:8px">
       <div id="fc-out" style="font-size:20px;font-weight:600;color:var(--primary-color);word-break:break-all">-</div>
     </div>
   </div>
   <div>
-    <div class="field-label"><span>全部等价值</span></div>
+    <div class="field-label"><span>{tu(lang, '全部等价值')}</span></div>
     <table id="fc-table" style="width:100%;border-collapse:collapse;font-size:14px"></table>
     <div style="margin-top:12px;font-size:12px;color:var(--text-sub);line-height:1.7">
-      换算基准：1 加仑(美) = 3.785411784 L，1 英里 = 1.609344 km；mpg(US) = 235.215 ÷ (L/100km)，mpg(UK) = 282.481 ÷ (L/100km)。
+      {tu(lang, '换算基准：1 加仑(美')}) = 3.785411784 L，1 {tu(lang, '英里')} = 1.609344 km；mpg(US) = 235.215 ÷ (L/100km)，mpg(UK) = 282.481 ÷ (L/100km)。
     </div>
   </div>
 </div>
 
-<script>
+<script>import { tu, currentLang } from '../../i18n/toolUi.ts';
+const LANG = currentLang();
+
 const $ = (id) => document.getElementById(id);
-const NAME = { l100:'升/百公里 (L/100km)', mpgus:'MPG 美制', mpguk:'MPG 英制', kml:'公里/升 (km/L)' };
+const NAME = { l100:tu(LANG, '升/百公里 (L/100km)'), mpgus:tu(LANG, 'MPG 美制'), mpguk:tu(LANG, 'MPG 英制'), kml:tu(LANG, '公里/升 (km/L)') };
 // 统一先转成 L/100km
 function toL100(v, u){
   if (u === 'l100') return v;

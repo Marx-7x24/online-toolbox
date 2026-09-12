@@ -93,7 +93,7 @@ const faqs = buildFaq(tool, lang);
   </div>
 
   <div class="tool-body">
-    <ToolComponent />
+    <ToolComponent lang={lang} />
   </div>
 
   {(tool.guide !== false) && guideText && (

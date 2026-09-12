@@ -1,20 +1,24 @@
 ---
+import { tu } from '../../i18n/toolUi.ts';
 // 时区换算：Intl API，本地计算
+interface Props { lang?: string }
+const { lang = 'zh' } = Astro.props;
+
 ---
 <div class="pane">
   <div>
-    <div class="field-label"><span>日期时间（来源时区）</span></div>
+    <div class="field-label"><span>{tu(lang, '日期时间（来源时区')}）</span></div>
     <input type="datetime-local" id="tz-when">
-    <div class="field-label" style="margin-top:10px;"><span>来源时区</span></div>
+    <div class="field-label" style="margin-top:10px;"><span>{tu(lang, '来源时区')}</span></div>
     <select id="tz-from"></select>
   </div>
   <div>
-    <div class="field-label"><span>目标时区结果</span></div>
-    <div id="tz-out" class="tz-out">选择后自动换算</div>
+    <div class="field-label"><span>{tu(lang, '目标时区结果')}</span></div>
+    <div id="tz-out" class="tz-out">{tu(lang, '选择后自动换算')}</div>
   </div>
 </div>
 <div class="btn-row">
-  <button id="tz-now" class="primary">填入当前时间</button>
+  <button id="tz-now" class="primary">{tu(lang, '填入当前时间')}</button>
   <span id="tz-msg" class="msg"></span>
 </div>
 
@@ -32,7 +36,9 @@
   .tz-out .row b { font-weight: 600; }
 </style>
 
-<script>
+<script>import { tu, currentLang } from '../../i18n/toolUi.ts';
+const LANG = currentLang();
+
   const $ = (id) => document.getElementById(id);
   const ZONES = ['Asia/Shanghai', 'Asia/Hong_Kong', 'Asia/Tokyo', 'Asia/Singapore', 'Asia/Kolkata', 'Asia/Dubai', 'Europe/London', 'Europe/Paris', 'Europe/Moscow', 'America/New_York', 'America/Chicago', 'America/Los_Angeles', 'Australia/Sydney', 'Pacific/Auckland', 'UTC'];
   ZONES.forEach((z) => {
@@ -54,7 +60,7 @@
   }
   function run() {
     const wall = $('tz-when').value;
-    if (!wall) { $('tz-out').textContent = '请先选择日期时间'; return; }
+    if (!wall) { $('tz-out').textContent = tu(LANG, '请先选择日期时间'); return; }
     const from = $('tz-from').value;
     const epoch = wallToEpoch(wall, from);
     const rows = ZONES.map((z) => {

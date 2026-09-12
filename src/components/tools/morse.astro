@@ -1,24 +1,30 @@
 ---
+import { tu } from '../../i18n/toolUi.ts';
 // 摩斯密码转换：本地映射
+interface Props { lang?: string }
+const { lang = 'zh' } = Astro.props;
+
 ---
 <div class="pane">
   <div>
-    <div class="field-label"><span>文本 / 摩斯</span></div>
-    <textarea id="mo-in" placeholder="英文或数字，或摩斯码（用空格分隔字母、/ 分隔词）"></textarea>
+    <div class="field-label"><span>{tu(lang, '文本')} / {tu(lang, '摩斯')}</span></div>
+    <textarea id="mo-in" placeholder={tu(lang, '英文或数字，或摩斯码（用空格分隔字母、/ 分隔词）')}></textarea>
   </div>
   <div>
-    <div class="field-label"><span>转换结果</span></div>
+    <div class="field-label"><span>{tu(lang, '转换结果')}</span></div>
     <textarea id="mo-out" readonly></textarea>
   </div>
 </div>
 <div class="btn-row">
-  <button id="mo-en" class="primary">文本→摩斯</button>
-  <button id="mo-de">摩斯→文本</button>
-  <button id="mo-copy">复制</button>
+  <button id="mo-en" class="primary">{tu(lang, '文本')}→{tu(lang, '摩斯')}</button>
+  <button id="mo-de">{tu(lang, '摩斯')}→{tu(lang, '文本')}</button>
+  <button id="mo-copy">{tu(lang, '复制')}</button>
   <span id="mo-msg" class="msg"></span>
 </div>
 
-<script>
+<script>import { tu, currentLang } from '../../i18n/toolUi.ts';
+const LANG = currentLang();
+
   const $ = (id) => document.getElementById(id);
   const MAP = {
     A: '.-', B: '-...', C: '-.-.', D: '-..', E: '.', F: '..-.', G: '--.', H: '....', I: '..', J: '.---',
@@ -36,7 +42,7 @@
       return MAP[ch] || ch;
     }).join(' ');
     $('mo-out').value = res;
-    $('mo-msg').textContent = '已转换'; $('mo-msg').className = 'msg ok';
+    $('mo-msg').textContent = tu(LANG, '已转换'); $('mo-msg').className = 'msg ok';
   });
   $('mo-de').addEventListener('click', () => {
     const v = $('mo-in').value.trim();
@@ -47,12 +53,12 @@
         return INV[tok] || tok;
       }).join('');
       $('mo-out').value = res;
-      $('mo-msg').textContent = '已转换'; $('mo-msg').className = 'msg ok';
-    } catch (e) { $('mo-msg').textContent = '解析失败：' + e.message; $('mo-msg').className = 'msg err'; }
+      $('mo-msg').textContent = tu(LANG, '已转换'); $('mo-msg').className = 'msg ok';
+    } catch (e) { $('mo-msg').textContent = tu(LANG, '解析失败：') + e.message; $('mo-msg').className = 'msg err'; }
   });
   $('mo-copy').addEventListener('click', async () => {
     if (!$('mo-out').value) return;
-    try { await navigator.clipboard.writeText($('mo-out').value); $('mo-msg').textContent = '已复制'; $('mo-msg').className = 'msg ok'; }
-    catch { $('mo-msg').textContent = '复制失败'; $('mo-msg').className = 'msg err'; }
+    try { await navigator.clipboard.writeText($('mo-out').value); $('mo-msg').textContent = tu(LANG, '已复制'); $('mo-msg').className = 'msg ok'; }
+    catch { $('mo-msg').textContent = tu(LANG, '复制失败'); $('mo-msg').className = 'msg err'; }
   });
 </script>

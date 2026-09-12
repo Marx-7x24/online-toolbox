@@ -1,22 +1,26 @@
 ---
+import { tu } from '../../i18n/toolUi.ts';
 // LED 文字：霓虹滚动文字效果（纯前端 CSS 动画）
+interface Props { lang?: string }
+const { lang = 'zh' } = Astro.props;
+
 ---
 <div class="pane">
   <div>
-    <div class="field-label"><span>文字内容</span></div>
-    <input type="text" id="led-text" value="欢迎光临 ★ 在线工具箱 ★" style="width:100%;padding:8px;border:1px solid var(--border-color);border-radius:6px;box-sizing:border-box">
-    <div class="field-label" style="margin-top:12px"><span>文字颜色</span></div>
+    <div class="field-label"><span>{tu(lang, '文字内容')}</span></div>
+    <input type="text" id="led-text" value={tu(lang, '欢迎光临 ★ 在线工具箱 ★')} style="width:100%;padding:8px;border:1px solid var(--border-color);border-radius:6px;box-sizing:border-box">
+    <div class="field-label" style="margin-top:12px"><span>{tu(lang, '文字颜色')}</span></div>
     <input type="color" id="led-color" value="#ff3b3b" style="width:60px;height:34px;border:1px solid var(--border-color);border-radius:6px">
-    <div class="field-label" style="margin-top:12px"><span>滚动速度（越小越快）</span></div>
+    <div class="field-label" style="margin-top:12px"><span>{tu(lang, '滚动速度（越小越快')}）</span></div>
     <input type="range" id="led-speed" min="4" max="30" value="12" style="width:100%">
-    <div class="field-label" style="margin-top:12px"><span>字号</span></div>
+    <div class="field-label" style="margin-top:12px"><span>{tu(lang, '字号')}</span></div>
     <input type="range" id="led-size" min="20" max="64" value="36" style="width:100%">
     <div class="btn-row" style="margin-top:12px">
-      <button id="led-toggle" class="primary">暂停 / 播放</button>
+      <button id="led-toggle" class="primary">{tu(lang, '暂停')} / {tu(lang, '播放')}</button>
     </div>
   </div>
   <div>
-    <div class="field-label"><span>预览</span></div>
+    <div class="field-label"><span>{tu(lang, '预览')}</span></div>
     <div id="led-screen" style="background:#0a0a0a;border-radius:10px;overflow:hidden;min-height:120px;display:flex;align-items:center;position:relative">
       <div id="led-track" style="white-space:nowrap;will-change:transform;padding:14px 0"></div>
     </div>

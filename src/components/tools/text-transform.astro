@@ -1,30 +1,36 @@
 ---
+import { tu } from '../../i18n/toolUi.ts';
 // 文本大小写/全角半角合一：本地转换
+interface Props { lang?: string }
+const { lang = 'zh' } = Astro.props;
+
 ---
 <div class="pane">
   <div>
-    <div class="field-label"><span>输入文本</span></div>
-    <textarea id="tt-in" placeholder="粘贴需要转换的文本"></textarea>
+    <div class="field-label"><span>{tu(lang, '输入文本')}</span></div>
+    <textarea id="tt-in" placeholder={tu(lang, '粘贴需要转换的文本')}></textarea>
   </div>
   <div>
-    <div class="field-label"><span>转换结果</span></div>
+    <div class="field-label"><span>{tu(lang, '转换结果')}</span></div>
     <textarea id="tt-out" readonly></textarea>
   </div>
 </div>
 <div class="btn-row">
-  <button data-f="lower">小写</button>
-  <button data-f="upper">大写</button>
-  <button data-f="title">首字母大写</button>
-  <button data-f="camel">驼峰</button>
-  <button data-f="snake">下划线</button>
-  <button data-f="kebab">中划线</button>
-  <button data-f="full">转全角</button>
-  <button data-f="half">转半角</button>
-  <button id="tt-copy">复制</button>
+  <button data-f="lower">{tu(lang, '小写')}</button>
+  <button data-f="upper">{tu(lang, '大写')}</button>
+  <button data-f="title">{tu(lang, '首字母大写')}</button>
+  <button data-f="camel">{tu(lang, '驼峰')}</button>
+  <button data-f="snake">{tu(lang, '下划线')}</button>
+  <button data-f="kebab">{tu(lang, '中划线')}</button>
+  <button data-f="full">{tu(lang, '转全角')}</button>
+  <button data-f="half">{tu(lang, '转半角')}</button>
+  <button id="tt-copy">{tu(lang, '复制')}</button>
   <span id="tt-msg" class="msg"></span>
 </div>
 
-<script>
+<script>import { tu, currentLang } from '../../i18n/toolUi.ts';
+const LANG = currentLang();
+
   const $ = (id) => document.getElementById(id);
   function toHalf(s) { let r = ''; for (const ch of s) { const c = ch.codePointAt(0); if (c >= 0xFF01 && c <= 0xFF5E) r += String.fromCodePoint(c - 0xFEE0); else if (c === 0x3000) r += ' '; else r += ch; } return r; }
   function toFull(s) { let r = ''; for (const ch of s) { const c = ch.codePointAt(0); if (c >= 0x21 && c <= 0x7E) r += String.fromCodePoint(c + 0xFEE0); else if (c === 0x20) r += '　'; else r += ch; } return r; }
@@ -43,11 +49,11 @@
     const v = $('tt-in').value;
     if (!v) { $('tt-out').value = ''; return; }
     $('tt-out').value = F[b.dataset.f](v);
-    $('tt-msg').textContent = '已转换'; $('tt-msg').className = 'msg ok';
+    $('tt-msg').textContent = tu(LANG, '已转换'); $('tt-msg').className = 'msg ok';
   }));
   $('tt-copy').addEventListener('click', async () => {
     if (!$('tt-out').value) return;
-    try { await navigator.clipboard.writeText($('tt-out').value); $('tt-msg').textContent = '已复制'; $('tt-msg').className = 'msg ok'; }
-    catch { $('tt-msg').textContent = '复制失败'; $('tt-msg').className = 'msg err'; }
+    try { await navigator.clipboard.writeText($('tt-out').value); $('tt-msg').textContent = tu(LANG, '已复制'); $('tt-msg').className = 'msg ok'; }
+    catch { $('tt-msg').textContent = tu(LANG, '复制失败'); $('tt-msg').className = 'msg err'; }
   });
 </script>

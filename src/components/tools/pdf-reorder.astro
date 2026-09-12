@@ -1,26 +1,30 @@
 ---
+import { tu } from '../../i18n/toolUi.ts';
 // PDF 页面重排：pdf-lib，本地处理
+interface Props { lang?: string }
+const { lang = 'zh' } = Astro.props;
+
 ---
 <div class="pane">
   <div>
-    <div class="field-label"><span>上传 PDF</span></div>
+    <div class="field-label"><span>{tu(lang, '上传')} PDF</span></div>
     <input type="file" id="ro-file" accept="application/pdf">
-    <div class="field-label" style="margin-top:10px;"><span>新顺序（逗号分隔，从 1 开始）</span></div>
-    <input type="text" id="ro-order" placeholder="如 3,1,2,4">
-    <div class="field-label" style="margin-top:10px;"><span>状态</span></div>
-    <div id="ro-status" class="ro-status">尚未选择文件</div>
+    <div class="field-label" style="margin-top:10px;"><span>{tu(lang, '新顺序（逗号分隔，从 1 开始')}）</span></div>
+    <input type="text" id="ro-order" placeholder={tu(lang, '如 3,1,2,4')}>
+    <div class="field-label" style="margin-top:10px;"><span>{tu(lang, '状态')}</span></div>
+    <div id="ro-status" class="ro-status">{tu(lang, '尚未选择文件')}</div>
   </div>
   <div>
-    <div class="field-label"><span>说明</span></div>
+    <div class="field-label"><span>{tu(lang, '说明')}</span></div>
     <div class="ro-help">
-      按你给出的页码顺序重排页面。<br>
-      例如原顺序 1,2,3,4，填 3,1,2,4 即把第 3 页放到最前。<br>
-      全部本地处理，文件不上传。
+      {tu(lang, '按你给出的页码顺序重排页面。')}<br>
+      {tu(lang, '例如原顺序 1,2,3,4，填 3,1,2,4 即把第 3 页放到最前。')}<br>
+      {tu(lang, '全部本地处理，文件不上传。')}
     </div>
   </div>
 </div>
 <div class="btn-row">
-  <button id="ro-run" class="primary">重排并下载</button>
+  <button id="ro-run" class="primary">{tu(lang, '重排并下载')}</button>
   <span id="ro-msg" class="msg"></span>
 </div>
 
@@ -28,7 +32,9 @@
   .ro-status, .ro-help { border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; min-height: 120px; color: var(--text-sub); background: var(--bg-soft); line-height: 1.7; }
 </style>
 
-<script>
+<script>import { tu, currentLang } from '../../i18n/toolUi.ts';
+const LANG = currentLang();
+
   import { PDFDocument } from 'pdf-lib';
   const $ = (id) => document.getElementById(id);
   let bytes = null;
@@ -40,11 +46,11 @@
     $('ro-status').textContent = `已载入，共 ${doc.getPageCount()} 页`;
   });
   $('ro-run').addEventListener('click', async () => {
-    if (!bytes) { $('ro-msg').textContent = '请先选择 PDF 文件'; $('ro-msg').className = 'msg err'; return; }
+    if (!bytes) { $('ro-msg').textContent = tu(LANG, '请先选择 PDF 文件'); $('ro-msg').className = 'msg err'; return; }
     const doc = await PDFDocument.load(bytes);
     const total = doc.getPageCount();
     const order = $('ro-order').value.split(',').map((x) => parseInt(x.trim(), 10)).filter((n) => n >= 1 && n <= total);
-    if (!order.length) { $('ro-msg').textContent = '顺序格式错误（应为逗号分隔的 1-' + total + '）'; $('ro-msg').className = 'msg err'; return; }
+    if (!order.length) { $('ro-msg').textContent = tu(LANG, '顺序格式错误（应为逗号分隔的 1-') + total + '）'; $('ro-msg').className = 'msg err'; return; }
     const out = await PDFDocument.create();
     const pages = await out.copyPages(doc, order.map((n) => n - 1));
     pages.forEach((p) => out.addPage(p));

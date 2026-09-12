@@ -1,38 +1,42 @@
 ---
+import { tu } from '../../i18n/toolUi.ts';
 // 证件照合并：把多张小证件照按指定行列排版到一张大图（A4）
+interface Props { lang?: string }
+const { lang = 'zh' } = Astro.props;
+
 ---
 <div class="pane">
   <div>
-    <div class="field-label"><span>选择多张证件照（按文件名排序）</span></div>
+    <div class="field-label"><span>{tu(lang, '选择多张证件照（按文件名排序')}）</span></div>
     <input type="file" id="icmerge-files" accept="image/*" multiple>
     <div id="icmerge-thumbs" class="icmerge-thumbs"></div>
-    <div class="field-label" style="margin-top:14px"><span>每张缩放后尺寸 <span id="icmerge-sz">150×200</span> px</span></div>
+    <div class="field-label" style="margin-top:14px"><span>{tu(lang, '每张缩放后尺寸')} <span id="icmerge-sz">150×200</span> px</span></div>
     <div style="display:flex;gap:8px;align-items:center">
       <input type="number" id="icmerge-w" value="150" min="40" max="500" style="width:80px">
       <span>×</span>
       <input type="number" id="icmerge-h" value="200" min="40" max="500" style="width:80px">
       <span>px</span>
     </div>
-    <div class="field-label" style="margin-top:14px"><span>排版</span></div>
+    <div class="field-label" style="margin-top:14px"><span>{tu(lang, '排版')}</span></div>
     <select id="icmerge-layout" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:6px">
-      <option value="auto">自动（按数量选最优）</option>
+      <option value="auto">{tu(lang, '自动（按数量选最优')}）</option>
       <option value="1x1">1×1</option>
       <option value="2x2">2×2</option>
       <option value="3x3">3×3</option>
       <option value="2x3">2×3</option>
       <option value="3x4">3×4</option>
-      <option value="4x6">4×6（A4 6 寸照）</option>
+      <option value="4x6">4×6（A4 6 {tu(lang, '寸照')}）</option>
     </select>
   </div>
   <div>
-    <div class="field-label"><span>合并预览</span></div>
+    <div class="field-label"><span>{tu(lang, '合并预览')}</span></div>
     <div id="icmerge-preview" class="icmerge-preview"></div>
   </div>
 </div>
 <div class="btn-row">
-  <button id="icmerge-run" class="primary">生成合并图</button>
-  <button id="icmerge-dl">下载</button>
-  <button id="icmerge-reset">重置</button>
+  <button id="icmerge-run" class="primary">{tu(lang, '生成合并图')}</button>
+  <button id="icmerge-dl">{tu(lang, '下载')}</button>
+  <button id="icmerge-reset">{tu(lang, '重置')}</button>
   <span id="icmerge-msg" class="msg"></span>
 </div>
 
@@ -45,7 +49,9 @@
   input[type="number"] { padding: 6px; border: 1px solid var(--border); border-radius: 6px; }
 </style>
 
-<script>
+<script>import { tu, currentLang } from '../../i18n/toolUi.ts';
+const LANG = currentLang();
+
   const $ = (id) => document.getElementById(id);
   const files = [];
   let outBlob = null;
@@ -109,10 +115,10 @@
   }
 
   $('icmerge-run').addEventListener('click', async () => {
-    if (files.length === 0) { $('icmerge-msg').textContent = '请先选择图片'; $('icmerge-msg').className = 'msg err'; return; }
+    if (files.length === 0) { $('icmerge-msg').textContent = tu(LANG, '请先选择图片'); $('icmerge-msg').className = 'msg err'; return; }
     const w = Number($('icmerge-w').value);
     const h = Number($('icmerge-h').value);
-    if (w < 40 || h < 40) { $('icmerge-msg').textContent = '尺寸太小'; $('icmerge-msg').className = 'msg err'; return; }
+    if (w < 40 || h < 40) { $('icmerge-msg').textContent = tu(LANG, '尺寸太小'); $('icmerge-msg').className = 'msg err'; return; }
     try {
       const layout = $('icmerge-layout').value;
       let [cols, rows] = layout === 'auto' ? autoLayout(files.length) : layout.split('x').map(Number);
@@ -134,12 +140,12 @@
         await drawCover(ctx, img, x, y, w, h);
       }
       outBlob = await new Promise(res => canvas.toBlob(res, 'image/png'));
-      $('icmerge-preview').innerHTML = '<img alt="预览">';
+      $('icmerge-preview').innerHTML = '<img alt=tu(LANG, "预览")>';
       $('icmerge-preview').querySelector('img').src = URL.createObjectURL(outBlob);
       $('icmerge-msg').textContent = `生成成功 · ${files.length} 张 → ${cols}×${rows} 排版 · ${(outBlob.size/1024).toFixed(1)} KB`;
       $('icmerge-msg').className = 'msg ok';
     } catch (err) {
-      $('icmerge-msg').textContent = '生成失败：' + err.message;
+      $('icmerge-msg').textContent = tu(LANG, '生成失败：') + err.message;
       $('icmerge-msg').className = 'msg err';
     }
   });

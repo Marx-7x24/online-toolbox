@@ -1,52 +1,58 @@
 ---
+import { tu } from '../../i18n/toolUi.ts';
 // heat-converter：纯前端单位换算（系数型）
 const UNITS = [{"sym":"J","zh":"焦耳","f":1},{"sym":"kJ","zh":"千焦","f":1000},{"sym":"cal","zh":"卡路里","f":4.1868},{"sym":"kcal","zh":"千卡","f":4186.8},{"sym":"Wh","zh":"瓦时","f":3600},{"sym":"kWh","zh":"千瓦时","f":3600000},{"sym":"BTU","zh":"英热单位","f":1055.05585},{"sym":"ftlb","zh":"英尺磅","f":1.35582}];
 const BASE = { name: "焦耳", sym: "J" };
+interface Props { lang?: string }
+const { lang = 'zh' } = Astro.props;
+
 ---
 <div class="pane">
   <div>
-    <div class="field-label"><span>数值</span></div>
+    <div class="field-label"><span>{tu(lang, '数值')}</span></div>
     <input type="number" id="uc-val" value="1" step="any" style="width:100%;padding:8px;border:1px solid var(--border-color);border-radius:6px;box-sizing:border-box;font-size:16px">
-    <div class="field-label" style="margin-top:12px"><span>从</span></div>
+    <div class="field-label" style="margin-top:12px"><span>{tu(lang, '从')}</span></div>
     <select id="uc-from" style="width:100%;padding:8px;border:1px solid var(--border-color);border-radius:6px;background:#fff;font-size:14px">
-      <option value="J" data-f="1">焦耳 (J)</option>
-      <option value="kJ" data-f="1000">千焦 (kJ)</option>
-      <option value="cal" data-f="4.1868">卡路里 (cal)</option>
-      <option value="kcal" data-f="4186.8">千卡 (kcal)</option>
-      <option value="Wh" data-f="3600">瓦时 (Wh)</option>
-      <option value="kWh" data-f="3600000">千瓦时 (kWh)</option>
-      <option value="BTU" data-f="1055.05585">英热单位 (BTU)</option>
-      <option value="ftlb" data-f="1.35582">英尺磅 (ftlb)</option>
+      <option value="J" data-f="1">{tu(lang, '焦耳')} (J)</option>
+      <option value="kJ" data-f="1000">{tu(lang, '千焦')} (kJ)</option>
+      <option value="cal" data-f="4.1868">{tu(lang, '卡路里')} (cal)</option>
+      <option value="kcal" data-f="4186.8">{tu(lang, '千卡')} (kcal)</option>
+      <option value="Wh" data-f="3600">{tu(lang, '瓦时')} (Wh)</option>
+      <option value="kWh" data-f="3600000">{tu(lang, '千瓦时')} (kWh)</option>
+      <option value="BTU" data-f="1055.05585">{tu(lang, '英热单位')} (BTU)</option>
+      <option value="ftlb" data-f="1.35582">{tu(lang, '英尺磅')} (ftlb)</option>
     </select>
     <div style="text-align:center;margin:8px 0">
-      <button id="uc-swap">⇅ 交换单位</button>
+      <button id="uc-swap">⇅ {tu(lang, '交换单位')}</button>
     </div>
-    <div class="field-label"><span>到</span></div>
+    <div class="field-label"><span>{tu(lang, '到')}</span></div>
     <select id="uc-to" style="width:100%;padding:8px;border:1px solid var(--border-color);border-radius:6px;background:#fff;font-size:14px">
-      <option value="J" data-f="1">焦耳 (J)</option>
-      <option value="kJ" data-f="1000">千焦 (kJ)</option>
-      <option value="cal" data-f="4.1868">卡路里 (cal)</option>
-      <option value="kcal" data-f="4186.8">千卡 (kcal)</option>
-      <option value="Wh" data-f="3600">瓦时 (Wh)</option>
-      <option value="kWh" data-f="3600000">千瓦时 (kWh)</option>
-      <option value="BTU" data-f="1055.05585">英热单位 (BTU)</option>
-      <option value="ftlb" data-f="1.35582">英尺磅 (ftlb)</option>
+      <option value="J" data-f="1">{tu(lang, '焦耳')} (J)</option>
+      <option value="kJ" data-f="1000">{tu(lang, '千焦')} (kJ)</option>
+      <option value="cal" data-f="4.1868">{tu(lang, '卡路里')} (cal)</option>
+      <option value="kcal" data-f="4186.8">{tu(lang, '千卡')} (kcal)</option>
+      <option value="Wh" data-f="3600">{tu(lang, '瓦时')} (Wh)</option>
+      <option value="kWh" data-f="3600000">{tu(lang, '千瓦时')} (kWh)</option>
+      <option value="BTU" data-f="1055.05585">{tu(lang, '英热单位')} (BTU)</option>
+      <option value="ftlb" data-f="1.35582">{tu(lang, '英尺磅')} (ftlb)</option>
     </select>
     <div style="margin-top:16px;padding:14px;background:rgba(0,0,0,.03);border-radius:8px">
       <div id="uc-out" style="font-size:20px;font-weight:600;color:var(--primary-color);word-break:break-all;line-height:1.5">-</div>
-      <div style="font-size:12px;color:var(--text-sub);margin-top:4px">换算结果</div>
+      <div style="font-size:12px;color:var(--text-sub);margin-top:4px">{tu(lang, '换算结果')}</div>
     </div>
   </div>
   <div>
-    <div class="field-label"><span>等于以下所有单位</span></div>
+    <div class="field-label"><span>{tu(lang, '等于以下所有单位')}</span></div>
     <table id="uc-table" style="width:100%;border-collapse:collapse;font-size:14px"></table>
     <p class="msg" id="uc-msg"></p>
   </div>
 </div>
 
-<script>
+<script>import { tu, currentLang } from '../../i18n/toolUi.ts';
+const LANG = currentLang();
+
 const $ = (id) => document.getElementById(id);
-const UNITS = [{"sym":"J","zh":"焦耳","f":1},{"sym":"kJ","zh":"千焦","f":1000},{"sym":"cal","zh":"卡路里","f":4.1868},{"sym":"kcal","zh":"千卡","f":4186.8},{"sym":"Wh","zh":"瓦时","f":3600},{"sym":"kWh","zh":"千瓦时","f":3600000},{"sym":"BTU","zh":"英热单位","f":1055.05585},{"sym":"ftlb","zh":"英尺磅","f":1.35582}];
+const UNITS = [{"sym":"J","zh":tu(LANG, "焦耳"),"f":1},{"sym":"kJ","zh":tu(LANG, "千焦"),"f":1000},{"sym":"cal","zh":tu(LANG, "卡路里"),"f":4.1868},{"sym":"kcal","zh":tu(LANG, "千卡"),"f":4186.8},{"sym":"Wh","zh":tu(LANG, "瓦时"),"f":3600},{"sym":"kWh","zh":tu(LANG, "千瓦时"),"f":3600000},{"sym":"BTU","zh":tu(LANG, "英热单位"),"f":1055.05585},{"sym":"ftlb","zh":tu(LANG, "英尺磅"),"f":1.35582}];
 function fmt(n){
   if (!isFinite(n)) return '-';
   if (n !== 0 && (Math.abs(n) < 1e-6 || Math.abs(n) >= 1e15)) return n.toExponential(6).replace(/(\.\d*?[1-9])0+e|\.0+e/g, '$1e');

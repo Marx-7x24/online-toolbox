@@ -1,45 +1,51 @@
 ---
+import { tu } from '../../i18n/toolUi.ts';
 // 微信群活码生成器：把群邀请链接生成二维码活码卡片，可列多个群并导出 PNG
 // 注：纯前端生成静态二维码；动态跳转/7天轮换需要服务端，本工具提供静态活码卡片
+interface Props { lang?: string }
+const { lang = 'zh' } = Astro.props;
+
 ---
 <div class="pane">
   <div>
-    <div class="field-label"><span>卡片标题</span></div>
-    <input type="text" id="wqr-title" value="扫码进群" style="width:100%;padding:7px;border:1px solid var(--border-color);border-radius:6px;box-sizing:border-box">
+    <div class="field-label"><span>{tu(lang, '卡片标题')}</span></div>
+    <input type="text" id="wqr-title" value={tu(lang, '扫码进群')} style="width:100%;padding:7px;border:1px solid var(--border-color);border-radius:6px;box-sizing:border-box">
 
-    <div class="field-label" style="margin-top:12px"><span>主群邀请链接 / 二维码内容</span></div>
-    <input type="text" id="wqr-url" placeholder="https:// 群邀请链接或二维码文本内容" style="width:100%;padding:7px;border:1px solid var(--border-color);border-radius:6px;box-sizing:border-box;font-family:ui-monospace,monospace">
+    <div class="field-label" style="margin-top:12px"><span>{tu(lang, '主群邀请链接')} / {tu(lang, '二维码内容')}</span></div>
+    <input type="text" id="wqr-url" placeholder="https:// {tu(lang, '群邀请链接或二维码文本内容')}" style="width:100%;padding:7px;border:1px solid var(--border-color);border-radius:6px;box-sizing:border-box;font-family:ui-monospace,monospace">
 
-    <div class="field-label" style="margin-top:12px"><span>副群/分组（每行「群名 | 链接」，可选）</span></div>
-    <textarea id="wqr-extras" rows="4" placeholder="备用群1 | https://&#10;备用群2 | https://" style="width:100%;padding:8px;border:1px solid var(--border-color);border-radius:6px;box-sizing:border-box;font-size:13px;line-height:1.7;resize:vertical"></textarea>
+    <div class="field-label" style="margin-top:12px"><span>{tu(lang, '副群')}/{tu(lang, '分组（每行')}「{tu(lang, '群名')} | {tu(lang, '链接')}」，{tu(lang, '可选')}）</span></div>
+    <textarea id="wqr-extras" rows="4" placeholder="{tu(lang, '备用群')}1 | https://&#10;{tu(lang, '备用群')}2 | https://" style="width:100%;padding:8px;border:1px solid var(--border-color);border-radius:6px;box-sizing:border-box;font-size:13px;line-height:1.7;resize:vertical"></textarea>
 
-    <div class="field-label" style="margin-top:12px"><span>有效期限 / 说明（可选，显示在卡片底部）</span></div>
-    <input type="text" id="wqr-note" value="扫码进群，7 天内有效" style="width:100%;padding:7px;border:1px solid var(--border-color);border-radius:6px;box-sizing:border-box">
+    <div class="field-label" style="margin-top:12px"><span>{tu(lang, '有效期限')} / {tu(lang, '说明（可选，显示在卡片底部')}）</span></div>
+    <input type="text" id="wqr-note" value={tu(lang, '扫码进群，7 天内有效')} style="width:100%;padding:7px;border:1px solid var(--border-color);border-radius:6px;box-sizing:border-box">
 
-    <div class="field-label" style="margin-top:12px"><span>主题色</span></div>
+    <div class="field-label" style="margin-top:12px"><span>{tu(lang, '主题色')}</span></div>
     <div style="display:flex;gap:8px;align-items:center">
       <input type="color" id="wqr-color" value="#07C160" style="width:42px;height:32px;border:1px solid var(--border-color);border-radius:6px">
-      <span style="font-size:13px;color:var(--text-sub)">用于二维码暗色与卡片标签</span>
+      <span style="font-size:13px;color:var(--text-sub)">{tu(lang, '用于二维码暗色与卡片标签')}</span>
     </div>
 
     <div class="btn-row" style="margin-top:14px">
-      <button id="wqr-gen" class="primary">生成活码卡片</button>
-      <button id="wqr-export" class="primary">导出 PNG</button>
+      <button id="wqr-gen" class="primary">{tu(lang, '生成活码卡片')}</button>
+      <button id="wqr-export" class="primary">{tu(lang, '导出')} PNG</button>
     </div>
     <p class="msg" id="wqr-msg"></p>
   </div>
   <div>
-    <div class="field-label"><span>预览</span></div>
+    <div class="field-label"><span>{tu(lang, '预览')}</span></div>
     <div id="wqr-screen" style="background:#fff;border-radius:14px;padding:22px 20px;display:flex;flex-direction:column;align-items:center;box-shadow:0 1px 6px rgba(0,0,0,.08);border:2px solid #07C160">
-      <div id="wqr-t" style="font-size:20px;font-weight:700;color:#111">扫码进群</div>
+      <div id="wqr-t" style="font-size:20px;font-weight:700;color:#111">{tu(lang, '扫码进群')}</div>
       <div id="wqr-canvas-wrap" style="margin-top:14px;background:#fff;padding:10px;border-radius:8px"></div>
       <div id="wqr-extra-list" style="margin-top:14px;width:100%"></div>
-      <div id="wqr-note-el" style="margin-top:14px;font-size:12px;color:#888;text-align:center">扫码进群，7 天内有效</div>
+      <div id="wqr-note-el" style="margin-top:14px;font-size:12px;color:#888;text-align:center">{tu(lang, '扫码进群，7 天内有效')}</div>
     </div>
   </div>
 </div>
 
-<script>
+<script>import { tu, currentLang } from '../../i18n/toolUi.ts';
+const LANG = currentLang();
+
 import QRCode from 'qrcode';
 
 const $ = (id) => document.getElementById(id);
@@ -55,8 +61,8 @@ colorInput.addEventListener('input', applyTheme);
 async function regen(){
   const url = $('wqr-url').value.trim();
   const color = colorInput.value;
-  if (!url){ $('wqr-msg').textContent='请填写主群链接'; $('wqr-msg').className='msg err'; return; }
-  $('wqr-msg').textContent='生成中…'; $('wqr-msg').className='msg';
+  if (!url){ $('wqr-msg').textContent=tu(LANG, '请填写主群链接'); $('wqr-msg').className='msg err'; return; }
+  $('wqr-msg').textContent=tu(LANG, '生成中…'); $('wqr-msg').className='msg';
   try {
     lastDataUrl = await QRCode.toDataURL(url, {
       width: 240, margin: 1,
@@ -64,9 +70,9 @@ async function regen(){
       errorCorrectionLevel: 'M'
     });
     $('wqr-canvas-wrap').innerHTML = `<img src="${lastDataUrl}" style="width:240px;height:240px;display:block;border-radius:6px">`;
-    $('wqr-msg').textContent='已生成'; $('wqr-msg').className='msg ok';
+    $('wqr-msg').textContent=tu(LANG, '已生成'); $('wqr-msg').className='msg ok';
   } catch (e){
-    $('wqr-msg').textContent='生成失败：' + (e.message || e); $('wqr-msg').className='msg err';
+    $('wqr-msg').textContent=tu(LANG, '生成失败：') + (e.message || e); $('wqr-msg').className='msg err';
   }
 }
 
@@ -74,7 +80,7 @@ $('wqr-gen').addEventListener('click', regen);
 
 ['wqr-title','wqr-note','wqr-url','wqr-extras'].forEach(id => {
   $(id).addEventListener('input', () => {
-    $('wqr-t').textContent = $('wqr-title').value || '扫码进群';
+    $('wqr-t').textContent = $('wqr-title').value || tu(LANG, '扫码进群');
     $('wqr-note-el').textContent = $('wqr-note').value || '';
     const lines = $('wqr-extras').value.split('\n').map(l => l.trim()).filter(Boolean);
     if (lines.length){
@@ -91,7 +97,7 @@ $('wqr-gen').addEventListener('click', regen);
 $('wqr-export').addEventListener('click', async () => {
   if (!lastDataUrl) await regen();
   if (!lastDataUrl) return;
-  const title = $('wqr-title').value || '扫码进群';
+  const title = $('wqr-title').value || tu(LANG, '扫码进群');
   const note = $('wqr-note').value || '';
   const color = colorInput.value;
   const W = 460, pad = 28, qrSize = 240;
@@ -121,7 +127,7 @@ $('wqr-export').addEventListener('click', async () => {
   let ey = qrY + qrSize + gap;
   if (lines.length){
     ctx.fillStyle = '#888'; ctx.font = '12px "PingFang SC",sans-serif'; ctx.textAlign='center';
-    ctx.fillText('备用群', W/2, ey); ey += 18;
+    ctx.fillText(tu(LANG, '备用群'), W/2, ey); ey += 18;
     ctx.textAlign='left';
     lines.forEach(l => {
       const [n, u] = l.split('|').map(s => s.trim());
@@ -144,7 +150,7 @@ $('wqr-export').addEventListener('click', async () => {
   }
   cnv.toBlob(b => {
     const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download='wechat-group-live-qr.png'; a.click();
-    $('wqr-msg').textContent='已导出活码卡片 PNG'; $('wqr-msg').className='msg ok';
+    $('wqr-msg').textContent=tu(LANG, '已导出活码卡片 PNG'); $('wqr-msg').className='msg ok';
   });
 });
 

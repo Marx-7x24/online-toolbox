@@ -1,10 +1,14 @@
 ---
+import { tu } from '../../i18n/toolUi.ts';
 // Flex 布局生成器：可视化调整参数，实时预览并生成标准 flex CSS
+interface Props { lang?: string }
+const { lang = 'zh' } = Astro.props;
+
 ---
 
 <div class="gen">
   <div class="gen__controls">
-    <label>主轴方向
+    <label>{tu(lang, '主轴方向')}
       <select id="fg-direction">
         <option value="row">row</option>
         <option value="row-reverse">row-reverse</option>
@@ -12,7 +16,7 @@
         <option value="column-reverse">column-reverse</option>
       </select>
     </label>
-    <label>主轴对齐 (justify-content)
+    <label>{tu(lang, '主轴对齐')} (justify-content)
       <select id="fg-justify">
         <option value="flex-start">flex-start</option>
         <option value="flex-end">flex-end</option>
@@ -22,7 +26,7 @@
         <option value="space-evenly">space-evenly</option>
       </select>
     </label>
-    <label>交叉轴对齐 (align-items)
+    <label>{tu(lang, '交叉轴对齐')} (align-items)
       <select id="fg-align">
         <option value="stretch">stretch</option>
         <option value="flex-start">flex-start</option>
@@ -31,14 +35,14 @@
         <option value="baseline">baseline</option>
       </select>
     </label>
-    <label>换行 (flex-wrap)
+    <label>{tu(lang, '换行')} (flex-wrap)
       <select id="fg-wrap">
         <option value="nowrap">nowrap</option>
         <option value="wrap">wrap</option>
         <option value="wrap-reverse">wrap-reverse</option>
       </select>
     </label>
-    <label>间距 (gap, px)
+    <label>{tu(lang, '间距')} (gap, px)
       <input id="fg-gap" type="number" value="10" min="0" max="60" />
     </label>
   </div>
@@ -54,7 +58,7 @@
 
   <pre id="fg-out" class="gen__code"></pre>
   <div class="btn-row">
-    <button id="fg-copy" class="primary">复制 CSS</button>
+    <button id="fg-copy" class="primary">{tu(lang, '复制')} CSS</button>
     <span id="fg-msg" class="msg"></span>
   </div>
 </div>
@@ -74,7 +78,9 @@
   .gen__code { background: #0f172a; color: #e2e8f0; padding: 12px 14px; border-radius: 8px; font-size: 13px; overflow:auto; }
 </style>
 
-<script>
+<script>import { tu, currentLang } from '../../i18n/toolUi.ts';
+const LANG = currentLang();
+
   const $ = (id) => document.getElementById(id);
   const dir = $('fg-direction'), just = $('fg-justify'), align = $('fg-align'), wrap = $('fg-wrap'), gap = $('fg-gap');
   const preview = $('fg-preview'), out = $('fg-out'), msg = $('fg-msg');
@@ -96,7 +102,7 @@
   update();
 
   $('fg-copy').addEventListener('click', async () => {
-    try { await navigator.clipboard.writeText(out.textContent); msg.textContent = '已复制'; msg.className = 'msg ok'; }
-    catch { msg.textContent = '复制失败，请手动选择'; msg.className = 'msg err'; }
+    try { await navigator.clipboard.writeText(out.textContent); msg.textContent = tu(LANG, '已复制'); msg.className = 'msg ok'; }
+    catch { msg.textContent = tu(LANG, '复制失败，请手动选择'); msg.className = 'msg err'; }
   });
 </script>

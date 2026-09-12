@@ -1,24 +1,30 @@
 ---
+import { tu } from '../../i18n/toolUi.ts';
 // HTML 实体编解码：本地字符映射
+interface Props { lang?: string }
+const { lang = 'zh' } = Astro.props;
+
 ---
 <div class="pane">
   <div>
-    <div class="field-label"><span>输入</span></div>
-    <textarea id="he-in" placeholder="粘贴 HTML 或含特殊字符的文本"></textarea>
+    <div class="field-label"><span>{tu(lang, '输入')}</span></div>
+    <textarea id="he-in" placeholder="{tu(lang, '粘贴 HTML 或含特殊字符的文本')}"></textarea>
   </div>
   <div>
-    <div class="field-label"><span>结果</span></div>
+    <div class="field-label"><span>{tu(lang, '结果')}</span></div>
     <textarea id="he-out" readonly></textarea>
   </div>
 </div>
 <div class="btn-row">
-  <button id="he-en" class="primary">编码</button>
-  <button id="he-de">解码</button>
-  <button id="he-copy">复制</button>
+  <button id="he-en" class="primary">{tu(lang, '编码')}</button>
+  <button id="he-de">{tu(lang, '解码')}</button>
+  <button id="he-copy">{tu(lang, '复制')}</button>
   <span id="he-msg" class="msg"></span>
 </div>
 
-<script>
+<script>import { tu, currentLang } from '../../i18n/toolUi.ts';
+const LANG = currentLang();
+
   const $ = (id) => document.getElementById(id);
   function encode(s) {
     return s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -32,17 +38,17 @@
     const v = $('he-in').value;
     if (!v) { $('he-out').value = ''; return; }
     $('he-out').value = encode(v);
-    $('he-msg').textContent = '已编码'; $('he-msg').className = 'msg ok';
+    $('he-msg').textContent = tu(LANG, '已编码'); $('he-msg').className = 'msg ok';
   });
   $('he-de').addEventListener('click', () => {
     const v = $('he-in').value;
     if (!v) { $('he-out').value = ''; return; }
-    try { $('he-out').value = decode(v); $('he-msg').textContent = '已解码'; $('he-msg').className = 'msg ok'; }
-    catch (e) { $('he-msg').textContent = '解码失败'; $('he-msg').className = 'msg err'; }
+    try { $('he-out').value = decode(v); $('he-msg').textContent = tu(LANG, '已解码'); $('he-msg').className = 'msg ok'; }
+    catch (e) { $('he-msg').textContent = tu(LANG, '解码失败'); $('he-msg').className = 'msg err'; }
   });
   $('he-copy').addEventListener('click', async () => {
     if (!$('he-out').value) return;
-    try { await navigator.clipboard.writeText($('he-out').value); $('he-msg').textContent = '已复制'; $('he-msg').className = 'msg ok'; }
-    catch { $('he-msg').textContent = '复制失败'; $('he-msg').className = 'msg err'; }
+    try { await navigator.clipboard.writeText($('he-out').value); $('he-msg').textContent = tu(LANG, '已复制'); $('he-msg').className = 'msg ok'; }
+    catch { $('he-msg').textContent = tu(LANG, '复制失败'); $('he-msg').className = 'msg err'; }
   });
 </script>

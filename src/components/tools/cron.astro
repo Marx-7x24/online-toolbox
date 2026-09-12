@@ -1,39 +1,46 @@
 ---
+import { tu } from '../../i18n/toolUi.ts';
+
+interface Props { lang?: string }
+const { lang = 'zh' } = Astro.props;
+
 ---
 
-<div class="tip">支持 5 位（分 时 日 月 周）与 6 位（秒 分 时 日 月 周）表达式，含 Quartz 不常见的 L、W、# 不做解析。</div>
+<div class="tip">{tu(lang, '支持 5 位（分 时 日 月 周）与 6 位（秒 分 时 日 月 周）表达式，含 Quartz 不常见的')} L、W、# {tu(lang, '不做解析。')}</div>
 
 <div style="max-width:520px;">
-  <div class="field-label"><span>Cron 表达式</span></div>
+  <div class="field-label"><span>Cron {tu(lang, '表达式')}</span></div>
   <input type="text" id="cr-expr" value="0 9 * * 1-5" spellcheck="false" />
 </div>
 
-<div class="field-label" style="margin-top:12px;"><span>常用预设</span></div>
+<div class="field-label" style="margin-top:12px;"><span>{tu(lang, '常用预设')}</span></div>
 <div id="cr-presets" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;"></div>
 
 <div class="btn-row">
-  <button class="primary" id="cr-go">解析</button>
-  <button id="cr-clear">清空</button>
+  <button class="primary" id="cr-go">{tu(lang, '解析')}</button>
+  <button id="cr-clear">{tu(lang, '清空')}</button>
 </div>
 
 <div id="cr-out"></div>
 <p class="msg" id="cr-msg"></p>
 
-<script>
+<script>import { tu, currentLang } from '../../i18n/toolUi.ts';
+const LANG = currentLang();
+
   const $ = (id) => document.getElementById(id);
 
   const PRESETS = [
-    ['每分钟', '* * * * *'],
-    ['每 5 分钟', '*/5 * * * *'],
-    ['每小时整点', '0 * * * *'],
-    ['每天凌晨 2 点', '0 2 * * *'],
-    ['每天上午 9 点', '0 9 * * *'],
-    ['工作日 9 点', '0 9 * * 1-5'],
-    ['每周一 8 点', '0 8 * * 1'],
-    ['每月 1 号 0 点', '0 0 1 * *'],
-    ['每季度首日', '0 0 1 1,4,7,10 *'],
-    ['每天 9 点和 18 点', '0 9,18 * * *'],
-    ['每 10 秒（6 位）', '*/10 * * * * *'],
+    [tu(LANG, '每分钟'), '* * * * *'],
+    [tu(LANG, '每 5 分钟'), '*/5 * * * *'],
+    [tu(LANG, '每小时整点'), '0 * * * *'],
+    [tu(LANG, '每天凌晨 2 点'), '0 2 * * *'],
+    [tu(LANG, '每天上午 9 点'), '0 9 * * *'],
+    [tu(LANG, '工作日 9 点'), '0 9 * * 1-5'],
+    [tu(LANG, '每周一 8 点'), '0 8 * * 1'],
+    [tu(LANG, '每月 1 号 0 点'), '0 0 1 * *'],
+    [tu(LANG, '每季度首日'), '0 0 1 1,4,7,10 *'],
+    [tu(LANG, '每天 9 点和 18 点'), '0 9,18 * * *'],
+    [tu(LANG, '每 10 秒（6 位）'), '*/10 * * * * *'],
   ];
   $('cr-presets').innerHTML = PRESETS.map(([n, e]) => `<button data-e="${e}" style="padding:6px 12px;font-size:13px;">${n}</button>`).join('');
   $('cr-presets').querySelectorAll('button').forEach((b) => {
@@ -41,12 +48,12 @@
   });
 
   const FIELDS = [
-    { name: '秒', min: 0, max: 59, names: null },
-    { name: '分钟', min: 0, max: 59, names: null },
-    { name: '小时', min: 0, max: 23, names: null },
-    { name: '日', min: 1, max: 31, names: null },
-    { name: '月', min: 1, max: 12, names: ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'] },
-    { name: '星期', min: 0, max: 7, names: ['周日','周一','周二','周三','周四','周五','周六','周日'] },
+    { name: tu(LANG, '秒'), min: 0, max: 59, names: null },
+    { name: tu(LANG, '分钟'), min: 0, max: 59, names: null },
+    { name: tu(LANG, '小时'), min: 0, max: 23, names: null },
+    { name: tu(LANG, '日'), min: 1, max: 31, names: null },
+    { name: tu(LANG, '月'), min: 1, max: 12, names: [tu(LANG, '1月'),tu(LANG, '2月'),tu(LANG, '3月'),tu(LANG, '4月'),tu(LANG, '5月'),tu(LANG, '6月'),tu(LANG, '7月'),tu(LANG, '8月'),tu(LANG, '9月'),tu(LANG, '10月'),tu(LANG, '11月'),tu(LANG, '12月')] },
+    { name: tu(LANG, '星期'), min: 0, max: 7, names: [tu(LANG, '周日'),tu(LANG, '周一'),tu(LANG, '周二'),tu(LANG, '周三'),tu(LANG, '周四'),tu(LANG, '周五'),tu(LANG, '周六'),tu(LANG, '周日')] },
   ];
 
   function parseField(str, min, max, names) {
@@ -57,7 +64,7 @@
       const stepMatch = t.match(/^(\*|\d+(?:-\d+)?)\/(\d+)$/);
       if (stepMatch) {
         const step = +stepMatch[2];
-        if (step <= 0) throw new Error('步长必须大于 0');
+        if (step <= 0) throw new Error(tu(LANG, '步长必须大于 0'));
         let a = min, b = max;
         if (stepMatch[1] !== '*') {
           const [x, y] = stepMatch[1].split('-').map(Number);
@@ -81,13 +88,13 @@
       throw new Error(`无法识别的片段「${t}」`);
     }
     const out = [...values].filter((v) => v >= min && v <= max).sort((a, b) => a - b);
-    if (!out.length) throw new Error('该字段没有有效取值');
+    if (!out.length) throw new Error(tu(LANG, '该字段没有有效取值'));
     return out;
   }
 
   function describe(values, unit, names) {
-    if (values.length === (names ? names.length : (unit === '日' ? 31 : unit === '月' ? 12 : unit === '小时' ? 24 : unit === '星期' ? 7 : 60))) {
-      return unit === '星期' ? '每天' : `每${unit}`;
+    if (values.length === (names ? names.length : (unit === tu(LANG, '日') ? 31 : unit === tu(LANG, '月') ? 12 : unit === tu(LANG, '小时') ? 24 : unit === tu(LANG, '星期') ? 7 : 60))) {
+      return unit === tu(LANG, '星期') ? '每天' : `每${unit}`;
     }
     const label = (v) => (names && names[v] ? names[v] : v);
     if (values.length <= 6) return values.map(label).join('、');
@@ -133,13 +140,13 @@
 
   function pad(n) { return String(n).padStart(2, '0'); }
   function fmt(d) {
-    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())} 周${'日一二三四五六'[d.getDay()]}`;
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())} 周${tu(LANG, '日一二三四五六')[d.getDay()]}`;
   }
 
   function run() {
     const msg = $('cr-msg');
     const raw = $('cr-expr').value.trim();
-    if (!raw) { $('cr-out').innerHTML = ''; msg.textContent = '请输入 Cron 表达式'; msg.className = 'msg err'; return; }
+    if (!raw) { $('cr-out').innerHTML = ''; msg.textContent = tu(LANG, '请输入 Cron 表达式'); msg.className = 'msg err'; return; }
     const parts = raw.split(/\s+/);
     if (parts.length !== 5 && parts.length !== 6) {
       $('cr-out').innerHTML = '';
@@ -160,7 +167,7 @@
 
       $('cr-out').innerHTML =
         '<table class="result-table" style="margin-top:14px;max-width:560px;">' +
-        `<tr><th>表达式位数</th><td>${isSix ? '6 位（含秒）' : '5 位（不含秒）'}</td></tr>` +
+        `<tr><th>表达式位数</th><td>${isSix ? '6 位（含秒）' : tu(LANG, '5 位（不含秒）')}</td></tr>` +
         rows.join('') +
         '</table>' +
         '<div class="field-label" style="margin-top:16px;"><span>接下来 5 次执行时间</span></div>' +
@@ -169,11 +176,11 @@
           ? runs.map((d, i) => `<tr><th>第 ${i + 1} 次</th><td style="font-family:ui-monospace,monospace;font-size:13px;">${fmt(d)}</td></tr>`).join('')
           : '<tr><th>结果</th><td>未来 4 年内没有匹配的执行时间</td></tr>') +
         '</table>';
-      msg.textContent = '解析成功';
+      msg.textContent = tu(LANG, '解析成功');
       msg.className = 'msg ok';
     } catch (e) {
       $('cr-out').innerHTML = '';
-      msg.textContent = '解析失败：' + e.message;
+      msg.textContent = tu(LANG, '解析失败：') + e.message;
       msg.className = 'msg err';
     }
   }

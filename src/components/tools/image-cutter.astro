@@ -1,35 +1,39 @@
 ---
+import { tu } from '../../i18n/toolUi.ts';
 // 九宫格切图：把图片切成 3×3 拼图便于朋友圈发布
+interface Props { lang?: string }
+const { lang = 'zh' } = Astro.props;
+
 ---
 <div class="pane">
   <div>
-    <div class="field-label"><span>选择图片（建议正方形或宽高相近）</span></div>
+    <div class="field-label"><span>{tu(lang, '选择图片（建议正方形或宽高相近')}）</span></div>
     <input type="file" id="ic9-file" accept="image/*">
-    <div class="field-label" style="margin-top:14px"><span>行数 × 列数</span></div>
+    <div class="field-label" style="margin-top:14px"><span>{tu(lang, '行数')} × {tu(lang, '列数')}</span></div>
     <select id="ic9-grid" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:6px">
-      <option value="3x3">3 × 3（朋友圈九宫格）</option>
+      <option value="3x3">3 × 3（{tu(lang, '朋友圈九宫格')}）</option>
       <option value="2x2">2 × 2</option>
       <option value="4x4">4 × 4</option>
       <option value="3x2">3 × 2</option>
       <option value="2x3">2 × 3</option>
     </select>
-    <div class="field-label" style="margin-top:14px"><span>间隔（白边 px）</span></div>
+    <div class="field-label" style="margin-top:14px"><span>{tu(lang, '间隔（白边')} px）</span></div>
     <input type="number" id="ic9-gap" value="6" min="0" max="50" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:6px;box-sizing:border-box">
-    <div class="field-label" style="margin-top:14px"><span>输出格式</span></div>
+    <div class="field-label" style="margin-top:14px"><span>{tu(lang, '输出格式')}</span></div>
     <select id="ic9-fmt" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:6px">
-      <option value="image/png">PNG（无损）</option>
-      <option value="image/jpeg">JPG（较小）</option>
+      <option value="image/png">PNG（{tu(lang, '无损')}）</option>
+      <option value="image/jpeg">JPG（{tu(lang, '较小')}）</option>
     </select>
   </div>
   <div>
-    <div class="field-label"><span>预览（首张）</span></div>
+    <div class="field-label"><span>{tu(lang, '预览（首张')}）</span></div>
     <div id="ic9-preview" class="ic9-preview"></div>
   </div>
 </div>
 <div class="btn-row">
-  <button id="ic9-run" class="primary">生成切图</button>
-  <button id="ic9-dl">下载全部</button>
-  <button id="ic9-reset">重置</button>
+  <button id="ic9-run" class="primary">{tu(lang, '生成切图')}</button>
+  <button id="ic9-dl">{tu(lang, '下载全部')}</button>
+  <button id="ic9-reset">{tu(lang, '重置')}</button>
   <span id="ic9-msg" class="msg"></span>
 </div>
 
@@ -39,7 +43,9 @@
   .ic9-preview:empty::before { content: '尚未生成'; color: #999; }
 </style>
 
-<script>
+<script>import { tu, currentLang } from '../../i18n/toolUi.ts';
+const LANG = currentLang();
+
   const $ = (id) => document.getElementById(id);
   let sourceFile = null;
   let pieces = []; // [{blob, name}, ...]
@@ -56,7 +62,7 @@
   }
 
   $('ic9-run').addEventListener('click', async () => {
-    if (!sourceFile) { $('ic9-msg').textContent = '请先选择图片'; $('ic9-msg').className = 'msg err'; return; }
+    if (!sourceFile) { $('ic9-msg').textContent = tu(LANG, '请先选择图片'); $('ic9-msg').className = 'msg err'; return; }
     try {
       const img = await loadImg(sourceFile);
       const [cols, rows] = $('ic9-grid').value.split('x').map(Number);
@@ -88,12 +94,12 @@
           pieces.push({ blob, name: `${(sourceFile.name.replace(/\.[^.]+$/, '') || 'tile')}_${r+1}_${c+1}.${fmt === 'image/png' ? 'png' : 'jpg'}` });
         }
       }
-      $('ic9-preview').innerHTML = '<img alt="预览">';
+      $('ic9-preview').innerHTML = '<img alt=tu(LANG, "预览")>';
       $('ic9-preview').querySelector('img').src = URL.createObjectURL(pieces[0].blob);
       $('ic9-msg').textContent = `生成成功 · ${rows}×${cols} = ${pieces.length} 张`;
       $('ic9-msg').className = 'msg ok';
     } catch (err) {
-      $('ic9-msg').textContent = '失败：' + err.message;
+      $('ic9-msg').textContent = tu(LANG, '失败：') + err.message;
       $('ic9-msg').className = 'msg err';
     }
   });

@@ -1,42 +1,49 @@
 ---
+import { tu } from '../../i18n/toolUi.ts';
+
+interface Props { lang?: string }
+const { lang = 'zh' } = Astro.props;
+
 ---
 
-<div class="tip">使用浏览器 crypto 随机数生成 v4 UUID，本地生成，不会上传到服务器。</div>
+<div class="tip">{tu(lang, '使用浏览器 crypto 随机数生成 v4 UUID，本地生成，不会上传到服务器。')}</div>
 
 <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:flex-end;">
   <div style="min-width:140px;">
-    <div class="field-label"><span>生成数量</span></div>
+    <div class="field-label"><span>{tu(lang, '生成数量')}</span></div>
     <select id="uu-n">
-      <option value="1">1 个</option>
-      <option value="5">5 个</option>
-      <option value="10" selected>10 个</option>
-      <option value="50">50 个</option>
-      <option value="100">100 个</option>
+      <option value="1">1 {tu(lang, '个')}</option>
+      <option value="5">5 {tu(lang, '个')}</option>
+      <option value="10" selected>10 {tu(lang, '个')}</option>
+      <option value="50">50 {tu(lang, '个')}</option>
+      <option value="100">100 {tu(lang, '个')}</option>
     </select>
   </div>
   <div style="min-width:160px;">
-    <div class="field-label"><span>输出格式</span></div>
+    <div class="field-label"><span>{tu(lang, '输出格式')}</span></div>
     <select id="uu-fmt">
-      <option value="lower">小写带横线</option>
-      <option value="upper">大写带横线</option>
-      <option value="plain">小写无横线</option>
-      <option value="plainupper">大写无横线</option>
-      <option value="brace">花括号 { }</option>
+      <option value="lower">{tu(lang, '小写带横线')}</option>
+      <option value="upper">{tu(lang, '大写带横线')}</option>
+      <option value="plain">{tu(lang, '小写无横线')}</option>
+      <option value="plainupper">{tu(lang, '大写无横线')}</option>
+      <option value="brace">{tu(lang, '花括号')} { }</option>
     </select>
   </div>
 </div>
 
 <div class="btn-row">
-  <button class="primary" id="uu-gen">生成</button>
-  <button id="uu-copy">复制全部</button>
-  <button id="uu-clear">清空</button>
+  <button class="primary" id="uu-gen">{tu(lang, '生成')}</button>
+  <button id="uu-copy">{tu(lang, '复制全部')}</button>
+  <button id="uu-clear">{tu(lang, '清空')}</button>
 </div>
 
-<textarea id="uu-out" placeholder="生成结果" readonly style="min-height:220px;"></textarea>
+<textarea id="uu-out" placeholder={tu(lang, '生成结果')} readonly style="min-height:220px;"></textarea>
 
 <p class="msg" id="uu-msg"></p>
 
-<script>
+<script>import { tu, currentLang } from '../../i18n/toolUi.ts';
+const LANG = currentLang();
+
   const $ = (id) => document.getElementById(id);
 
   function v4() {
@@ -71,7 +78,7 @@
   $('uu-copy').onclick = async () => {
     if (!$('uu-out').value) return;
     await navigator.clipboard.writeText($('uu-out').value);
-    $('uu-msg').textContent = '已复制';
+    $('uu-msg').textContent = tu(LANG, '已复制');
     $('uu-msg').className = 'msg ok';
   };
   $('uu-clear').onclick = () => { $('uu-out').value = ''; $('uu-msg').textContent = ''; };

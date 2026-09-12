@@ -1,32 +1,38 @@
 ---
+import { tu } from '../../i18n/toolUi.ts';
 // 文字转语音：浏览器原生 SpeechSynthesis（Web Speech API），本地合成不上传
+interface Props { lang?: string }
+const { lang = 'zh' } = Astro.props;
+
 ---
 <div class="pane">
   <div>
-    <div class="field-label"><span>朗读文本</span></div>
-    <textarea id="tts-text" placeholder="输入要朗读的文字…" style="width:100%;height:200px;padding:10px;border:1px solid var(--border-color);border-radius:8px;box-sizing:border-box;font-size:14px;resize:vertical"></textarea>
-    <div class="field-label" style="margin-top:12px"><span>语音</span></div>
+    <div class="field-label"><span>{tu(lang, '朗读文本')}</span></div>
+    <textarea id="tts-text" placeholder={tu(lang, '输入要朗读的文字…')} style="width:100%;height:200px;padding:10px;border:1px solid var(--border-color);border-radius:8px;box-sizing:border-box;font-size:14px;resize:vertical"></textarea>
+    <div class="field-label" style="margin-top:12px"><span>{tu(lang, '语音')}</span></div>
     <select id="tts-voice" style="width:100%;padding:8px;border:1px solid var(--border-color);border-radius:6px"></select>
     <div style="display:flex;gap:14px;align-items:center;margin-top:12px">
-      <label>语速 <input type="range" id="tts-rate" min="0.5" max="2" step="0.1" value="1" style="width:90px"></label>
-      <label>音调 <input type="range" id="tts-pitch" min="0" max="2" step="0.1" value="1" style="width:90px"></label>
+      <label>{tu(lang, '语速')} <input type="range" id="tts-rate" min="0.5" max="2" step="0.1" value="1" style="width:90px"></label>
+      <label>{tu(lang, '音调')} <input type="range" id="tts-pitch" min="0" max="2" step="0.1" value="1" style="width:90px"></label>
     </div>
     <div class="btn-row" style="margin-top:12px">
-      <button id="tts-play" class="primary">朗读</button>
-      <button id="tts-stop">停止</button>
+      <button id="tts-play" class="primary">{tu(lang, '朗读')}</button>
+      <button id="tts-stop">{tu(lang, '停止')}</button>
     </div>
     <p class="msg" id="tts-msg"></p>
   </div>
   <div>
-    <div class="field-label"><span>说明</span></div>
+    <div class="field-label"><span>{tu(lang, '说明')}</span></div>
     <p style="color:var(--text-sub);font-size:13px;line-height:1.7">
-      基于浏览器内置的语音合成引擎，中文是否可用取决于系统已安装的语音包（Windows/macOS/Android 通常自带中文语音）。<br>
-      朗读完全在本地完成，文字不会上传到任何服务器。
+      {tu(lang, '基于浏览器内置的语音合成引擎，中文是否可用取决于系统已安装的语音包')}（Windows/macOS/Android {tu(lang, '通常自带中文语音）。')}<br>
+      {tu(lang, '朗读完全在本地完成，文字不会上传到任何服务器。')}
     </p>
   </div>
 </div>
 
-<script>
+<script>import { tu, currentLang } from '../../i18n/toolUi.ts';
+const LANG = currentLang();
+
   const $ = (id) => document.getElementById(id);
   function loadVoices(){
     const vs = speechSynthesis.getVoices();
@@ -38,18 +44,18 @@
     loadVoices();
     speechSynthesis.onvoiceschanged = loadVoices;
     $('tts-play').addEventListener('click', ()=>{
-      const text = $('tts-text').value.trim(); if(!text){ $('tts-msg').textContent='请输入文本'; $('tts-msg').className='msg err'; return; }
+      const text = $('tts-text').value.trim(); if(!text){ $('tts-msg').textContent=tu(LANG, '请输入文本'); $('tts-msg').className='msg err'; return; }
       speechSynthesis.cancel();
       const u = new SpeechSynthesisUtterance(text);
       const vs = speechSynthesis.getVoices(); const vi = +$('tts-voice').value;
       if (vs[vi]) u.voice = vs[vi];
       u.rate = +$('tts-rate').value; u.pitch = +$('tts-pitch').value;
       speechSynthesis.speak(u);
-      $('tts-msg').textContent='朗读中…'; $('tts-msg').className='msg ok';
-      u.onend = ()=>{ $('tts-msg').textContent='朗读结束'; };
+      $('tts-msg').textContent=tu(LANG, '朗读中…'); $('tts-msg').className='msg ok';
+      u.onend = ()=>{ $('tts-msg').textContent=tu(LANG, '朗读结束'); };
     });
-    $('tts-stop').addEventListener('click', ()=>{ speechSynthesis.cancel(); $('tts-msg').textContent='已停止'; });
+    $('tts-stop').addEventListener('click', ()=>{ speechSynthesis.cancel(); $('tts-msg').textContent=tu(LANG, '已停止'); });
   } else {
-    $('tts-msg').textContent='当前浏览器不支持语音合成'; $('tts-msg').className='msg err';
+    $('tts-msg').textContent=tu(LANG, '当前浏览器不支持语音合成'); $('tts-msg').className='msg err';
   }
 </script>

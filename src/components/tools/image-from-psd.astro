@@ -1,27 +1,31 @@
 ---
+import { tu } from '../../i18n/toolUi.ts';
 // PSD/PSB → JPG/PNG（懒加载 ag-psd）
+interface Props { lang?: string }
+const { lang = 'zh' } = Astro.props;
+
 ---
 <div class="pane">
   <div>
-    <div class="field-label"><span>选择 PSD/PSB 文件</span></div>
+    <div class="field-label"><span>{tu(lang, '选择')} PSD/PSB {tu(lang, '文件')}</span></div>
     <input type="file" id="ifpsd-file" accept=".psd,.psb,image/vnd.adobe.photoshop">
     <div id="ifpsd-info" class="msg"></div>
-    <div class="field-label" style="margin-top:14px"><span>输出格式</span></div>
+    <div class="field-label" style="margin-top:14px"><span>{tu(lang, '输出格式')}</span></div>
     <select id="ifpsd-fmt" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:6px">
-      <option value="image/jpeg">JPG（较小）</option>
-      <option value="image/png">PNG（无损）</option>
+      <option value="image/jpeg">JPG（{tu(lang, '较小')}）</option>
+      <option value="image/png">PNG（{tu(lang, '无损')}）</option>
     </select>
-    <p style="font-size:12px;color:#999;margin-top:8px">首次使用需联网加载解码器 ~150KB；仅合成导出（不支持单独图层）。</p>
+    <p style="font-size:12px;color:#999;margin-top:8px">{tu(lang, '首次使用需联网加载解码器')} ~150KB；{tu(lang, '仅合成导出（不支持单独图层）。')}</p>
   </div>
   <div>
-    <div class="field-label"><span>合成预览</span></div>
+    <div class="field-label"><span>{tu(lang, '合成预览')}</span></div>
     <div id="ifpsd-preview" class="ifpsd-preview"></div>
   </div>
 </div>
 <div class="btn-row">
-  <button id="ifpsd-run" class="primary">开始转换</button>
-  <button id="ifpsd-dl">下载</button>
-  <button id="ifpsd-reset">重置</button>
+  <button id="ifpsd-run" class="primary">{tu(lang, '开始转换')}</button>
+  <button id="ifpsd-dl">{tu(lang, '下载')}</button>
+  <button id="ifpsd-reset">{tu(lang, '重置')}</button>
   <span id="ifpsd-msg" class="msg"></span>
 </div>
 
@@ -31,7 +35,9 @@
   .ifpsd-preview:empty::before { content: '尚未选择图片'; color: #999; }
 </style>
 
-<script>
+<script>import { tu, currentLang } from '../../i18n/toolUi.ts';
+const LANG = currentLang();
+
   const $ = (id) => document.getElementById(id);
   let sourceFile = null;
   let canvas = null;
@@ -62,19 +68,19 @@
   }
 
   $('ifpsd-run').addEventListener('click', async () => {
-    if (!sourceFile) { $('ifpsd-msg').textContent = '请先选择 PSD 文件'; $('ifpsd-msg').className = 'msg err'; return; }
-    $('ifpsd-msg').textContent = '加载解码器…'; $('ifpsd-msg').className = 'msg';
+    if (!sourceFile) { $('ifpsd-msg').textContent = tu(LANG, '请先选择 PSD 文件'); $('ifpsd-msg').className = 'msg err'; return; }
+    $('ifpsd-msg').textContent = tu(LANG, '加载解码器…'); $('ifpsd-msg').className = 'msg';
     try {
       const agPsd = await loadAgPsd();
       const buf = await sourceFile.arrayBuffer();
       const psd = agPsd.readPsd(buf, { skipLayerImageData: true, skipThumbnail: false, useImageData: true });
-      if (!psd.canvas) throw new Error('PSD 解析失败（可能含智能对象/组样式等不支持的特性）');
+      if (!psd.canvas) throw new Error(tu(LANG, 'PSD 解析失败（可能含智能对象/组样式等不支持的特性）'));
       canvas = psd.canvas;
       $('ifpsd-info').textContent = `已解码 · ${canvas.width}×${canvas.height} · ${psd.layers?.length || 0} 图层`;
       $('ifpsd-info').className = 'msg ok';
       await convert();
     } catch (err) {
-      $('ifpsd-msg').textContent = '解码失败：' + err.message;
+      $('ifpsd-msg').textContent = tu(LANG, '解码失败：') + err.message;
       $('ifpsd-msg').className = 'msg err';
     }
   });
@@ -95,7 +101,7 @@
       outBlob = await new Promise(res => canvas.toBlob(res, fmt));
       outExt = 'png';
     }
-    $('ifpsd-preview').innerHTML = '<img alt="预览">';
+    $('ifpsd-preview').innerHTML = '<img alt=tu(LANG, "预览")>';
     $('ifpsd-preview').querySelector('img').src = URL.createObjectURL(outBlob);
     $('ifpsd-msg').textContent = `就绪 · ${(outBlob.size/1024).toFixed(1)} KB`;
     $('ifpsd-msg').className = 'msg ok';
@@ -104,7 +110,7 @@
   $('ifpsd-fmt').addEventListener('change', convert);
 
   $('ifpsd-dl').addEventListener('click', () => {
-    if (!outBlob) { $('ifpsd-msg').textContent = '请先转换'; $('ifpsd-msg').className = 'msg err'; return; }
+    if (!outBlob) { $('ifpsd-msg').textContent = tu(LANG, '请先转换'); $('ifpsd-msg').className = 'msg err'; return; }
     const a = document.createElement('a');
     a.href = URL.createObjectURL(outBlob);
     a.download = (sourceFile.name.replace(/\.[^.]+$/, '') || 'image') + '.' + outExt;

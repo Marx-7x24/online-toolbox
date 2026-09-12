@@ -1,15 +1,19 @@
 ---
+import { tu } from '../../i18n/toolUi.ts';
 // 日期倒计时：到目标日期的剩余天/时/分/秒
+interface Props { lang?: string }
+const { lang = 'zh' } = Astro.props;
+
 ---
 
 <div>
-  <div class="field-label"><span>目标日期时间</span></div>
+  <div class="field-label"><span>{tu(lang, '目标日期时间')}</span></div>
   <input id="cd-in" type="datetime-local" />
 </div>
-<div id="cd-out" class="cd-out">请选择目标时间</div>
+<div id="cd-out" class="cd-out">{tu(lang, '请选择目标时间')}</div>
 <div class="btn-row">
-  <button id="cd-toggle" class="primary">开始</button>
-  <button id="cd-reset">重置</button>
+  <button id="cd-toggle" class="primary">{tu(lang, '开始')}</button>
+  <button id="cd-reset">{tu(lang, '重置')}</button>
 </div>
 
 <style>
@@ -17,7 +21,9 @@
   .cd-out span { color: var(--brand); }
 </style>
 
-<script>
+<script>import { tu, currentLang } from '../../i18n/toolUi.ts';
+const LANG = currentLang();
+
   const $ = (id) => document.getElementById(id);
   const input = $('cd-in'), out = $('cd-out'), toggle = $('cd-toggle');
   let timer = null;
@@ -25,18 +31,18 @@
   function fmt(n) { return String(n).padStart(2, '0'); }
   function tick() {
     const target = new Date(input.value).getTime();
-    if (isNaN(target)) { out.textContent = '请选择有效时间'; return; }
+    if (isNaN(target)) { out.textContent = tu(LANG, '请选择有效时间'); return; }
     const diff = target - Date.now();
-    if (diff <= 0) { stop(); out.innerHTML = '⏰ 时间到！'; return; }
+    if (diff <= 0) { stop(); out.innerHTML = tu(LANG, '⏰ 时间到！'); return; }
     const d = Math.floor(diff / 86400000);
     const h = Math.floor((diff % 86400000) / 3600000);
     const m = Math.floor((diff % 3600000) / 60000);
     const s = Math.floor((diff % 60000) / 1000);
     out.innerHTML = `<span>${d}</span> 天 <span>${fmt(h)}</span>:<span>${fmt(m)}</span>:<span>${fmt(s)}</span>`;
   }
-  function start() { if (timer || !input.value) return; toggle.textContent = '暂停'; tick(); timer = setInterval(tick, 1000); }
-  function stop() { if (timer) { clearInterval(timer); timer = null; } toggle.textContent = '开始'; }
+  function start() { if (timer || !input.value) return; toggle.textContent = tu(LANG, '暂停'); tick(); timer = setInterval(tick, 1000); }
+  function stop() { if (timer) { clearInterval(timer); timer = null; } toggle.textContent = tu(LANG, '开始'); }
 
   toggle.addEventListener('click', () => { timer ? stop() : start(); });
-  $('cd-reset').addEventListener('click', () => { stop(); out.textContent = '请选择目标时间'; });
+  $('cd-reset').addEventListener('click', () => { stop(); out.textContent = tu(LANG, '请选择目标时间'); });
 </script>

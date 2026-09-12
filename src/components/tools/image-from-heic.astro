@@ -1,24 +1,28 @@
 ---
+import { tu } from '../../i18n/toolUi.ts';
 // HEIC/HEIF → JPG（懒加载 heic2any）
+interface Props { lang?: string }
+const { lang = 'zh' } = Astro.props;
+
 ---
 <div class="pane">
   <div>
-    <div class="field-label"><span>选择 HEIC/HEIF 图片</span></div>
+    <div class="field-label"><span>{tu(lang, '选择')} HEIC/HEIF {tu(lang, '图片')}</span></div>
     <input type="file" id="ifheic-file" accept=".heic,.heif,image/heic,image/heif">
     <div id="ifheic-info" class="msg"></div>
-    <div class="field-label" style="margin-top:14px"><span>输出画质 <span id="ifheic-qv">92%</span></span></div>
+    <div class="field-label" style="margin-top:14px"><span>{tu(lang, '输出画质')} <span id="ifheic-qv">92%</span></span></div>
     <input type="range" id="ifheic-q" min="1" max="100" value="92" style="width:100%">
-    <p style="font-size:12px;color:#999;margin-top:8px">首次使用需联网加载解码器 ~500KB；解码完全在浏览器本地完成，图片不会上传。</p>
+    <p style="font-size:12px;color:#999;margin-top:8px">{tu(lang, '首次使用需联网加载解码器')} ~500KB；{tu(lang, '解码完全在浏览器本地完成，图片不会上传。')}</p>
   </div>
   <div>
-    <div class="field-label"><span>JPG 预览</span></div>
+    <div class="field-label"><span>JPG {tu(lang, '预览')}</span></div>
     <div id="ifheic-preview" class="ifheic-preview"></div>
   </div>
 </div>
 <div class="btn-row">
-  <button id="ifheic-run" class="primary">转换为 JPG</button>
-  <button id="ifheic-dl">下载 JPG</button>
-  <button id="ifheic-reset">重置</button>
+  <button id="ifheic-run" class="primary">{tu(lang, '转换为')} JPG</button>
+  <button id="ifheic-dl">{tu(lang, '下载')} JPG</button>
+  <button id="ifheic-reset">{tu(lang, '重置')}</button>
   <span id="ifheic-msg" class="msg"></span>
 </div>
 
@@ -28,7 +32,9 @@
   .ifheic-preview:empty::before { content: '尚未选择图片'; color: #999; }
 </style>
 
-<script>
+<script>import { tu, currentLang } from '../../i18n/toolUi.ts';
+const LANG = currentLang();
+
   const $ = (id) => document.getElementById(id);
   let sourceFile = null;
   let jpgBlob = null;
@@ -58,26 +64,26 @@
   }
 
   $('ifheic-run').addEventListener('click', async () => {
-    if (!sourceFile) { $('ifheic-msg').textContent = '请先选择 HEIC 图片'; $('ifheic-msg').className = 'msg err'; return; }
-    $('ifheic-msg').textContent = '加载解码器…'; $('ifheic-msg').className = 'msg';
+    if (!sourceFile) { $('ifheic-msg').textContent = tu(LANG, '请先选择 HEIC 图片'); $('ifheic-msg').className = 'msg err'; return; }
+    $('ifheic-msg').textContent = tu(LANG, '加载解码器…'); $('ifheic-msg').className = 'msg';
     try {
       const heic2any = await loadHeic2any();
       const q = Number($('ifheic-q').value) / 100;
       const blob = await heic2any({ blob: sourceFile, toType: 'image/jpeg', quality: q });
       const outBlob = Array.isArray(blob) ? blob[0] : blob;
       jpgBlob = outBlob;
-      $('ifheic-preview').innerHTML = '<img alt="预览">';
+      $('ifheic-preview').innerHTML = '<img alt=tu(LANG, "预览")>';
       $('ifheic-preview').querySelector('img').src = URL.createObjectURL(outBlob);
       $('ifheic-msg').textContent = `转换成功 · ${(outBlob.size/1024).toFixed(1)} KB`;
       $('ifheic-msg').className = 'msg ok';
     } catch (err) {
-      $('ifheic-msg').textContent = '转换失败：' + (err.message || '该 HEIC 文件可能已加密或损坏');
+      $('ifheic-msg').textContent = tu(LANG, '转换失败：') + (err.message || tu(LANG, '该 HEIC 文件可能已加密或损坏'));
       $('ifheic-msg').className = 'msg err';
     }
   });
 
   $('ifheic-dl').addEventListener('click', () => {
-    if (!jpgBlob) { $('ifheic-msg').textContent = '请先转换'; $('ifheic-msg').className = 'msg err'; return; }
+    if (!jpgBlob) { $('ifheic-msg').textContent = tu(LANG, '请先转换'); $('ifheic-msg').className = 'msg err'; return; }
     const a = document.createElement('a');
     a.href = URL.createObjectURL(jpgBlob);
     a.download = (sourceFile.name.replace(/\.[^.]+$/, '') || 'image') + '.jpg';

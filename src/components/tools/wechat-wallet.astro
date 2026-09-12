@@ -1,44 +1,48 @@
 ---
+import { tu } from '../../i18n/toolUi.ts';
 // 微信零钱模拟器：自定义零钱/零钱通余额与交易流水，生成钱包截图导出 PNG
+interface Props { lang?: string }
+const { lang = 'zh' } = Astro.props;
+
 ---
 <div class="pane">
   <div>
-    <div class="field-label"><span>零钱余额（元）</span></div>
+    <div class="field-label"><span>{tu(lang, '零钱余额（元')}）</span></div>
     <input type="number" id="ww-change" value="8888.88" step="0.01" style="width:100%;padding:7px;border:1px solid var(--border-color);border-radius:6px;box-sizing:border-box">
 
-    <div class="field-label" style="margin-top:12px"><span>零钱通余额（元）</span></div>
+    <div class="field-label" style="margin-top:12px"><span>{tu(lang, '零钱通余额（元')}）</span></div>
     <input type="number" id="ww-pass" value="12800.00" step="0.01" style="width:100%;padding:7px;border:1px solid var(--border-color);border-radius:6px;box-sizing:border-box">
 
-    <div class="field-label" style="margin-top:14px"><span>交易流水</span></div>
-    <div style="font-size:12px;color:var(--text-sub);margin-bottom:6px">每行一笔，格式：图标关键字 + 金额（正=收入/负=支出），例：<code>收+100</code>、<code>转-50</code></div>
-    <textarea id="ww-tx" rows="8" style="width:100%;padding:8px;border:1px solid var(--border-color);border-radius:6px;box-sizing:border-box;font-size:13px;line-height:1.7;resize:vertical">收+888.88
-转-200.00
-红包-66.66
-退款+18.00
-充值+500.00</textarea>
+    <div class="field-label" style="margin-top:14px"><span>{tu(lang, '交易流水')}</span></div>
+    <div style="font-size:12px;color:var(--text-sub);margin-bottom:6px">{tu(lang, '每行一笔，格式：图标关键字 + 金额（正')}={tu(lang, '收入')}/{tu(lang, '负')}={tu(lang, '支出），例')}：<code>{tu(lang, '收')}+100</code>、<code>{tu(lang, '转')}-50</code></div>
+    <textarea id="ww-tx" rows="8" style="width:100%;padding:8px;border:1px solid var(--border-color);border-radius:6px;box-sizing:border-box;font-size:13px;line-height:1.7;resize:vertical">{tu(lang, '收')}+888.88
+{tu(lang, '转')}-200.00
+{tu(lang, '红包')}-66.66
+{tu(lang, '退款')}+18.00
+{tu(lang, '充值')}+500.00</textarea>
 
-    <div class="field-label" style="margin-top:12px"><span>手机时间</span></div>
+    <div class="field-label" style="margin-top:12px"><span>{tu(lang, '手机时间')}</span></div>
     <input type="text" id="ww-sb-time" value="14:30" style="width:100%;padding:7px;border:1px solid var(--border-color);border-radius:6px;box-sizing:border-box">
-    <div class="field-label" style="margin-top:12px"><span>信号强度</span></div>
+    <div class="field-label" style="margin-top:12px"><span>{tu(lang, '信号强度')}</span></div>
     <select id="ww-sb-signal" style="width:100%;padding:7px;border:1px solid var(--border-color);border-radius:6px;background:#fff">
-      <option value="1">1 格</option><option value="2">2 格</option><option value="3">3 格</option><option value="4" selected>4 格</option>
+      <option value="1">1 {tu(lang, '格')}</option><option value="2">2 {tu(lang, '格')}</option><option value="3">3 {tu(lang, '格')}</option><option value="4" selected>4 {tu(lang, '格')}</option>
     </select>
-    <div class="field-label" style="margin-top:12px"><span>手机网络</span></div>
+    <div class="field-label" style="margin-top:12px"><span>{tu(lang, '手机网络')}</span></div>
     <select id="ww-sb-net" style="width:100%;padding:7px;border:1px solid var(--border-color);border-radius:6px;background:#fff">
       <option value="5G" selected>5G</option><option value="4G">4G</option>
     </select>
-    <div class="field-label" style="margin-top:12px"><span>剩余电量</span></div>
+    <div class="field-label" style="margin-top:12px"><span>{tu(lang, '剩余电量')}</span></div>
     <input type="range" id="ww-sb-bat" min="0" max="100" value="80" style="width:100%">
   </div>
   <div>
-    <div class="field-label"><span>预览</span></div>
+    <div class="field-label"><span>{tu(lang, '预览')}</span></div>
     <div id="ww-screen" style="max-width:340px;margin:0 auto;background:#ededed;border-radius:14px;overflow:hidden;box-shadow:0 4px 18px rgba(0,0,0,.12);min-height:420px">
       <div class="sb-statusbar"><span class="sb-time">14:30</span><span class="sb-right"><span class="sb-signal"></span><span class="sb-net">5G</span><span class="sb-battery"><i></i></span></span></div>
-      <div id="ww-header" style="background:#ededed;padding:8px 12px;font-size:14px;text-align:center;color:#111;border-bottom:1px solid #d9d9d9;display:flex;justify-content:space-between;align-items:center"><span>‹</span><strong style="font-size:15px">零钱</strong><span style="visibility:hidden">·</span></div>
+      <div id="ww-header" style="background:#ededed;padding:8px 12px;font-size:14px;text-align:center;color:#111;border-bottom:1px solid #d9d9d9;display:flex;justify-content:space-between;align-items:center"><span>‹</span><strong style="font-size:15px">{tu(lang, '零钱')}</strong><span style="visibility:hidden">·</span></div>
       <div id="ww-body" style="padding:0 14px 16px"></div>
     </div>
     <div class="btn-row" style="justify-content:center">
-      <button id="ww-export" class="primary">生成微信钱包截图</button>
+      <button id="ww-export" class="primary">{tu(lang, '生成微信钱包截图')}</button>
     </div>
     <p class="msg" id="ww-msg"></p>
   </div>
@@ -68,14 +72,16 @@
   .ww-tx-amt.out { color:#111; }
 </style>
 
-<script>
+<script>import { tu, currentLang } from '../../i18n/toolUi.ts';
+const LANG = currentLang();
+
 import { bindStatusBar } from '../../scripts/statusbar.js';
 const $ = (id) => document.getElementById(id);
 
 const ICON_MAP = [
-  [/^收|退|充值|转入/, '收', 'in'],
-  [/^转|发|红包|支出|付款|消费|提现/, '转', 'out'],
-  [/^理|收益|利息|基金|理财/, '理', 'in'],
+  [/^收|退|充值|转入/, tu(LANG, '收'), 'in'],
+  [/^转|发|红包|支出|付款|消费|提现/, tu(LANG, '转'), 'out'],
+  [/^理|收益|利息|基金|理财/, tu(LANG, '理'), 'in'],
 ];
 function classify(text){
   for (const [re, ic, dir] of ICON_MAP){ if (re.test(text)) return { icon: ic, dir }; }
@@ -92,7 +98,7 @@ function parseTx(s){
     return {
       name, icon: cls.icon, dir: sign === '+' ? 'in' : 'out',
       amount: (sign === '+' ? '+' : '-') + amt.toFixed(2),
-      time: ['今天 14:30','今天 13:21','昨天 22:08','昨天 09:45','前天 18:33'][i] || '今天 ' + (12 + (i%10)) + ':00'
+      time: [tu(LANG, '今天 14:30'),tu(LANG, '今天 13:21'),tu(LANG, '昨天 22:08'),tu(LANG, '昨天 09:45'),tu(LANG, '前天 18:33')][i] || tu(LANG, '今天 ') + (12 + (i%10)) + ':00'
     };
   }).filter(Boolean);
 }
@@ -154,7 +160,7 @@ $('ww-export').addEventListener('click', () => {
   // header
   ctx.fillStyle = '#ededed'; ctx.fillRect(0,0,W,44);
   ctx.fillStyle = '#111'; ctx.font = '600 16px "PingFang SC",sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
-  ctx.fillText('零钱', W/2, 22);
+  ctx.fillText(tu(LANG, '零钱'), W/2, 22);
   ctx.strokeStyle = '#d9d9d9'; ctx.beginPath(); ctx.moveTo(0,44); ctx.lineTo(W,44); ctx.stroke();
   // status bar text
   ctx.fillStyle = '#111'; ctx.font = '12px sans-serif'; ctx.textAlign='left'; ctx.textBaseline='top';
@@ -162,7 +168,7 @@ $('ww-export').addEventListener('click', () => {
   // 总资产
   let py = 44 + 18;
   ctx.fillStyle = '#888'; ctx.font = '13px "PingFang SC",sans-serif'; ctx.textBaseline='top'; ctx.textAlign='left';
-  ctx.fillText('总资产（元）', 18, py); py += 18;
+  ctx.fillText(tu(LANG, '总资产（元）'), 18, py); py += 18;
   ctx.fillStyle = '#111'; ctx.font = '600 30px "PingFang SC",sans-serif';
   ctx.fillText('¥' + total.toFixed(2), 18, py); py += 36 + 18;
   // cards
@@ -171,18 +177,18 @@ $('ww-export').addEventListener('click', () => {
   ctx.beginPath(); ctx.roundRect(18, cardY, (W-50)/2, cardH, 8); ctx.fill();
   ctx.beginPath(); ctx.roundRect(18+(W-50)/2+14, cardY, (W-50)/2, cardH, 8); ctx.fill();
   ctx.fillStyle = '#888'; ctx.font = '13px "PingFang SC",sans-serif'; ctx.textBaseline='top';
-  ctx.fillText('零钱', 28, cardY+12);
-  ctx.fillText('零钱通', 18+(W-50)/2+24, cardY+12);
+  ctx.fillText(tu(LANG, '零钱'), 28, cardY+12);
+  ctx.fillText(tu(LANG, '零钱通'), 18+(W-50)/2+24, cardY+12);
   ctx.fillStyle = '#111'; ctx.font = '600 17px "PingFang SC",sans-serif';
   ctx.fillText('¥' + ch.toFixed(2), 28, cardY+32);
   ctx.fillText('¥' + pass.toFixed(2), 18+(W-50)/2+24, cardY+32);
   ctx.fillStyle = '#888'; ctx.font = '12px "PingFang SC",sans-serif';
-  ctx.fillText('可用余额', 28, cardY+54);
-  ctx.fillText('可收益 · 可支付', 18+(W-50)/2+24, cardY+54);
+  ctx.fillText(tu(LANG, '可用余额'), 28, cardY+54);
+  ctx.fillText(tu(LANG, '可收益 · 可支付'), 18+(W-50)/2+24, cardY+54);
   py = cardY + cardH + 14;
   // section title
   ctx.fillStyle = '#111'; ctx.font = '600 14px "PingFang SC",sans-serif';
-  ctx.fillText('交易记录', 18, py); py += 22;
+  ctx.fillText(tu(LANG, '交易记录'), 18, py); py += 22;
   // tx list
   const listY = py, itemH = 58;
   ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.roundRect(18, listY, W-36, itemH*list.length, 8); ctx.fill();
@@ -205,7 +211,7 @@ $('ww-export').addEventListener('click', () => {
   });
   cnv.toBlob(b => {
     const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download='wechat-wallet.png'; a.click();
-    $('ww-msg').textContent='已导出 wechat-wallet.png'; $('ww-msg').className='msg ok';
+    $('ww-msg').textContent=tu(LANG, '已导出 wechat-wallet.png'); $('ww-msg').className='msg ok';
   });
 });
 

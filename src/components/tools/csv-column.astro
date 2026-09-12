@@ -1,25 +1,31 @@
 ---
+import { tu } from '../../i18n/toolUi.ts';
 // CSV 列提取：本地解析
+interface Props { lang?: string }
+const { lang = 'zh' } = Astro.props;
+
 ---
 <div class="pane">
   <div>
-    <div class="field-label"><span>CSV 输入</span></div>
+    <div class="field-label"><span>CSV {tu(lang, '输入')}</span></div>
     <textarea id="cs-in" placeholder="name,age,city&#10;Tom,20,Beijing&#10;Lucy,25,Shanghai"></textarea>
   </div>
   <div>
-    <div class="field-label"><span>保留列（逗号分隔，或留空保留全部）</span></div>
+    <div class="field-label"><span>{tu(lang, '保留列（逗号分隔，或留空保留全部')}）</span></div>
     <input type="text" id="cs-keep" placeholder="name,city">
-    <div class="field-label" style="margin-top:10px;"><span>结果 CSV</span></div>
+    <div class="field-label" style="margin-top:10px;"><span>{tu(lang, '结果')} CSV</span></div>
     <textarea id="cs-out" readonly></textarea>
   </div>
 </div>
 <div class="btn-row">
-  <button id="cs-run" class="primary">提取</button>
-  <button id="cs-copy">复制</button>
+  <button id="cs-run" class="primary">{tu(lang, '提取')}</button>
+  <button id="cs-copy">{tu(lang, '复制')}</button>
   <span id="cs-msg" class="msg"></span>
 </div>
 
-<script>
+<script>import { tu, currentLang } from '../../i18n/toolUi.ts';
+const LANG = currentLang();
+
   const $ = (id) => document.getElementById(id);
   function parseRow(line) {
     const out = []; let cur = ''; let q = false;
@@ -46,7 +52,7 @@
   });
   $('cs-copy').addEventListener('click', async () => {
     if (!$('cs-out').value) return;
-    try { await navigator.clipboard.writeText($('cs-out').value); $('cs-msg').textContent = '已复制'; $('cs-msg').className = 'msg ok'; }
-    catch { $('cs-msg').textContent = '复制失败'; $('cs-msg').className = 'msg err'; }
+    try { await navigator.clipboard.writeText($('cs-out').value); $('cs-msg').textContent = tu(LANG, '已复制'); $('cs-msg').className = 'msg ok'; }
+    catch { $('cs-msg').textContent = tu(LANG, '复制失败'); $('cs-msg').className = 'msg err'; }
   });
 </script>

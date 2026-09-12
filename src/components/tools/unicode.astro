@@ -1,28 +1,35 @@
 ---
+import { tu } from '../../i18n/toolUi.ts';
+
+interface Props { lang?: string }
+const { lang = 'zh' } = Astro.props;
+
 ---
 
 <div class="pane">
   <div>
-    <div class="field-label"><span>中文 / 原文</span></div>
-    <textarea id="uc-in" placeholder="输入中文文本" style="min-height:160px;"></textarea>
+    <div class="field-label"><span>{tu(lang, '中文')} / {tu(lang, '原文')}</span></div>
+    <textarea id="uc-in" placeholder={tu(lang, '输入中文文本')} style="min-height:160px;"></textarea>
   </div>
   <div>
-    <div class="field-label"><span>Unicode 转义</span></div>
+    <div class="field-label"><span>Unicode {tu(lang, '转义')}</span></div>
     <textarea id="uc-out" placeholder="\\u4e2d\\u6587" style="min-height:160px;" spellcheck="false"></textarea>
   </div>
 </div>
 
 <div class="btn-row">
-  <button class="primary" id="uc-enc">中文 → Unicode</button>
-  <button id="uc-dec">Unicode → 中文</button>
-  <button id="uc-brace">切换为花括号写法</button>
-  <button id="uc-copy">复制右侧</button>
-  <button id="uc-clear">清空</button>
+  <button class="primary" id="uc-enc">{tu(lang, '中文')} → Unicode</button>
+  <button id="uc-dec">Unicode → {tu(lang, '中文')}</button>
+  <button id="uc-brace">{tu(lang, '切换为花括号写法')}</button>
+  <button id="uc-copy">{tu(lang, '复制右侧')}</button>
+  <button id="uc-clear">{tu(lang, '清空')}</button>
 </div>
 
 <p class="msg" id="uc-msg"></p>
 
-<script>
+<script>import { tu, currentLang } from '../../i18n/toolUi.ts';
+const LANG = currentLang();
+
   const $ = (id) => document.getElementById(id);
   let brace = false;
 
@@ -38,7 +45,7 @@
 
   function encode() {
     const s = $('uc-in').value;
-    if (!s) { $('uc-msg').textContent = '请先输入内容'; $('uc-msg').className = 'msg err'; return; }
+    if (!s) { $('uc-msg').textContent = tu(LANG, '请先输入内容'); $('uc-msg').className = 'msg err'; return; }
     let out = '';
     for (const ch of s) {
       const cp = ch.codePointAt(0);
@@ -46,22 +53,22 @@
       else out += ch;
     }
     $('uc-out').value = out;
-    $('uc-msg').textContent = '已转换，共 ' + ([...s].filter((c) => c.codePointAt(0) > 0x7f).length) + ' 个非 ASCII 字符';
+    $('uc-msg').textContent = tu(LANG, '已转换，共 ') + ([...s].filter((c) => c.codePointAt(0) > 0x7f).length) + tu(LANG, ' 个非 ASCII 字符');
     $('uc-msg').className = 'msg ok';
   }
 
   function decode() {
     const s = $('uc-out').value.trim();
-    if (!s) { $('uc-msg').textContent = '请先在右侧输入 Unicode 转义串'; $('uc-msg').className = 'msg err'; return; }
+    if (!s) { $('uc-msg').textContent = tu(LANG, '请先在右侧输入 Unicode 转义串'); $('uc-msg').className = 'msg err'; return; }
     try {
       let out = s;
       out = out.replace(/\\u\{([0-9a-fA-F]+)\}/g, (_, h) => String.fromCodePoint(parseInt(h, 16)));
       out = out.replace(/\\u([0-9a-fA-F]{4})/g, (_, h) => String.fromCharCode(parseInt(h, 16)));
       $('uc-in').value = out;
-      $('uc-msg').textContent = '解码完成';
+      $('uc-msg').textContent = tu(LANG, '解码完成');
       $('uc-msg').className = 'msg ok';
     } catch (e) {
-      $('uc-msg').textContent = '解码失败：' + e.message;
+      $('uc-msg').textContent = tu(LANG, '解码失败：') + e.message;
       $('uc-msg').className = 'msg err';
     }
   }
@@ -76,7 +83,7 @@
   $('uc-copy').onclick = async () => {
     if (!$('uc-out').value) return;
     await navigator.clipboard.writeText($('uc-out').value);
-    $('uc-msg').textContent = '已复制';
+    $('uc-msg').textContent = tu(LANG, '已复制');
     $('uc-msg').className = 'msg ok';
   };
   $('uc-clear').onclick = () => {

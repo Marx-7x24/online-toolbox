@@ -1,7 +1,12 @@
 ---
+import { tu } from '../../i18n/toolUi.ts';
+
+interface Props { lang?: string }
+const { lang = 'zh' } = Astro.props;
+
 ---
 
-<div class="tip">转换在你本机完成，图片不上传服务器，断网也能用。</div>
+<div class="tip">{tu(lang, '转换在你本机完成，图片不上传服务器，断网也能用。')}</div>
 
 <div class="btn-row" style="align-items:center;">
   <input type="file" id="cv-file" accept="image/*" multiple style="width:auto;font-family:inherit;padding:6px;border:none;" />
@@ -9,7 +14,7 @@
 
 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-top:12px;">
   <div>
-    <div class="field-label"><span>目标格式</span></div>
+    <div class="field-label"><span>{tu(lang, '目标格式')}</span></div>
     <select id="cv-fmt">
       <option value="image/jpeg">JPEG</option>
       <option value="image/png">PNG</option>
@@ -18,28 +23,30 @@
     </select>
   </div>
   <div>
-    <div class="field-label"><span>质量（JPEG/WebP）</span><span id="cv-q-val">90%</span></div>
+    <div class="field-label"><span>{tu(lang, '质量')}（JPEG/WebP）</span><span id="cv-q-val">90%</span></div>
     <input type="range" id="cv-q" min="10" max="100" value="90" style="padding:0;" />
   </div>
   <div>
-    <div class="field-label"><span>背景处理</span></div>
+    <div class="field-label"><span>{tu(lang, '背景处理')}</span></div>
     <select id="cv-bg">
-      <option value="white">透明区域填白（转 JPEG 建议）</option>
-      <option value="keep">保留透明</option>
+      <option value="white">{tu(lang, '透明区域填白（转 JPEG 建议')}）</option>
+      <option value="keep">{tu(lang, '保留透明')}</option>
     </select>
   </div>
 </div>
 
 <div class="btn-row">
-  <button class="primary" id="cv-go">开始转换</button>
-  <button id="cv-dl">下载全部</button>
-  <button id="cv-clear">清空</button>
+  <button class="primary" id="cv-go">{tu(lang, '开始转换')}</button>
+  <button id="cv-dl">{tu(lang, '下载全部')}</button>
+  <button id="cv-clear">{tu(lang, '清空')}</button>
 </div>
 
 <p class="msg" id="cv-msg"></p>
 <div id="cv-list"></div>
 
-<script>
+<script>import { tu, currentLang } from '../../i18n/toolUi.ts';
+const LANG = currentLang();
+
   const $ = (id) => document.getElementById(id);
   let jobs = [];
   const EXT = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'image/bmp': 'bmp' };
@@ -70,7 +77,7 @@
 
   $('cv-go').onclick = async () => {
     const files = Array.from($('cv-file').files || []);
-    if (!files.length) { $('cv-msg').textContent = '请先选择图片'; $('cv-msg').className = 'msg err'; return; }
+    if (!files.length) { $('cv-msg').textContent = tu(LANG, '请先选择图片'); $('cv-msg').className = 'msg err'; return; }
     jobs = [];
     const fmt = $('cv-fmt').value;
     const ext = EXT[fmt];

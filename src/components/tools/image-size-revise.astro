@@ -1,25 +1,29 @@
 ---
+import { tu } from '../../i18n/toolUi.ts';
 // 图片尺寸修改：按宽/高/百分比缩放
+interface Props { lang?: string }
+const { lang = 'zh' } = Astro.props;
+
 ---
 <div class="pane">
   <div>
-    <div class="field-label"><span>选择图片</span></div>
+    <div class="field-label"><span>{tu(lang, '选择图片')}</span></div>
     <input type="file" id="isr-file" accept="image/*">
     <div id="isr-info" class="msg"></div>
-    <div class="field-label" style="margin-top:14px"><span>缩放方式</span></div>
+    <div class="field-label" style="margin-top:14px"><span>{tu(lang, '缩放方式')}</span></div>
     <select id="isr-mode" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:6px">
-      <option value="ratio">按比例（%）</option>
-      <option value="w">指定宽度（高度自动）</option>
-      <option value="h">指定高度（宽度自动）</option>
-      <option value="exact">指定宽×高（强制拉伸）</option>
-      <option value="long">长边不超过（短边自动）</option>
+      <option value="ratio">{tu(lang, '按比例')}（%）</option>
+      <option value="w">{tu(lang, '指定宽度（高度自动')}）</option>
+      <option value="h">{tu(lang, '指定高度（宽度自动')}）</option>
+      <option value="exact">{tu(lang, '指定宽')}×{tu(lang, '高（强制拉伸')}）</option>
+      <option value="long">{tu(lang, '长边不超过（短边自动')}）</option>
     </select>
-    <div class="field-label" style="margin-top:14px"><span>参数</span></div>
+    <div class="field-label" style="margin-top:14px"><span>{tu(lang, '参数')}</span></div>
     <input type="number" id="isr-val" value="50" min="1" max="10000" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:6px;box-sizing:border-box">
     <div id="isr-second" style="display:none;margin-top:6px">
       <input type="number" id="isr-val2" value="50" min="1" max="10000" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:6px;box-sizing:border-box">
     </div>
-    <div class="field-label" style="margin-top:14px"><span>输出格式</span></div>
+    <div class="field-label" style="margin-top:14px"><span>{tu(lang, '输出格式')}</span></div>
     <select id="isr-fmt" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:6px">
       <option value="image/png">PNG</option>
       <option value="image/jpeg">JPG</option>
@@ -27,14 +31,14 @@
     </select>
   </div>
   <div>
-    <div class="field-label"><span>预览</span></div>
+    <div class="field-label"><span>{tu(lang, '预览')}</span></div>
     <div id="isr-preview" class="isr-preview"></div>
   </div>
 </div>
 <div class="btn-row">
-  <button id="isr-run" class="primary">开始缩放</button>
-  <button id="isr-dl">下载</button>
-  <button id="isr-reset">重置</button>
+  <button id="isr-run" class="primary">{tu(lang, '开始缩放')}</button>
+  <button id="isr-dl">{tu(lang, '下载')}</button>
+  <button id="isr-reset">{tu(lang, '重置')}</button>
   <span id="isr-msg" class="msg"></span>
 </div>
 
@@ -44,7 +48,9 @@
   .isr-preview:empty::before { content: '尚未生成'; color: #999; }
 </style>
 
-<script>
+<script>import { tu, currentLang } from '../../i18n/toolUi.ts';
+const LANG = currentLang();
+
   const $ = (id) => document.getElementById(id);
   let sourceFile = null;
   let outBlob = null;
@@ -52,7 +58,7 @@
   $('isr-mode').addEventListener('change', () => {
     const m = $('isr-mode').value;
     $('isr-second').style.display = (m === 'exact') ? 'block' : 'none';
-    const labels = { ratio: '缩放百分比（1-1000）', w: '目标宽度 (px)', h: '目标高度 (px)', exact: '目标宽度 (px)', long: '长边不超过 (px)' };
+    const labels = { ratio: tu(LANG, '缩放百分比（1-1000）'), w: tu(LANG, '目标宽度 (px)'), h: tu(LANG, '目标高度 (px)'), exact: tu(LANG, '目标宽度 (px)'), long: tu(LANG, '长边不超过 (px)') };
     $('isr-val').previousElementSibling && ($('isr-val').parentElement.querySelector('.field-label span').textContent = labels[m]);
   });
 
@@ -74,7 +80,7 @@
   }
 
   $('isr-run').addEventListener('click', async () => {
-    if (!sourceFile) { $('isr-msg').textContent = '请先选择图片'; $('isr-msg').className = 'msg err'; return; }
+    if (!sourceFile) { $('isr-msg').textContent = tu(LANG, '请先选择图片'); $('isr-msg').className = 'msg err'; return; }
     try {
       const img = await loadImg(sourceFile);
       const mode = $('isr-mode').value;
@@ -99,12 +105,12 @@
       const fmt = $('isr-fmt').value;
       const ext = fmt === 'image/jpeg' ? 'jpg' : fmt.split('/')[1];
       outBlob = await new Promise(res => canvas.toBlob(res, fmt, 0.92));
-      $('isr-preview').innerHTML = '<img alt="预览">';
+      $('isr-preview').innerHTML = '<img alt=tu(LANG, "预览")>';
       $('isr-preview').querySelector('img').src = URL.createObjectURL(outBlob);
       $('isr-msg').textContent = `成功 · ${img.width}×${img.height} → ${tw}×${th} · ${(outBlob.size/1024).toFixed(1)} KB`;
       $('isr-msg').className = 'msg ok';
     } catch (err) {
-      $('isr-msg').textContent = '失败：' + err.message;
+      $('isr-msg').textContent = tu(LANG, '失败：') + err.message;
       $('isr-msg').className = 'msg err';
     }
   });

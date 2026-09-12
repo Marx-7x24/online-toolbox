@@ -1,32 +1,36 @@
 ---
+import { tu } from '../../i18n/toolUi.ts';
 // PDF 批量重命名：按模板改名
+interface Props { lang?: string }
+const { lang = 'zh' } = Astro.props;
+
 ---
 <div class="pane">
   <div>
-    <div class="field-label"><span>选择多个 PDF 文件</span></div>
+    <div class="field-label"><span>{tu(lang, '选择多个 PDF 文件')}</span></div>
     <input type="file" id="prn-files" accept="application/pdf" multiple>
     <div id="prn-list" class="prn-list"></div>
   </div>
   <div>
-    <div class="field-label"><span>命名规则</span></div>
+    <div class="field-label"><span>{tu(lang, '命名规则')}</span></div>
     <select id="prn-rule" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:6px">
-      <option value="prefix">加前缀</option>
-      <option value="suffix">加后缀（扩展名前）</option>
-      <option value="number">加序号（001/002/...）</option>
-      <option value="replace">替换关键字</option>
-      <option value="date">加日期前缀</option>
+      <option value="prefix">{tu(lang, '加前缀')}</option>
+      <option value="suffix">{tu(lang, '加后缀（扩展名前')}）</option>
+      <option value="number">{tu(lang, '加序号')}（001/002/...）</option>
+      <option value="replace">{tu(lang, '替换关键字')}</option>
+      <option value="date">{tu(lang, '加日期前缀')}</option>
     </select>
-    <div class="field-label" style="margin-top:14px"><span id="prn-extra-label">前缀文本</span></div>
-    <input type="text" id="prn-extra" value="新文件_" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:6px;box-sizing:border-box">
+    <div class="field-label" style="margin-top:14px"><span id="prn-extra-label">{tu(lang, '前缀文本')}</span></div>
+    <input type="text" id="prn-extra" value={tu(lang, '新文件_')} style="width:100%;padding:6px;border:1px solid var(--border);border-radius:6px;box-sizing:border-box">
     <div id="prn-extra2" style="display:none;margin-top:6px">
-      <input type="text" id="prn-extra2-input" placeholder="替换为" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:6px;box-sizing:border-box">
+      <input type="text" id="prn-extra2-input" placeholder={tu(lang, '替换为')} style="width:100%;padding:6px;border:1px solid var(--border);border-radius:6px;box-sizing:border-box">
     </div>
   </div>
 </div>
 <div class="btn-row">
-  <button id="prn-run" class="primary">生成新名称</button>
-  <button id="prn-dl">下载所有（ZIP 不可用，改为逐个）</button>
-  <button id="prn-reset">重置</button>
+  <button id="prn-run" class="primary">{tu(lang, '生成新名称')}</button>
+  <button id="prn-dl">{tu(lang, '下载所有（ZIP 不可用，改为逐个')}）</button>
+  <button id="prn-reset">{tu(lang, '重置')}</button>
   <span id="prn-msg" class="msg"></span>
 </div>
 
@@ -38,14 +42,16 @@
   .prn-list .new { color: #3e2eff; font-weight: 600; flex: 1; }
 </style>
 
-<script>
+<script>import { tu, currentLang } from '../../i18n/toolUi.ts';
+const LANG = currentLang();
+
   const $ = (id) => document.getElementById(id);
   let files = [];
 
   $('prn-rule').addEventListener('change', updateForm);
   function updateForm() {
     const r = $('prn-rule').value;
-    const labels = { prefix: '前缀文本', suffix: '后缀文本', number: '起始序号', replace: '原关键字（要替换的）', date: '日期格式（YYYY-MM-DD）' };
+    const labels = { prefix: tu(LANG, '前缀文本'), suffix: tu(LANG, '后缀文本'), number: tu(LANG, '起始序号'), replace: tu(LANG, '原关键字（要替换的）'), date: tu(LANG, '日期格式（YYYY-MM-DD）') };
     $('prn-extra-label').textContent = labels[r];
     $('prn-extra2').style.display = (r === 'replace') ? 'block' : 'none';
     if (r === 'number') $('prn-extra').value = $('prn-extra').value || '001';
@@ -87,9 +93,9 @@
   }
 
   $('prn-run').addEventListener('click', () => {
-    if (!files.length) { $('prn-msg').textContent = '请先选择文件'; $('prn-msg').className = 'msg err'; return; }
+    if (!files.length) { $('prn-msg').textContent = tu(LANG, '请先选择文件'); $('prn-msg').className = 'msg err'; return; }
     renderPreview();
-    $('prn-msg').textContent = `已生成 ${files.length} 个新名称（点击"下载所有"逐个另存）`;
+    $('prn-msg').textContent = `已生成 ${files.length} 个新名称（点击tu(LANG, "下载所有")逐个另存）`;
     $('prn-msg').className = 'msg ok';
   });
 

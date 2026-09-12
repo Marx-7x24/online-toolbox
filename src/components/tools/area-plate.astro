@@ -1,83 +1,89 @@
 ---
+import { tu } from '../../i18n/toolUi.ts';
 // 车牌归属地查询：根据车牌号解析省份与发牌城市（本地词表，覆盖各省会及主要城市）
+interface Props { lang?: string }
+const { lang = 'zh' } = Astro.props;
+
 ---
 <div class="pane">
   <div>
-    <div class="field-label"><span>车牌号</span></div>
-    <input type="text" id="ap-in" placeholder="如 京A12345 / 粤B12345" style="width:100%;padding:10px;border:1px solid var(--border-color);border-radius:8px;box-sizing:border-box;font-size:16px;letter-spacing:1px;text-transform:uppercase">
+    <div class="field-label"><span>{tu(lang, '车牌号')}</span></div>
+    <input type="text" id="ap-in" placeholder={tu(lang, '如 京A12345 / 粤B12345')} style="width:100%;padding:10px;border:1px solid var(--border-color);border-radius:8px;box-sizing:border-box;font-size:16px;letter-spacing:1px;text-transform:uppercase">
     <div class="btn-row" style="margin-top:12px">
-      <button id="ap-run" class="primary">查询</button>
-      <button id="ap-clear">清空</button>
+      <button id="ap-run" class="primary">{tu(lang, '查询')}</button>
+      <button id="ap-clear">{tu(lang, '清空')}</button>
     </div>
   </div>
   <div>
-    <div class="field-label"><span>查询结果</span></div>
+    <div class="field-label"><span>{tu(lang, '查询结果')}</span></div>
     <table class="result-table"><tbody>
-      <tr><th>省份</th><td id="ap-prov">—</td></tr>
-      <tr><th>发牌城市</th><td id="ap-city">—</td></tr>
-      <tr><th>车牌类型</th><td id="ap-type">—</td></tr>
+      <tr><th>{tu(lang, '省份')}</th><td id="ap-prov">—</td></tr>
+      <tr><th>{tu(lang, '发牌城市')}</th><td id="ap-city">—</td></tr>
+      <tr><th>{tu(lang, '车牌类型')}</th><td id="ap-type">—</td></tr>
     </tbody></table>
     <p class="msg" id="ap-msg"></p>
   </div>
 </div>
 
-<script>
+<script>import { tu, currentLang } from '../../i18n/toolUi.ts';
+const LANG = currentLang();
+
   const $ = (id) => document.getElementById(id);
-  const PROV = { 京:'北京市',津:'天津市',沪:'上海市',渝:'重庆市',冀:'河北省',豫:'河南省',云:'云南省',辽:'辽宁省',黑:'黑龙江省',湘:'湖南省',皖:'安徽省',鲁:'山东省',新:'新疆维吾尔自治区',苏:'江苏省',浙:'浙江省',赣:'江西省',鄂:'湖北省',桂:'广西壮族自治区',甘:'甘肃省',晋:'山西省',蒙:'内蒙古自治区',陕:'陕西省',吉:'吉林省',闽:'福建省',贵:'贵州省',粤:'广东省',青:'青海省',藏:'西藏自治区',川:'四川省',宁:'宁夏回族自治区',琼:'海南省' };
+  const PROV = { 京:tu(LANG, '北京市'),津:tu(LANG, '天津市'),沪:tu(LANG, '上海市'),渝:tu(LANG, '重庆市'),冀:tu(LANG, '河北省'),豫:tu(LANG, '河南省'),云:tu(LANG, '云南省'),辽:tu(LANG, '辽宁省'),黑:tu(LANG, '黑龙江省'),湘:tu(LANG, '湖南省'),皖:tu(LANG, '安徽省'),鲁:tu(LANG, '山东省'),新:tu(LANG, '新疆维吾尔自治区'),苏:tu(LANG, '江苏省'),浙:tu(LANG, '浙江省'),赣:tu(LANG, '江西省'),鄂:tu(LANG, '湖北省'),桂:tu(LANG, '广西壮族自治区'),甘:tu(LANG, '甘肃省'),晋:tu(LANG, '山西省'),蒙:tu(LANG, '内蒙古自治区'),陕:tu(LANG, '陕西省'),吉:tu(LANG, '吉林省'),闽:tu(LANG, '福建省'),贵:tu(LANG, '贵州省'),粤:tu(LANG, '广东省'),青:tu(LANG, '青海省'),藏:tu(LANG, '西藏自治区'),川:tu(LANG, '四川省'),宁:tu(LANG, '宁夏回族自治区'),琼:tu(LANG, '海南省') };
   // 发牌机关（城市）代号：覆盖各省会 A 及主要城市
   const CITY = {
-    '京A':'北京市','京B':'北京市','京C':'北京市','京E':'北京市','京F':'北京市','京G':'北京远郊','京H':'北京市','京N':'北京市','京Y':'北京远郊',
-    '津A':'天津市','津B':'天津市','津C':'天津市','津E':'天津市',
-    '沪A':'上海市','沪B':'上海市','沪C':'上海郊县','沪D':'上海市','沪N':'上海市',
-    '渝A':'重庆市区','渝B':'重庆江南','渝C':'重庆永川','渝F':'重庆万州','渝G':'重庆涪陵','渝H':'重庆黔江',
-    '冀A':'石家庄','冀B':'唐山','冀C':'秦皇岛','冀D':'邯郸','冀E':'邢台','冀F':'保定','冀G':'张家口','冀H':'承德','冀J':'沧州','冀R':'廊坊','冀T':'衡水',
-    '豫A':'郑州','豫B':'开封','豫C':'洛阳','豫D':'平顶山','豫E':'安阳','豫F':'鹤壁','豫G':'新乡','豫H':'焦作','豫J':'濮阳','豫K':'许昌','豫L':'漯河','豫M':'三门峡','豫N':'商丘','豫P':'周口','豫Q':'驻马店','豫R':'南阳','豫S':'信阳','豫U':'济源',
-    '云A':'昆明','云C':'昭通','云D':'曲靖','云E':'楚雄','云F':'玉溪','云G':'红河','云H':'文山','云J':'普洱','云K':'西双版纳','云L':'大理','云M':'保山','云N':'德宏','云P':'丽江','云Q':'怒江','云R':'迪庆','云S':'临沧',
-    '辽A':'沈阳','辽B':'大连','辽C':'鞍山','辽D':'抚顺','辽E':'本溪','辽F':'丹东','辽G':'锦州','辽H':'营口','辽J':'阜新','辽K':'辽阳','辽L':'盘锦','辽M':'铁岭','辽N':'朝阳','辽P':'葫芦岛',
-    '黑A':'哈尔滨','黑B':'齐齐哈尔','黑C':'牡丹江','黑D':'佳木斯','黑E':'大庆','黑F':'伊春','黑G':'鸡西','黑H':'鹤岗','黑J':'双鸭山','黑K':'七台河','黑L':'哈尔滨(农垦)','黑M':'绥化','黑N':'黑河','黑P':'大兴安岭',
-    '湘A':'长沙','湘B':'株洲','湘C':'湘潭','湘D':'衡阳','湘E':'邵阳','湘F':'岳阳','湘G':'张家界','湘H':'益阳','湘J':'常德','湘K':'娄底','湘L':'郴州','湘M':'永州','湘N':'怀化','湘U':'湘西',
-    '皖A':'合肥','皖B':'芜湖','皖C':'蚌埠','皖D':'淮南','皖E':'马鞍山','皖F':'淮北','皖G':'铜陵','皖H':'安庆','皖J':'黄山','皖K':'阜阳','皖L':'宿州','皖M':'滁州','皖N':'六安','皖P':'宣城','皖Q':'巢湖','皖R':'池州','皖S':'亳州',
-    '鲁A':'济南','鲁B':'青岛','鲁C':'淄博','鲁D':'枣庄','鲁E':'东营','鲁F':'烟台','鲁G':'潍坊','鲁H':'济宁','鲁J':'泰安','鲁K':'威海','鲁L':'日照','鲁M':'莱芜','鲁N':'德州','鲁P':'聊城','鲁Q':'临沂','鲁R':'菏泽','鲁S':'青岛','鲁U':'青岛','鲁Y':'烟台',
-    '苏A':'南京','苏B':'无锡','苏C':'徐州','苏D':'常州','苏E':'苏州','苏F':'南通','苏G':'连云港','苏H':'淮安','苏J':'盐城','苏K':'扬州','苏L':'镇江','苏M':'泰州','苏N':'宿迁',
-    '浙A':'杭州','浙B':'宁波','浙C':'温州','浙D':'绍兴','浙E':'湖州','浙F':'嘉兴','浙G':'金华','浙H':'衢州','浙J':'台州','浙K':'丽水','浙L':'舟山',
-    '赣A':'南昌','赣B':'赣州','赣C':'宜春','赣D':'吉安','赣E':'上饶','赣F':'抚州','赣G':'九江','赣H':'景德镇','赣J':'萍乡','赣K':'新余','赣L':'鹰潭','赣M':'南昌',
-    '鄂A':'武汉','鄂B':'黄石','鄂C':'十堰','鄂D':'荆州','鄂E':'宜昌','鄂F':'襄阳','鄂G':'鄂州','鄂H':'荆门','鄂J':'黄冈','鄂K':'孝感','鄂L':'咸宁','鄂M':'仙桃','鄂N':'潜江','鄂P':'神农架','鄂Q':'恩施','鄂R':'天门','鄂S':'随州',
-    '桂A':'南宁','桂B':'柳州','桂C':'桂林','桂D':'梧州','桂E':'北海','桂F':'崇左','桂G':'来宾','桂H':'桂林','桂J':'贺州','桂K':'玉林','桂L':'百色','桂M':'河池','桂N':'钦州','桂P':'防城港',
-    '甘A':'兰州','甘B':'嘉峪关','甘C':'金昌','甘D':'白银','甘E':'天水','甘F':'酒泉','甘G':'张掖','甘H':'武威','甘J':'定西','甘K':'陇南','甘L':'平凉','甘M':'庆阳','甘N':'临夏','甘P':'甘南',
-    '晋A':'太原','晋B':'大同','晋C':'阳泉','晋D':'长治','晋E':'晋城','晋F':'朔州','晋H':'忻州','晋J':'吕梁','晋K':'晋中','晋L':'临汾','晋M':'运城',
-    '蒙A':'呼和浩特','蒙B':'包头','蒙C':'乌海','蒙D':'赤峰','蒙E':'呼伦贝尔','蒙F':'兴安盟','蒙G':'通辽','蒙H':'锡林郭勒','蒙J':'乌兰察布','蒙K':'鄂尔多斯','蒙L':'巴彦淖尔','蒙M':'阿拉善',
-    '陕A':'西安','陕B':'铜川','陕C':'宝鸡','陕D':'咸阳','陕E':'渭南','陕F':'汉中','陕G':'安康','陕H':'商洛','陕J':'延安','陕K':'榆林','陕U':'西安',
-    '吉A':'长春','吉B':'吉林','吉C':'四平','吉D':'辽源','吉E':'通化','吉F':'白山','吉G':'白城','吉H':'延边','吉J':'松原',
-    '闽A':'福州','闽B':'莆田','闽C':'泉州','闽D':'厦门','闽E':'漳州','闽F':'龙岩','闽G':'三明','闽H':'南平','闽J':'宁德','闽K':'省直系统',
-    '贵A':'贵阳','贵B':'六盘水','贵C':'遵义','贵D':'铜仁','贵E':'黔西南','贵F':'毕节','贵G':'安顺','贵H':'黔东南','贵J':'黔南',
-    '粤A':'广州','粤B':'深圳','粤C':'珠海','粤D':'汕头','粤E':'佛山','粤F':'韶关','粤G':'湛江','粤H':'肇庆','粤J':'江门','粤K':'茂名','粤L':'惠州','粤M':'梅州','粤N':'汕尾','粤P':'河源','粤Q':'阳江','粤R':'清远','粤S':'东莞','粤T':'中山','粤U':'潮州','粤V':'揭阳','粤W':'云浮','粤X':'佛山顺德','粤Y':'佛山南海','粤Z':'港澳入粤',
-    '青A':'西宁','青B':'海东','青C':'海北','青D':'黄南','青E':'海南州','青F':'果洛','青G':'玉树','青H':'海西',
-    '藏A':'拉萨','藏B':'昌都','藏C':'山南','藏D':'日喀则','藏E':'那曲','藏F':'阿里','藏G':'林芝','藏H':'区直系统',
-    '川A':'成都','川B':'绵阳','川C':'自贡','川D':'攀枝花','川E':'泸州','川F':'德阳','川H':'广元','川J':'遂宁','川K':'内江','川L':'乐山','川M':'资阳','川Q':'宜宾','川R':'南充','川S':'达州','川T':'雅安','川U':'阿坝','川V':'甘孜','川W':'凉山','川X':'广安','川Y':'巴中','川Z':'眉山',
-    '宁A':'银川','宁B':'石嘴山','宁C':'吴忠','宁D':'固原','宁E':'中卫',
-    '琼A':'海口','琼B':'三亚','琼C':'海南(琼北)','琼D':'海南(琼南)','琼E':'洋浦','琼F':'儋州'
+    '京A':tu(LANG, '北京市'),'京B':tu(LANG, '北京市'),'京C':tu(LANG, '北京市'),'京E':tu(LANG, '北京市'),'京F':tu(LANG, '北京市'),'京G':tu(LANG, '北京远郊'),'京H':tu(LANG, '北京市'),'京N':tu(LANG, '北京市'),'京Y':tu(LANG, '北京远郊'),
+    '津A':tu(LANG, '天津市'),'津B':tu(LANG, '天津市'),'津C':tu(LANG, '天津市'),'津E':tu(LANG, '天津市'),
+    '沪A':tu(LANG, '上海市'),'沪B':tu(LANG, '上海市'),'沪C':tu(LANG, '上海郊县'),'沪D':tu(LANG, '上海市'),'沪N':tu(LANG, '上海市'),
+    '渝A':tu(LANG, '重庆市区'),'渝B':tu(LANG, '重庆江南'),'渝C':tu(LANG, '重庆永川'),'渝F':tu(LANG, '重庆万州'),'渝G':tu(LANG, '重庆涪陵'),'渝H':tu(LANG, '重庆黔江'),
+    '冀A':tu(LANG, '石家庄'),'冀B':tu(LANG, '唐山'),'冀C':tu(LANG, '秦皇岛'),'冀D':tu(LANG, '邯郸'),'冀E':tu(LANG, '邢台'),'冀F':tu(LANG, '保定'),'冀G':tu(LANG, '张家口'),'冀H':tu(LANG, '承德'),'冀J':tu(LANG, '沧州'),'冀R':tu(LANG, '廊坊'),'冀T':tu(LANG, '衡水'),
+    '豫A':tu(LANG, '郑州'),'豫B':tu(LANG, '开封'),'豫C':tu(LANG, '洛阳'),'豫D':tu(LANG, '平顶山'),'豫E':tu(LANG, '安阳'),'豫F':tu(LANG, '鹤壁'),'豫G':tu(LANG, '新乡'),'豫H':tu(LANG, '焦作'),'豫J':tu(LANG, '濮阳'),'豫K':tu(LANG, '许昌'),'豫L':tu(LANG, '漯河'),'豫M':tu(LANG, '三门峡'),'豫N':tu(LANG, '商丘'),'豫P':tu(LANG, '周口'),'豫Q':tu(LANG, '驻马店'),'豫R':tu(LANG, '南阳'),'豫S':tu(LANG, '信阳'),'豫U':tu(LANG, '济源'),
+    '云A':tu(LANG, '昆明'),'云C':tu(LANG, '昭通'),'云D':tu(LANG, '曲靖'),'云E':tu(LANG, '楚雄'),'云F':tu(LANG, '玉溪'),'云G':tu(LANG, '红河'),'云H':tu(LANG, '文山'),'云J':tu(LANG, '普洱'),'云K':tu(LANG, '西双版纳'),'云L':tu(LANG, '大理'),'云M':tu(LANG, '保山'),'云N':tu(LANG, '德宏'),'云P':tu(LANG, '丽江'),'云Q':tu(LANG, '怒江'),'云R':tu(LANG, '迪庆'),'云S':tu(LANG, '临沧'),
+    '辽A':tu(LANG, '沈阳'),'辽B':tu(LANG, '大连'),'辽C':tu(LANG, '鞍山'),'辽D':tu(LANG, '抚顺'),'辽E':tu(LANG, '本溪'),'辽F':tu(LANG, '丹东'),'辽G':tu(LANG, '锦州'),'辽H':tu(LANG, '营口'),'辽J':tu(LANG, '阜新'),'辽K':tu(LANG, '辽阳'),'辽L':tu(LANG, '盘锦'),'辽M':tu(LANG, '铁岭'),'辽N':tu(LANG, '朝阳'),'辽P':tu(LANG, '葫芦岛'),
+    '黑A':tu(LANG, '哈尔滨'),'黑B':tu(LANG, '齐齐哈尔'),'黑C':tu(LANG, '牡丹江'),'黑D':tu(LANG, '佳木斯'),'黑E':tu(LANG, '大庆'),'黑F':tu(LANG, '伊春'),'黑G':tu(LANG, '鸡西'),'黑H':tu(LANG, '鹤岗'),'黑J':tu(LANG, '双鸭山'),'黑K':tu(LANG, '七台河'),'黑L':tu(LANG, '哈尔滨(农垦)'),'黑M':tu(LANG, '绥化'),'黑N':tu(LANG, '黑河'),'黑P':tu(LANG, '大兴安岭'),
+    '湘A':tu(LANG, '长沙'),'湘B':tu(LANG, '株洲'),'湘C':tu(LANG, '湘潭'),'湘D':tu(LANG, '衡阳'),'湘E':tu(LANG, '邵阳'),'湘F':tu(LANG, '岳阳'),'湘G':tu(LANG, '张家界'),'湘H':tu(LANG, '益阳'),'湘J':tu(LANG, '常德'),'湘K':tu(LANG, '娄底'),'湘L':tu(LANG, '郴州'),'湘M':tu(LANG, '永州'),'湘N':tu(LANG, '怀化'),'湘U':tu(LANG, '湘西'),
+    '皖A':tu(LANG, '合肥'),'皖B':tu(LANG, '芜湖'),'皖C':tu(LANG, '蚌埠'),'皖D':tu(LANG, '淮南'),'皖E':tu(LANG, '马鞍山'),'皖F':tu(LANG, '淮北'),'皖G':tu(LANG, '铜陵'),'皖H':tu(LANG, '安庆'),'皖J':tu(LANG, '黄山'),'皖K':tu(LANG, '阜阳'),'皖L':tu(LANG, '宿州'),'皖M':tu(LANG, '滁州'),'皖N':tu(LANG, '六安'),'皖P':tu(LANG, '宣城'),'皖Q':tu(LANG, '巢湖'),'皖R':tu(LANG, '池州'),'皖S':tu(LANG, '亳州'),
+    '鲁A':tu(LANG, '济南'),'鲁B':tu(LANG, '青岛'),'鲁C':tu(LANG, '淄博'),'鲁D':tu(LANG, '枣庄'),'鲁E':tu(LANG, '东营'),'鲁F':tu(LANG, '烟台'),'鲁G':tu(LANG, '潍坊'),'鲁H':tu(LANG, '济宁'),'鲁J':tu(LANG, '泰安'),'鲁K':tu(LANG, '威海'),'鲁L':tu(LANG, '日照'),'鲁M':tu(LANG, '莱芜'),'鲁N':tu(LANG, '德州'),'鲁P':tu(LANG, '聊城'),'鲁Q':tu(LANG, '临沂'),'鲁R':tu(LANG, '菏泽'),'鲁S':tu(LANG, '青岛'),'鲁U':tu(LANG, '青岛'),'鲁Y':tu(LANG, '烟台'),
+    '苏A':tu(LANG, '南京'),'苏B':tu(LANG, '无锡'),'苏C':tu(LANG, '徐州'),'苏D':tu(LANG, '常州'),'苏E':tu(LANG, '苏州'),'苏F':tu(LANG, '南通'),'苏G':tu(LANG, '连云港'),'苏H':tu(LANG, '淮安'),'苏J':tu(LANG, '盐城'),'苏K':tu(LANG, '扬州'),'苏L':tu(LANG, '镇江'),'苏M':tu(LANG, '泰州'),'苏N':tu(LANG, '宿迁'),
+    '浙A':tu(LANG, '杭州'),'浙B':tu(LANG, '宁波'),'浙C':tu(LANG, '温州'),'浙D':tu(LANG, '绍兴'),'浙E':tu(LANG, '湖州'),'浙F':tu(LANG, '嘉兴'),'浙G':tu(LANG, '金华'),'浙H':tu(LANG, '衢州'),'浙J':tu(LANG, '台州'),'浙K':tu(LANG, '丽水'),'浙L':tu(LANG, '舟山'),
+    '赣A':tu(LANG, '南昌'),'赣B':tu(LANG, '赣州'),'赣C':tu(LANG, '宜春'),'赣D':tu(LANG, '吉安'),'赣E':tu(LANG, '上饶'),'赣F':tu(LANG, '抚州'),'赣G':tu(LANG, '九江'),'赣H':tu(LANG, '景德镇'),'赣J':tu(LANG, '萍乡'),'赣K':tu(LANG, '新余'),'赣L':tu(LANG, '鹰潭'),'赣M':tu(LANG, '南昌'),
+    '鄂A':tu(LANG, '武汉'),'鄂B':tu(LANG, '黄石'),'鄂C':tu(LANG, '十堰'),'鄂D':tu(LANG, '荆州'),'鄂E':tu(LANG, '宜昌'),'鄂F':tu(LANG, '襄阳'),'鄂G':tu(LANG, '鄂州'),'鄂H':tu(LANG, '荆门'),'鄂J':tu(LANG, '黄冈'),'鄂K':tu(LANG, '孝感'),'鄂L':tu(LANG, '咸宁'),'鄂M':tu(LANG, '仙桃'),'鄂N':tu(LANG, '潜江'),'鄂P':tu(LANG, '神农架'),'鄂Q':tu(LANG, '恩施'),'鄂R':tu(LANG, '天门'),'鄂S':tu(LANG, '随州'),
+    '桂A':tu(LANG, '南宁'),'桂B':tu(LANG, '柳州'),'桂C':tu(LANG, '桂林'),'桂D':tu(LANG, '梧州'),'桂E':tu(LANG, '北海'),'桂F':tu(LANG, '崇左'),'桂G':tu(LANG, '来宾'),'桂H':tu(LANG, '桂林'),'桂J':tu(LANG, '贺州'),'桂K':tu(LANG, '玉林'),'桂L':tu(LANG, '百色'),'桂M':tu(LANG, '河池'),'桂N':tu(LANG, '钦州'),'桂P':tu(LANG, '防城港'),
+    '甘A':tu(LANG, '兰州'),'甘B':tu(LANG, '嘉峪关'),'甘C':tu(LANG, '金昌'),'甘D':tu(LANG, '白银'),'甘E':tu(LANG, '天水'),'甘F':tu(LANG, '酒泉'),'甘G':tu(LANG, '张掖'),'甘H':tu(LANG, '武威'),'甘J':tu(LANG, '定西'),'甘K':tu(LANG, '陇南'),'甘L':tu(LANG, '平凉'),'甘M':tu(LANG, '庆阳'),'甘N':tu(LANG, '临夏'),'甘P':tu(LANG, '甘南'),
+    '晋A':tu(LANG, '太原'),'晋B':tu(LANG, '大同'),'晋C':tu(LANG, '阳泉'),'晋D':tu(LANG, '长治'),'晋E':tu(LANG, '晋城'),'晋F':tu(LANG, '朔州'),'晋H':tu(LANG, '忻州'),'晋J':tu(LANG, '吕梁'),'晋K':tu(LANG, '晋中'),'晋L':tu(LANG, '临汾'),'晋M':tu(LANG, '运城'),
+    '蒙A':tu(LANG, '呼和浩特'),'蒙B':tu(LANG, '包头'),'蒙C':tu(LANG, '乌海'),'蒙D':tu(LANG, '赤峰'),'蒙E':tu(LANG, '呼伦贝尔'),'蒙F':tu(LANG, '兴安盟'),'蒙G':tu(LANG, '通辽'),'蒙H':tu(LANG, '锡林郭勒'),'蒙J':tu(LANG, '乌兰察布'),'蒙K':tu(LANG, '鄂尔多斯'),'蒙L':tu(LANG, '巴彦淖尔'),'蒙M':tu(LANG, '阿拉善'),
+    '陕A':tu(LANG, '西安'),'陕B':tu(LANG, '铜川'),'陕C':tu(LANG, '宝鸡'),'陕D':tu(LANG, '咸阳'),'陕E':tu(LANG, '渭南'),'陕F':tu(LANG, '汉中'),'陕G':tu(LANG, '安康'),'陕H':tu(LANG, '商洛'),'陕J':tu(LANG, '延安'),'陕K':tu(LANG, '榆林'),'陕U':tu(LANG, '西安'),
+    '吉A':tu(LANG, '长春'),'吉B':tu(LANG, '吉林'),'吉C':tu(LANG, '四平'),'吉D':tu(LANG, '辽源'),'吉E':tu(LANG, '通化'),'吉F':tu(LANG, '白山'),'吉G':tu(LANG, '白城'),'吉H':tu(LANG, '延边'),'吉J':tu(LANG, '松原'),
+    '闽A':tu(LANG, '福州'),'闽B':tu(LANG, '莆田'),'闽C':tu(LANG, '泉州'),'闽D':tu(LANG, '厦门'),'闽E':tu(LANG, '漳州'),'闽F':tu(LANG, '龙岩'),'闽G':tu(LANG, '三明'),'闽H':tu(LANG, '南平'),'闽J':tu(LANG, '宁德'),'闽K':tu(LANG, '省直系统'),
+    '贵A':tu(LANG, '贵阳'),'贵B':tu(LANG, '六盘水'),'贵C':tu(LANG, '遵义'),'贵D':tu(LANG, '铜仁'),'贵E':tu(LANG, '黔西南'),'贵F':tu(LANG, '毕节'),'贵G':tu(LANG, '安顺'),'贵H':tu(LANG, '黔东南'),'贵J':tu(LANG, '黔南'),
+    '粤A':tu(LANG, '广州'),'粤B':tu(LANG, '深圳'),'粤C':tu(LANG, '珠海'),'粤D':tu(LANG, '汕头'),'粤E':tu(LANG, '佛山'),'粤F':tu(LANG, '韶关'),'粤G':tu(LANG, '湛江'),'粤H':tu(LANG, '肇庆'),'粤J':tu(LANG, '江门'),'粤K':tu(LANG, '茂名'),'粤L':tu(LANG, '惠州'),'粤M':tu(LANG, '梅州'),'粤N':tu(LANG, '汕尾'),'粤P':tu(LANG, '河源'),'粤Q':tu(LANG, '阳江'),'粤R':tu(LANG, '清远'),'粤S':tu(LANG, '东莞'),'粤T':tu(LANG, '中山'),'粤U':tu(LANG, '潮州'),'粤V':tu(LANG, '揭阳'),'粤W':tu(LANG, '云浮'),'粤X':tu(LANG, '佛山顺德'),'粤Y':tu(LANG, '佛山南海'),'粤Z':tu(LANG, '港澳入粤'),
+    '青A':tu(LANG, '西宁'),'青B':tu(LANG, '海东'),'青C':tu(LANG, '海北'),'青D':tu(LANG, '黄南'),'青E':tu(LANG, '海南州'),'青F':tu(LANG, '果洛'),'青G':tu(LANG, '玉树'),'青H':tu(LANG, '海西'),
+    '藏A':tu(LANG, '拉萨'),'藏B':tu(LANG, '昌都'),'藏C':tu(LANG, '山南'),'藏D':tu(LANG, '日喀则'),'藏E':tu(LANG, '那曲'),'藏F':tu(LANG, '阿里'),'藏G':tu(LANG, '林芝'),'藏H':tu(LANG, '区直系统'),
+    '川A':tu(LANG, '成都'),'川B':tu(LANG, '绵阳'),'川C':tu(LANG, '自贡'),'川D':tu(LANG, '攀枝花'),'川E':tu(LANG, '泸州'),'川F':tu(LANG, '德阳'),'川H':tu(LANG, '广元'),'川J':tu(LANG, '遂宁'),'川K':tu(LANG, '内江'),'川L':tu(LANG, '乐山'),'川M':tu(LANG, '资阳'),'川Q':tu(LANG, '宜宾'),'川R':tu(LANG, '南充'),'川S':tu(LANG, '达州'),'川T':tu(LANG, '雅安'),'川U':tu(LANG, '阿坝'),'川V':tu(LANG, '甘孜'),'川W':tu(LANG, '凉山'),'川X':tu(LANG, '广安'),'川Y':tu(LANG, '巴中'),'川Z':tu(LANG, '眉山'),
+    '宁A':tu(LANG, '银川'),'宁B':tu(LANG, '石嘴山'),'宁C':tu(LANG, '吴忠'),'宁D':tu(LANG, '固原'),'宁E':tu(LANG, '中卫'),
+    '琼A':tu(LANG, '海口'),'琼B':tu(LANG, '三亚'),'琼C':tu(LANG, '海南(琼北)'),'琼D':tu(LANG, '海南(琼南)'),'琼E':tu(LANG, '洋浦'),'琼F':tu(LANG, '儋州')
   };
   function plateType(p){
-    if (/^WJ/.test(p)) return '武警';
-    if (/^使/.test(p)) return '使馆';
-    if (/^军/.test(p)) return '军队';
-    if (/^港|^澳|^台/.test(p)) return '港澳/台入境内地';
-    if (/^学/.test(p)) return '教练车';
-    if (/^挂/.test(p)) return '挂车';
-    if (/^临/.test(p)) return '临时号牌';
-    if (/^领/.test(p)) return '领事馆';
-    return '普通民用号牌';
+    if (/^WJ/.test(p)) return tu(LANG, '武警');
+    if (/^使/.test(p)) return tu(LANG, '使馆');
+    if (/^军/.test(p)) return tu(LANG, '军队');
+    if (/^港|^澳|^台/.test(p)) return tu(LANG, '港澳/台入境内地');
+    if (/^学/.test(p)) return tu(LANG, '教练车');
+    if (/^挂/.test(p)) return tu(LANG, '挂车');
+    if (/^临/.test(p)) return tu(LANG, '临时号牌');
+    if (/^领/.test(p)) return tu(LANG, '领事馆');
+    return tu(LANG, '普通民用号牌');
   }
   $('ap-run').addEventListener('click', () => {
     const raw = $('ap-in').value.trim().toUpperCase();
     const m = raw.match(/^([京津冀晋蒙辽吉黑沪苏浙皖闽赣鲁豫鄂湘粤桂琼渝川贵云藏陕甘青宁新])([A-Z])/);
-    if (!m){ $('ap-prov').textContent='—'; $('ap-city').textContent='—'; $('ap-type').textContent='—'; $('ap-msg').textContent='无法识别，请输入形如「京A12345」的号牌'; $('ap-msg').className='msg err'; return; }
-    const prov = PROV[m[1]] || '未知省份';
-    const city = CITY[m[1]+m[2]] || (prov + '（城市代码 '+m[2]+' 未收录）');
+    if (!m){ $('ap-prov').textContent='—'; $('ap-city').textContent='—'; $('ap-type').textContent='—'; $('ap-msg').textContent=tu(LANG, '无法识别，请输入形如「京A12345」的号牌'); $('ap-msg').className='msg err'; return; }
+    const prov = PROV[m[1]] || tu(LANG, '未知省份');
+    const city = CITY[m[1]+m[2]] || (prov + tu(LANG, '（城市代码 ')+m[2]+tu(LANG, ' 未收录）'));
     $('ap-prov').textContent = prov;
     $('ap-city').textContent = city;
     $('ap-type').textContent = plateType(raw);
-    $('ap-msg').textContent = '查询完成（数据基于公开号牌规则，个别区县代号可能未收录）';
+    $('ap-msg').textContent = tu(LANG, '查询完成（数据基于公开号牌规则，个别区县代号可能未收录）');
     $('ap-msg').className = 'msg ok';
   });
   $('ap-clear').addEventListener('click', () => { $('ap-in').value=''; $('ap-prov').textContent='—'; $('ap-city').textContent='—'; $('ap-type').textContent='—'; $('ap-msg').textContent=''; });

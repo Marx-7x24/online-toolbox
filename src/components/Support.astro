@@ -5,6 +5,7 @@
 //      再把下面两个占位 div 换成 <img src="/support-wx.png" /> 即可，零后端。
 //   2) 正式支付：在此嵌入微信支付 JSAPI / 支付宝当面付 的收款组件（需后端或云函数，前期可不做）。
 import { t } from '../i18n/ui.ts';
+import { tu } from '../i18n/toolUi.ts';
 
 interface Props {
   lang?: string;
@@ -18,12 +19,12 @@ const { lang = 'zh' } = Astro.props;
   <div class="support__qrs">
     <div class="support__qr">
       <!-- 微信支付：替换为 <img src="/support-wx.png" alt="微信支付" /> -->
-      <div class="support__qr-img" data-pay="wechat">微信</div>
+      <div class="support__qr-img" data-pay="wechat">{tu(lang, '微信')}</div>
       <span>{t(lang, 'supportWx')}</span>
     </div>
     <div class="support__qr">
       <!-- 支付宝：替换为 <img src="/support-ali.png" alt="支付宝" /> -->
-      <div class="support__qr-img" data-pay="alipay">支付宝</div>
+      <div class="support__qr-img" data-pay="alipay">{tu(lang, '支付宝')}</div>
       <span>{t(lang, 'supportAli')}</span>
     </div>
   </div>

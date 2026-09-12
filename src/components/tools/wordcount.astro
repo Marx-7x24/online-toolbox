@@ -1,18 +1,25 @@
 ---
+import { tu } from '../../i18n/toolUi.ts';
+
+interface Props { lang?: string }
+const { lang = 'zh' } = Astro.props;
+
 ---
 
-<div class="field-label"><span>输入文本</span><span id="wc-live"></span></div>
-<textarea id="wc-in" placeholder="粘贴或输入要统计的文本" style="min-height:220px;"></textarea>
+<div class="field-label"><span>{tu(lang, '输入文本')}</span><span id="wc-live"></span></div>
+<textarea id="wc-in" placeholder={tu(lang, '粘贴或输入要统计的文本')} style="min-height:220px;"></textarea>
 
 <div class="btn-row">
-  <button class="primary" id="wc-go">统计</button>
-  <button id="wc-sample">填入示例</button>
-  <button id="wc-clear">清空</button>
+  <button class="primary" id="wc-go">{tu(lang, '统计')}</button>
+  <button id="wc-sample">{tu(lang, '填入示例')}</button>
+  <button id="wc-clear">{tu(lang, '清空')}</button>
 </div>
 
 <div id="wc-out"></div>
 
-<script>
+<script>import { tu, currentLang } from '../../i18n/toolUi.ts';
+const LANG = currentLang();
+
   const $ = (id) => document.getElementById(id);
 
   function stat(text) {
@@ -33,22 +40,22 @@
   function render() {
     const s = stat($('wc-in').value);
     const rows = [
-      ['总字符数', s.chars + ' （含空格与换行）'],
-      ['不含空白字符', s.noSpace],
-      ['中文字符', s.cn],
-      ['英文字母', s.en],
-      ['数字', s.digit],
-      ['中文标点', s.punctCn],
-      ['英文标点', s.punctEn],
-      ['空白字符', s.space],
-      ['英文单词', s.wordsEn],
-      ['行数', s.lines],
-      ['段落数', s.paragraphs],
-      ['汉字+英文单词', s.cn + s.wordsEn + ' （常见投稿口径）'],
+      [tu(LANG, '总字符数'), s.chars + tu(LANG, ' （含空格与换行）')],
+      [tu(LANG, '不含空白字符'), s.noSpace],
+      [tu(LANG, '中文字符'), s.cn],
+      [tu(LANG, '英文字母'), s.en],
+      [tu(LANG, '数字'), s.digit],
+      [tu(LANG, '中文标点'), s.punctCn],
+      [tu(LANG, '英文标点'), s.punctEn],
+      [tu(LANG, '空白字符'), s.space],
+      [tu(LANG, '英文单词'), s.wordsEn],
+      [tu(LANG, '行数'), s.lines],
+      [tu(LANG, '段落数'), s.paragraphs],
+      [tu(LANG, '汉字+英文单词'), s.cn + s.wordsEn + tu(LANG, ' （常见投稿口径）')],
     ];
     $('wc-out').innerHTML =
       '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:14px;">' +
-      ['总字符数', '不含空白字符', '中文字符', '英文单词', '行数', '段落数']
+      [tu(LANG, '总字符数'), tu(LANG, '不含空白字符'), tu(LANG, '中文字符'), tu(LANG, '英文单词'), tu(LANG, '行数'), tu(LANG, '段落数')]
         .map((k, i) => {
           const vals = [s.chars, s.noSpace, s.cn, s.wordsEn, s.lines, s.paragraphs];
           return `<div style="background:var(--background-secondary,var(--bg));border-radius:10px;padding:12px;">

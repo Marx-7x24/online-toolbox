@@ -1,50 +1,57 @@
 ---
+import { tu } from '../../i18n/toolUi.ts';
+
+interface Props { lang?: string }
+const { lang = 'zh' } = Astro.props;
+
 ---
 
-<div class="tip">把多张电子发票排到 A4 纸上打印，报销时能省不少纸。文件不上传服务器。</div>
+<div class="tip">{tu(lang, '把多张电子发票排到 A4 纸上打印，报销时能省不少纸。文件不上传服务器。')}</div>
 
 <div class="btn-row" style="align-items:center;">
   <input type="file" id="im-file" accept="application/pdf,image/*" multiple style="width:auto;font-family:inherit;padding:6px;border:none;" />
-  <span style="font-size:13px;color:var(--text-hint);">支持 PDF 与图片混排</span>
+  <span style="font-size:13px;color:var(--text-hint);">{tu(lang, '支持 PDF 与图片混排')}</span>
 </div>
 
 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-top:12px;">
   <div>
-    <div class="field-label"><span>每行列数</span></div>
+    <div class="field-label"><span>{tu(lang, '每行列数')}</span></div>
     <select id="im-cols">
-      <option value="1">1 列（发票原大）</option>
-      <option value="2" selected>2 列</option>
-      <option value="3">3 列</option>
-      <option value="4">4 列</option>
+      <option value="1">1 {tu(lang, '列（发票原大')}）</option>
+      <option value="2" selected>2 {tu(lang, '列')}</option>
+      <option value="3">3 {tu(lang, '列')}</option>
+      <option value="4">4 {tu(lang, '列')}</option>
     </select>
   </div>
   <div>
-    <div class="field-label"><span>纸张</span></div>
+    <div class="field-label"><span>{tu(lang, '纸张')}</span></div>
     <select id="im-paper">
-      <option value="210,297" selected>A4 纵向</option>
-      <option value="297,210">A4 横向</option>
-      <option value="148,210">A5 纵向</option>
+      <option value="210,297" selected>A4 {tu(lang, '纵向')}</option>
+      <option value="297,210">A4 {tu(lang, '横向')}</option>
+      <option value="148,210">A5 {tu(lang, '纵向')}</option>
     </select>
   </div>
   <div>
-    <div class="field-label"><span>页边距</span><span id="im-m-val">10 mm</span></div>
+    <div class="field-label"><span>{tu(lang, '页边距')}</span><span id="im-m-val">10 mm</span></div>
     <input type="range" id="im-m" min="0" max="30" value="10" style="padding:0;" />
   </div>
   <div>
-    <div class="field-label"><span>每张最大高度</span><span id="im-h-val">自动</span></div>
+    <div class="field-label"><span>{tu(lang, '每张最大高度')}</span><span id="im-h-val">{tu(lang, '自动')}</span></div>
     <input type="range" id="im-h" min="0" max="100" value="0" style="padding:0;" />
   </div>
 </div>
 
 <div class="btn-row">
-  <button class="primary" id="im-go">合并生成</button>
-  <button id="im-clear">清空</button>
+  <button class="primary" id="im-go">{tu(lang, '合并生成')}</button>
+  <button id="im-clear">{tu(lang, '清空')}</button>
 </div>
 
 <p class="msg" id="im-msg"></p>
 <div id="im-out"></div>
 
-<script>
+<script>import { tu, currentLang } from '../../i18n/toolUi.ts';
+const LANG = currentLang();
+
   import { PDFDocument } from 'pdf-lib';
 
   const $ = (id) => document.getElementById(id);
@@ -68,8 +75,8 @@
 
   $('im-go').onclick = async () => {
     const files = Array.from($('im-file').files || []);
-    if (!files.length) { $('im-msg').textContent = '请先选择发票文件'; $('im-msg').className = 'msg err'; return; }
-    $('im-msg').textContent = '处理中…';
+    if (!files.length) { $('im-msg').textContent = tu(LANG, '请先选择发票文件'); $('im-msg').className = 'msg err'; return; }
+    $('im-msg').textContent = tu(LANG, '处理中…');
     $('im-msg').className = 'msg';
 
     try {
@@ -163,7 +170,7 @@
       $('im-msg').textContent = `已合并 ${items.length} 张发票到 ${out.getPageCount()} 页，开始下载`;
       $('im-msg').className = 'msg ok';
     } catch (e) {
-      $('im-msg').textContent = '处理失败：' + (e.message || '文件可能已加密或损坏');
+      $('im-msg').textContent = tu(LANG, '处理失败：') + (e.message || tu(LANG, '文件可能已加密或损坏'));
       $('im-msg').className = 'msg err';
     }
   };

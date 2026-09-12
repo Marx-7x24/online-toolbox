@@ -1,22 +1,26 @@
 ---
+import { tu } from '../../i18n/toolUi.ts';
 // PDF 重复页面检测：扫描每页指纹找出重复页
+interface Props { lang?: string }
+const { lang = 'zh' } = Astro.props;
+
 ---
 <div class="pane">
   <div>
-    <div class="field-label"><span>选择 PDF 文件</span></div>
+    <div class="field-label"><span>{tu(lang, '选择 PDF 文件')}</span></div>
     <input type="file" id="pd-file" accept="application/pdf">
-    <div class="field-label" style="margin-top:14px"><span>相似度阈值 <span id="pd-tv">95</span>%</span></div>
+    <div class="field-label" style="margin-top:14px"><span>{tu(lang, '相似度阈值')} <span id="pd-tv">95</span>%</span></div>
     <input type="range" id="pd-thr" min="70" max="100" value="95" style="width:100%">
-    <p style="font-size:12px;color:#999;margin-top:8px">计算每页文字 + 图像指纹，超过阈值的视为重复。</p>
+    <p style="font-size:12px;color:#999;margin-top:8px">{tu(lang, '计算每页文字 + 图像指纹，超过阈值的视为重复。')}</p>
   </div>
   <div>
-    <div class="field-label"><span>扫描结果</span></div>
+    <div class="field-label"><span>{tu(lang, '扫描结果')}</span></div>
     <div id="pd-result" class="pd-result"></div>
   </div>
 </div>
 <div class="btn-row">
-  <button id="pd-run" class="primary">开始扫描</button>
-  <button id="pd-reset">重置</button>
+  <button id="pd-run" class="primary">{tu(lang, '开始扫描')}</button>
+  <button id="pd-reset">{tu(lang, '重置')}</button>
   <span id="pd-msg" class="msg"></span>
 </div>
 
@@ -28,7 +32,9 @@
   .pd-result .group:last-child { border-bottom: 0; }
 </style>
 
-<script>
+<script>import { tu, currentLang } from '../../i18n/toolUi.ts';
+const LANG = currentLang();
+
   const $ = (id) => document.getElementById(id);
   let sourceFile = null;
 
@@ -85,8 +91,8 @@
   }
 
   $('pd-run').addEventListener('click', async () => {
-    if (!sourceFile) { $('pd-msg').textContent = '请先选择 PDF'; $('pd-msg').className = 'msg err'; return; }
-    $('pd-msg').textContent = '加载中…'; $('pd-msg').className = 'msg';
+    if (!sourceFile) { $('pd-msg').textContent = tu(LANG, '请先选择 PDF'); $('pd-msg').className = 'msg err'; return; }
+    $('pd-msg').textContent = tu(LANG, '加载中…'); $('pd-msg').className = 'msg';
     $('pd-result').innerHTML = '';
     try {
       const pdfjs = await loadPdfJs();
@@ -117,7 +123,7 @@
       }
       if (groups.length === 0) {
         $('pd-result').innerHTML = `<div>扫描 ${total} 页，未发现重复页面（阈值 ${thr*100}%）</div>`;
-        $('pd-msg').textContent = '完成 · 无重复';
+        $('pd-msg').textContent = tu(LANG, '完成 · 无重复');
       } else {
         const html = groups.map(g => `<div class="group"><span class="dup">重复组：</span>第 ${g.join('、')} 页（共 ${g.length} 页）</div>`).join('');
         const dupCount = groups.reduce((s, g) => s + g.length - 1, 0);
@@ -126,7 +132,7 @@
       }
       $('pd-msg').className = 'msg ok';
     } catch (err) {
-      $('pd-msg').textContent = '失败：' + err.message;
+      $('pd-msg').textContent = tu(LANG, '失败：') + err.message;
       $('pd-msg').className = 'msg err';
     }
   });

@@ -1,28 +1,32 @@
 ---
+import { tu } from '../../i18n/toolUi.ts';
 // 文本自动排版：整理空行、多余空格、段落间距等
+interface Props { lang?: string }
+const { lang = 'zh' } = Astro.props;
+
 ---
 
 <div class="pane">
   <div>
-    <div class="field-label"><span>原始文本</span></div>
-    <textarea id="tf-in" placeholder="把需要整理的文本粘贴到这里…"></textarea>
+    <div class="field-label"><span>{tu(lang, '原始文本')}</span></div>
+    <textarea id="tf-in" placeholder={tu(lang, '把需要整理的文本粘贴到这里…')}></textarea>
   </div>
   <div>
-    <div class="field-label"><span>整理结果</span></div>
+    <div class="field-label"><span>{tu(lang, '整理结果')}</span></div>
     <textarea id="tf-out" readonly></textarea>
   </div>
 </div>
 
 <div class="tf-opts">
-  <label><input type="checkbox" id="tf-trim" checked /> 去除行首尾空格</label>
-  <label><input type="checkbox" id="tf-collapse" checked /> 合并连续空格</label>
-  <label><input type="checkbox" id="tf-blank" checked /> 段间保留一个空行</label>
-  <label><input type="checkbox" id="tf-nodenum" checked /> 删除连续空行</label>
+  <label><input type="checkbox" id="tf-trim" checked /> {tu(lang, '去除行首尾空格')}</label>
+  <label><input type="checkbox" id="tf-collapse" checked /> {tu(lang, '合并连续空格')}</label>
+  <label><input type="checkbox" id="tf-blank" checked /> {tu(lang, '段间保留一个空行')}</label>
+  <label><input type="checkbox" id="tf-nodenum" checked /> {tu(lang, '删除连续空行')}</label>
 </div>
 
 <div class="btn-row">
-  <button id="tf-run" class="primary">整理</button>
-  <button id="tf-copy">复制结果</button>
+  <button id="tf-run" class="primary">{tu(lang, '整理')}</button>
+  <button id="tf-copy">{tu(lang, '复制结果')}</button>
   <span id="tf-msg" class="msg"></span>
 </div>
 
@@ -31,7 +35,9 @@
   .tf-opts label { display: flex; align-items: center; gap: 6px; }
 </style>
 
-<script>
+<script>import { tu, currentLang } from '../../i18n/toolUi.ts';
+const LANG = currentLang();
+
   const $ = (id) => document.getElementById(id);
   const input = $('tf-in'), output = $('tf-out'), msg = $('tf-msg');
 
@@ -45,12 +51,12 @@
       lines = lines.filter((l, i) => !(l === '' && lines[i - 1] === ''));
     }
     output.value = lines.join('\n');
-    msg.textContent = '已整理'; msg.className = 'msg ok';
+    msg.textContent = tu(LANG, '已整理'); msg.className = 'msg ok';
   });
 
   $('tf-copy').addEventListener('click', async () => {
     if (!output.value) return;
-    try { await navigator.clipboard.writeText(output.value); msg.textContent = '已复制'; msg.className = 'msg ok'; }
-    catch { msg.textContent = '复制失败'; msg.className = 'msg err'; }
+    try { await navigator.clipboard.writeText(output.value); msg.textContent = tu(LANG, '已复制'); msg.className = 'msg ok'; }
+    catch { msg.textContent = tu(LANG, '复制失败'); msg.className = 'msg err'; }
   });
 </script>

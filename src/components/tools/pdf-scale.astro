@@ -1,41 +1,45 @@
 ---
+import { tu } from '../../i18n/toolUi.ts';
 // PDF 页面缩放：调整每页尺寸（A4/A3/A5/Letter 或自定义）
+interface Props { lang?: string }
+const { lang = 'zh' } = Astro.props;
+
 ---
 <div class="pane">
   <div>
-    <div class="field-label"><span>选择 PDF 文件</span></div>
+    <div class="field-label"><span>{tu(lang, '选择 PDF 文件')}</span></div>
     <input type="file" id="ps-file" accept="application/pdf">
-    <div class="field-label" style="margin-top:14px"><span>目标页面尺寸</span></div>
+    <div class="field-label" style="margin-top:14px"><span>{tu(lang, '目标页面尺寸')}</span></div>
     <select id="ps-spec" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:6px">
       <option value="a4">A4 (210 × 297 mm)</option>
       <option value="a3">A3 (297 × 420 mm)</option>
       <option value="a5">A5 (148 × 210 mm)</option>
       <option value="letter">Letter (216 × 279 mm)</option>
       <option value="b5">B5 (176 × 250 mm)</option>
-      <option value="fit">等比缩放（按百分比）</option>
-      <option value="custom">自定义（mm）</option>
+      <option value="fit">{tu(lang, '等比缩放（按百分比')}）</option>
+      <option value="custom">{tu(lang, '自定义')}（mm）</option>
     </select>
     <div id="ps-custom" style="display:none;margin-top:8px;display:flex;gap:6px">
-      <input type="number" id="ps-w" value="210" placeholder="宽 mm" style="flex:1;padding:6px;border:1px solid var(--border);border-radius:6px">
-      <input type="number" id="ps-h" value="297" placeholder="高 mm" style="flex:1;padding:6px;border:1px solid var(--border);border-radius:6px">
+      <input type="number" id="ps-w" value="210" placeholder="{tu(lang, '宽')} mm" style="flex:1;padding:6px;border:1px solid var(--border);border-radius:6px">
+      <input type="number" id="ps-h" value="297" placeholder="{tu(lang, '高')} mm" style="flex:1;padding:6px;border:1px solid var(--border);border-radius:6px">
     </div>
     <div id="ps-pct" style="display:none;margin-top:8px">
       <input type="number" id="ps-pct-val" value="50" min="10" max="500" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:6px;box-sizing:border-box">
     </div>
   </div>
   <div>
-    <div class="field-label"><span>说明</span></div>
+    <div class="field-label"><span>{tu(lang, '说明')}</span></div>
     <p style="font-size:13px;color:#666;background:#f8f9fb;padding:12px;border-radius:8px;line-height:1.6">
-      • 等比缩放：每页内容按比例放大/缩小，文字不会变形<br>
-      • 强制改尺寸：内容按新页面拉伸（可能导致变形）<br>
-      • 单位换算：1 mm = 2.835 pt
+      • {tu(lang, '等比缩放：每页内容按比例放大')}/{tu(lang, '缩小，文字不会变形')}<br>
+      • {tu(lang, '强制改尺寸：内容按新页面拉伸（可能导致变形')}）<br>
+      • {tu(lang, '单位换算')}：1 mm = 2.835 pt
     </p>
   </div>
 </div>
 <div class="btn-row">
-  <button id="ps-run" class="primary">开始缩放</button>
-  <button id="ps-dl">下载</button>
-  <button id="ps-reset">重置</button>
+  <button id="ps-run" class="primary">{tu(lang, '开始缩放')}</button>
+  <button id="ps-dl">{tu(lang, '下载')}</button>
+  <button id="ps-reset">{tu(lang, '重置')}</button>
   <span id="ps-msg" class="msg"></span>
 </div>
 
@@ -43,7 +47,9 @@
   input[type="number"] { box-sizing: border-box; }
 </style>
 
-<script>
+<script>import { tu, currentLang } from '../../i18n/toolUi.ts';
+const LANG = currentLang();
+
   const $ = (id) => document.getElementById(id);
   let sourceFile = null;
   let outBlob = null;
@@ -76,8 +82,8 @@
   }
 
   $('ps-run').addEventListener('click', async () => {
-    if (!sourceFile) { $('ps-msg').textContent = '请先选择 PDF'; $('ps-msg').className = 'msg err'; return; }
-    $('ps-msg').textContent = '处理中…'; $('ps-msg').className = 'msg';
+    if (!sourceFile) { $('ps-msg').textContent = tu(LANG, '请先选择 PDF'); $('ps-msg').className = 'msg err'; return; }
+    $('ps-msg').textContent = tu(LANG, '处理中…'); $('ps-msg').className = 'msg';
     try {
       const PDFLib = await loadPdfLib();
       const buf = await sourceFile.arrayBuffer();
@@ -126,7 +132,7 @@
       $('ps-msg').textContent = `成功 · ${pages.length} 页 · 新尺寸 ${Math.round(newW/2.835)}×${Math.round(newH/2.835)} mm`;
       $('ps-msg').className = 'msg ok';
     } catch (err) {
-      $('ps-msg').textContent = '失败：' + err.message;
+      $('ps-msg').textContent = tu(LANG, '失败：') + err.message;
       $('ps-msg').className = 'msg err';
     }
   });

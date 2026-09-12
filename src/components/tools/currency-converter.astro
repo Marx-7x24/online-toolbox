@@ -1,14 +1,18 @@
 ---
+import { tu } from '../../i18n/toolUi.ts';
 // 货币汇率转换器：frankfurter.app（欧洲央行）实时汇率，失败回退内置参考汇率
+interface Props { lang?: string }
+const { lang = 'zh' } = Astro.props;
+
 ---
 <div class="pane">
   <div>
-    <div class="field-label"><span>金额</span></div>
+    <div class="field-label"><span>{tu(lang, '金额')}</span></div>
     <input type="number" id="cr-amt" value="100" step="any" style="width:100%;padding:9px;border:1px solid var(--border-color);border-radius:6px;box-sizing:border-box;font-size:16px">
-    <div class="field-label" style="margin-top:12px"><span>从</span></div>
+    <div class="field-label" style="margin-top:12px"><span>{tu(lang, '从')}</span></div>
     <select id="cr-from" style="width:100%;padding:9px;border:1px solid var(--border-color);border-radius:6px;background:#fff"></select>
-    <div style="text-align:center;margin:8px 0"><button id="cr-swap">⇅ 交换</button></div>
-    <div class="field-label"><span>到</span></div>
+    <div style="text-align:center;margin:8px 0"><button id="cr-swap">⇅ {tu(lang, '交换')}</button></div>
+    <div class="field-label"><span>{tu(lang, '到')}</span></div>
     <select id="cr-to" style="width:100%;padding:9px;border:1px solid var(--border-color);border-radius:6px;background:#fff"></select>
     <div style="margin-top:14px;padding:14px;background:rgba(0,0,0,.03);border-radius:8px">
       <div id="cr-out" style="font-size:22px;font-weight:600;color:var(--primary-color);word-break:break-all">-</div>
@@ -17,21 +21,23 @@
     <p class="msg" id="cr-msg"></p>
   </div>
   <div>
-    <div class="field-label"><span>常用币种行情（1 单位基准币）</span></div>
-    <div id="cr-list" style="font-size:13px;color:var(--text-sub)">加载中…</div>
+    <div class="field-label"><span>{tu(lang, '常用币种行情（1 单位基准币')}）</span></div>
+    <div id="cr-list" style="font-size:13px;color:var(--text-sub)">{tu(lang, '加载中')}…</div>
     <div style="margin-top:12px;font-size:12px;color:var(--text-sub);line-height:1.7">
-      汇率来源欧洲央行（ECB），工作日更新，不含周末与节假日数据；仅供参考，实际交易以银行/支付机构牌价为准。接口不可用时自动使用内置参考汇率（标注「参考」）。
+      {tu(lang, '汇率来源欧洲央行（ECB），工作日更新，不含周末与节假日数据；仅供参考，实际交易以银行')}/{tu(lang, '支付机构牌价为准。接口不可用时自动使用内置参考汇率（标注')}「{tu(lang, '参考')}」）。
     </div>
   </div>
 </div>
 
-<script>
+<script>import { tu, currentLang } from '../../i18n/toolUi.ts';
+const LANG = currentLang();
+
 const $ = (id) => document.getElementById(id);
 const CURRENCIES = [
-  ['CNY','人民币 ¥'],['USD','美元 $'],['EUR','欧元 €'],['JPY','日元 ¥'],['GBP','英镑 £'],
-  ['HKD','港币 HK$'],['KRW','韩元 ₩'],['SGD','新加坡元'],['AUD','澳元'],['CAD','加元'],
-  ['CHF','瑞士法郎'],['THB','泰铢'],['MYR','林吉特'],['RUB','俄罗斯卢布'],['NZD','新西兰元'],
-  ['INR','印度卢比'],['TWD','新台币'],['BRL','巴西雷亚尔'],['ZAR','南非兰特'],['SEK','瑞典克朗'],
+  ['CNY',tu(LANG, '人民币 ¥')],['USD',tu(LANG, '美元 $')],['EUR',tu(LANG, '欧元 €')],['JPY',tu(LANG, '日元 ¥')],['GBP',tu(LANG, '英镑 £')],
+  ['HKD',tu(LANG, '港币 HK$')],['KRW',tu(LANG, '韩元 ₩')],['SGD',tu(LANG, '新加坡元')],['AUD',tu(LANG, '澳元')],['CAD',tu(LANG, '加元')],
+  ['CHF',tu(LANG, '瑞士法郎')],['THB',tu(LANG, '泰铢')],['MYR',tu(LANG, '林吉特')],['RUB',tu(LANG, '俄罗斯卢布')],['NZD',tu(LANG, '新西兰元')],
+  ['INR',tu(LANG, '印度卢比')],['TWD',tu(LANG, '新台币')],['BRL',tu(LANG, '巴西雷亚尔')],['ZAR',tu(LANG, '南非兰特')],['SEK',tu(LANG, '瑞典克朗')],
 ];
 // 离线参考汇率（相对 USD，仅供接口失败兜底，2025 年参考值）
 const FALLBACK = { USD:1, CNY:7.12, EUR:0.92, JPY:150.5, GBP:0.79, HKD:7.81, KRW:1370, SGD:1.34, AUD:1.51, CAD:1.36, CHF:0.88, THB:35.8, MYR:4.62, RUB:92, NZD:1.64, INR:83.5, TWD:32.3, BRL:5.5, ZAR:18.3, SEK:10.5 };
@@ -55,7 +61,7 @@ function convert(){
   const out = usd * rateOf(t);
   $('cr-out').textContent = out.toLocaleString('zh-CN', { maximumFractionDigits: 2 }) + ' ' + t;
   const r = rateOf(t) / rateOf(f);
-  $('cr-rate').textContent = `1 ${f} = ${r.toFixed(4)} ${t}（${isLive ? '实时' : '参考'}）`;
+  $('cr-rate').textContent = `1 ${f} = ${r.toFixed(4)} ${t}（${isLive ? '实时' : tu(LANG, '参考')}）`;
 }
 async function load(){
   try {
@@ -64,12 +70,12 @@ async function load(){
     if (data && data.rates){
       RATES = { USD: 1, ...data.rates };
       isLive = true;
-      $('cr-msg').textContent = '已连接欧洲央行实时汇率（' + data.date + '）';
+      $('cr-msg').textContent = tu(LANG, '已连接欧洲央行实时汇率（') + data.date + '）';
       $('cr-msg').className = 'msg ok';
     } else throw new Error('bad data');
   } catch (e){
     RATES = null;
-    $('cr-msg').textContent = '实时汇率不可用，当前使用内置参考汇率';
+    $('cr-msg').textContent = tu(LANG, '实时汇率不可用，当前使用内置参考汇率');
     $('cr-msg').className = 'msg err';
   }
   convert();

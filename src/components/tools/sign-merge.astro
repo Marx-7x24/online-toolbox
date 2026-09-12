@@ -1,33 +1,37 @@
 ---
+import { tu } from '../../i18n/toolUi.ts';
 // 印章合并 / 去白底：上传印章图，去除白底透明后叠加到任意图片
+interface Props { lang?: string }
+const { lang = 'zh' } = Astro.props;
+
 ---
 <div class="pane">
   <div>
-    <div class="field-label"><span>① 上传印章（PNG/JPG，推荐红章）</span></div>
+    <div class="field-label"><span>① {tu(lang, '上传印章')}（PNG/JPG，{tu(lang, '推荐红章')}）</span></div>
     <input type="file" id="sm-sign" accept="image/*">
-    <div class="field-label" style="margin-top:14px"><span>② 容差（白色阈值，越大去白越多）</span></div>
+    <div class="field-label" style="margin-top:14px"><span>② {tu(lang, '容差（白色阈值，越大去白越多')}）</span></div>
     <input type="range" id="sm-tol" min="0" max="255" value="220" style="width:100%">
-    <p style="font-size:12px;color:#999;margin-top:8px">基于颜色距离去白底，非 AI 抠图。带阴影/渐变的印章建议取较大容差。</p>
+    <p style="font-size:12px;color:#999;margin-top:8px">{tu(lang, '基于颜色距离去白底，非 AI 抠图。带阴影')}/{tu(lang, '渐变的印章建议取较大容差。')}</p>
     <div id="sign-preview" class="sm-preview-mini"></div>
   </div>
   <div>
-    <div class="field-label"><span>③ 上传需要盖章的图片</span></div>
+    <div class="field-label"><span>③ {tu(lang, '上传需要盖章的图片')}</span></div>
     <input type="file" id="sm-base" accept="image/*">
-    <div class="field-label" style="margin-top:14px"><span>④ 印章位置 & 缩放</span></div>
+    <div class="field-label" style="margin-top:14px"><span>④ {tu(lang, '印章位置')} & {tu(lang, '缩放')}</span></div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
       <label>X% <input type="number" id="sm-x" value="70" min="0" max="100" style="width:100%"></label>
       <label>Y% <input type="number" id="sm-y" value="70" min="0" max="100" style="width:100%"></label>
-      <label>宽% <input type="number" id="sm-w" value="25" min="1" max="100" style="width:100%"></label>
-      <label>旋转° <input type="number" id="sm-rot" value="-15" min="-180" max="180" style="width:100%"></label>
+      <label>{tu(lang, '宽')}% <input type="number" id="sm-w" value="25" min="1" max="100" style="width:100%"></label>
+      <label>{tu(lang, '旋转')}° <input type="number" id="sm-rot" value="-15" min="-180" max="180" style="width:100%"></label>
     </div>
-    <div class="field-label" style="margin-top:14px"><span>合并预览</span></div>
+    <div class="field-label" style="margin-top:14px"><span>{tu(lang, '合并预览')}</span></div>
     <div id="sm-preview" class="sm-preview"></div>
   </div>
 </div>
 <div class="btn-row">
-  <button id="sm-run" class="primary">合并印章</button>
-  <button id="sm-dl">下载</button>
-  <button id="sm-reset">重置</button>
+  <button id="sm-run" class="primary">{tu(lang, '合并印章')}</button>
+  <button id="sm-dl">{tu(lang, '下载')}</button>
+  <button id="sm-reset">{tu(lang, '重置')}</button>
   <span id="sm-msg" class="msg"></span>
 </div>
 
@@ -39,7 +43,9 @@
   input[type="number"] { padding: 6px; border: 1px solid var(--border); border-radius: 6px; box-sizing: border-box; }
 </style>
 
-<script>
+<script>import { tu, currentLang } from '../../i18n/toolUi.ts';
+const LANG = currentLang();
+
   const $ = (id) => document.getElementById(id);
   let signFile = null, baseFile = null, processedSignCanvas = null;
   let outBlob = null;
@@ -77,7 +83,7 @@
     if (!signFile) return;
     const img = await loadImage(signFile);
     processedSignCanvas = processSign(img, Number($('sm-tol').value));
-    $('sign-preview').innerHTML = '<img alt="印章预览">';
+    $('sign-preview').innerHTML = '<img alt=tu(LANG, "印章预览")>';
     $('sign-preview').querySelector('img').src = processedSignCanvas.toDataURL();
   });
 
@@ -91,7 +97,7 @@
   $('sm-base').addEventListener('change', (e) => baseFile = e.target.files[0]);
 
   $('sm-run').addEventListener('click', async () => {
-    if (!signFile || !baseFile) { $('sm-msg').textContent = '请同时上传印章和底图'; $('sm-msg').className = 'msg err'; return; }
+    if (!signFile || !baseFile) { $('sm-msg').textContent = tu(LANG, '请同时上传印章和底图'); $('sm-msg').className = 'msg err'; return; }
     try {
       const baseImg = await loadImage(baseFile);
       const signImg = processedSignCanvas;
@@ -115,12 +121,12 @@
       ctx.drawImage(signImg, -sw/2, -sh/2, sw, sh);
       ctx.restore();
       outBlob = await new Promise(res => canvas.toBlob(res, 'image/png'));
-      $('sm-preview').innerHTML = '<img alt="预览">';
+      $('sm-preview').innerHTML = '<img alt=tu(LANG, "预览")>';
       $('sm-preview').querySelector('img').src = URL.createObjectURL(outBlob);
       $('sm-msg').textContent = `合并成功 · ${(outBlob.size/1024).toFixed(1)} KB`;
       $('sm-msg').className = 'msg ok';
     } catch (err) {
-      $('sm-msg').textContent = '失败：' + err.message;
+      $('sm-msg').textContent = tu(LANG, '失败：') + err.message;
       $('sm-msg').className = 'msg err';
     }
   });

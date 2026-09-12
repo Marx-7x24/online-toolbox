@@ -1,33 +1,37 @@
 ---
+import { tu } from '../../i18n/toolUi.ts';
 // 营销图生成：根据标题/副标题/二维码/主图合成营销海报
+interface Props { lang?: string }
+const { lang = 'zh' } = Astro.props;
+
 ---
 <div class="pane">
   <div>
-    <div class="field-label"><span>主图（可省略）</span></div>
+    <div class="field-label"><span>{tu(lang, '主图（可省略')}）</span></div>
     <input type="file" id="mk-img" accept="image/*">
-    <div class="field-label" style="margin-top:14px"><span>主标题</span></div>
-    <input type="text" id="mk-title" value="限时特惠" maxlength="20" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:6px;box-sizing:border-box">
-    <div class="field-label" style="margin-top:8px"><span>副标题</span></div>
-    <input type="text" id="mk-sub" value="全场 5 折起 / 错过再等一年" maxlength="40" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:6px;box-sizing:border-box">
-    <div class="field-label" style="margin-top:8px"><span>模板</span></div>
+    <div class="field-label" style="margin-top:14px"><span>{tu(lang, '主标题')}</span></div>
+    <input type="text" id="mk-title" value={tu(lang, '限时特惠')} maxlength="20" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:6px;box-sizing:border-box">
+    <div class="field-label" style="margin-top:8px"><span>{tu(lang, '副标题')}</span></div>
+    <input type="text" id="mk-sub" value={tu(lang, '全场 5 折起 / 错过再等一年')} maxlength="40" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:6px;box-sizing:border-box">
+    <div class="field-label" style="margin-top:8px"><span>{tu(lang, '模板')}</span></div>
     <select id="mk-tpl" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:6px">
-      <option value="purple">紫色主色（懒人同款）</option>
-      <option value="red">红色喜庆</option>
-      <option value="blue">科技蓝</option>
-      <option value="dark">暗黑高级</option>
+      <option value="purple">{tu(lang, '紫色主色（懒人同款')}）</option>
+      <option value="red">{tu(lang, '红色喜庆')}</option>
+      <option value="blue">{tu(lang, '科技蓝')}</option>
+      <option value="dark">{tu(lang, '暗黑高级')}</option>
     </select>
-    <div class="field-label" style="margin-top:8px"><span>宽×高（px）</span></div>
+    <div class="field-label" style="margin-top:8px"><span>{tu(lang, '宽')}×{tu(lang, '高')}（px）</span></div>
     <input type="text" id="mk-size" value="800×1200" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:6px;box-sizing:border-box">
   </div>
   <div>
-    <div class="field-label"><span>预览</span></div>
+    <div class="field-label"><span>{tu(lang, '预览')}</span></div>
     <div id="mk-preview" class="mk-preview"></div>
   </div>
 </div>
 <div class="btn-row">
-  <button id="mk-run" class="primary">生成营销图</button>
-  <button id="mk-dl">下载</button>
-  <button id="mk-reset">重置</button>
+  <button id="mk-run" class="primary">{tu(lang, '生成营销图')}</button>
+  <button id="mk-dl">{tu(lang, '下载')}</button>
+  <button id="mk-reset">{tu(lang, '重置')}</button>
   <span id="mk-msg" class="msg"></span>
 </div>
 
@@ -37,7 +41,9 @@
   .mk-preview:empty::before { content: '尚未生成'; color: #999; }
 </style>
 
-<script>
+<script>import { tu, currentLang } from '../../i18n/toolUi.ts';
+const LANG = currentLang();
+
   const $ = (id) => document.getElementById(id);
   let imgFile = null;
   let outBlob = null;
@@ -97,7 +103,7 @@
         ctx.fillStyle = 'rgba(255,255,255,0.6)';
         ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
         ctx.font = `${imgH * 0.1}px sans-serif`;
-        ctx.fillText('主图位', w/2, imgY + imgH/2);
+        ctx.fillText(tu(LANG, '主图位'), w/2, imgY + imgH/2);
       }
 
       // 标题
@@ -127,12 +133,12 @@
       ctx.fillText('★ Toolbox', w - 30, h - 30);
 
       outBlob = await new Promise(res => canvas.toBlob(res, 'image/png'));
-      $('mk-preview').innerHTML = '<img alt="预览">';
+      $('mk-preview').innerHTML = '<img alt=tu(LANG, "预览")>';
       $('mk-preview').querySelector('img').src = URL.createObjectURL(outBlob);
       $('mk-msg').textContent = `生成成功 · ${w}×${h}`;
       $('mk-msg').className = 'msg ok';
     } catch (err) {
-      $('mk-msg').textContent = '失败：' + err.message;
+      $('mk-msg').textContent = tu(LANG, '失败：') + err.message;
       $('mk-msg').className = 'msg err';
     }
   });

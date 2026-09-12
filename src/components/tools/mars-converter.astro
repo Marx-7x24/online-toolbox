@@ -1,36 +1,42 @@
 ---
+import { tu } from '../../i18n/toolUi.ts';
 // 火星坐标转换：WGS-84(GPS) / GCJ-02(国测局/高德) / BD-09(百度) 互转（纯前端算法）
+interface Props { lang?: string }
+const { lang = 'zh' } = Astro.props;
+
 ---
 <div class="pane">
   <div>
-    <div class="field-label"><span>经度 (lng)</span></div>
+    <div class="field-label"><span>{tu(lang, '经度')} (lng)</span></div>
     <input type="text" id="mc-lng" value="116.404" style="width:100%;padding:8px;border:1px solid var(--border-color);border-radius:6px;box-sizing:border-box">
-    <div class="field-label" style="margin-top:12px"><span>纬度 (lat)</span></div>
+    <div class="field-label" style="margin-top:12px"><span>{tu(lang, '纬度')} (lat)</span></div>
     <input type="text" id="mc-lat" value="39.915" style="width:100%;padding:8px;border:1px solid var(--border-color);border-radius:6px;box-sizing:border-box">
-    <div class="field-label" style="margin-top:12px"><span>当前坐标所用体系</span></div>
+    <div class="field-label" style="margin-top:12px"><span>{tu(lang, '当前坐标所用体系')}</span></div>
     <select id="mc-from" style="width:100%;padding:8px;border:1px solid var(--border-color);border-radius:6px">
-      <option value="wgs84">WGS-84（GPS / 原始经纬度）</option>
-      <option value="gcj02">GCJ-02（高德 / 腾讯 / 国测局）</option>
-      <option value="bd09">BD-09（百度）</option>
+      <option value="wgs84">WGS-84（GPS / {tu(lang, '原始经纬度')}）</option>
+      <option value="gcj02">GCJ-02（{tu(lang, '高德')} / {tu(lang, '腾讯')} / {tu(lang, '国测局')}）</option>
+      <option value="bd09">BD-09（{tu(lang, '百度')}）</option>
     </select>
     <div class="btn-row" style="margin-top:12px">
-      <button id="mc-run" class="primary">转换</button>
-      <button id="mc-swap">交换经纬度</button>
+      <button id="mc-run" class="primary">{tu(lang, '转换')}</button>
+      <button id="mc-swap">{tu(lang, '交换经纬度')}</button>
     </div>
   </div>
   <div>
-    <div class="field-label"><span>转换结果</span></div>
+    <div class="field-label"><span>{tu(lang, '转换结果')}</span></div>
     <table class="result-table"><tbody>
       <tr><th>WGS-84 (GPS)</th><td id="mc-wgs">—</td></tr>
-      <tr><th>GCJ-02 (高德)</th><td id="mc-gcj">—</td></tr>
-      <tr><th>BD-09 (百度)</th><td id="mc-bd">—</td></tr>
+      <tr><th>GCJ-02 ({tu(lang, '高德')})</th><td id="mc-gcj">—</td></tr>
+      <tr><th>BD-09 ({tu(lang, '百度')})</th><td id="mc-bd">—</td></tr>
     </tbody></table>
     <p class="msg" id="mc-msg"></p>
-    <p style="color:var(--text-hint);font-size:12px">说明：GCJ-02 为中国法定加密偏移，转换公式为近似实现，与官方存在米级误差，仅供开发调试参考。</p>
+    <p style="color:var(--text-hint);font-size:12px">{tu(lang, '说明：GCJ-02 为中国法定加密偏移，转换公式为近似实现，与官方存在米级误差，仅供开发调试参考。')}</p>
   </div>
 </div>
 
-<script>
+<script>import { tu, currentLang } from '../../i18n/toolUi.ts';
+const LANG = currentLang();
+
   const $ = (id) => document.getElementById(id);
   const a = 6378245.0, ee = 0.00669342162296594323, pi = Math.PI, x_pi = pi*3000/180;
   const outOfChina = (lng, lat) => (lng<72.004||lng>137.8347)||(lat<0.8293||lat>55.8271);
@@ -52,12 +58,12 @@
 
   $('mc-run').addEventListener('click', () => {
     const lng = parseFloat($('mc-lng').value), lat = parseFloat($('mc-lat').value);
-    if (isNaN(lng)||isNaN(lat)) { $('mc-msg').textContent='请输入合法的经度纬度'; $('mc-msg').className='msg err'; return; }
+    if (isNaN(lng)||isNaN(lat)) { $('mc-msg').textContent=tu(LANG, '请输入合法的经度纬度'); $('mc-msg').className='msg err'; return; }
     const r = convert(lng, lat, $('mc-from').value);
     $('mc-wgs').textContent = fmt(r.w);
     $('mc-gcj').textContent = fmt(r.g);
     $('mc-bd').textContent = fmt(r.b);
-    $('mc-msg').textContent='转换完成'; $('mc-msg').className='msg ok';
+    $('mc-msg').textContent=tu(LANG, '转换完成'); $('mc-msg').className='msg ok';
   });
   $('mc-swap').addEventListener('click', () => { const l=$('mc-lng').value; $('mc-lng').value=$('mc-lat').value; $('mc-lat').value=l; });
 </script>

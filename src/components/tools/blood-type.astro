@@ -1,38 +1,44 @@
 ---
+import { tu } from '../../i18n/toolUi.ts';
 // 血型遗传计算器：父母 ABO 血型 → 子女可能血型与概率
+interface Props { lang?: string }
+const { lang = 'zh' } = Astro.props;
+
 ---
 <div class="pane">
   <div>
-    <div class="field-label"><span>父亲血型</span></div>
+    <div class="field-label"><span>{tu(lang, '父亲血型')}</span></div>
     <select id="bt-dad" style="width:100%;padding:10px;border:1px solid var(--border-color);border-radius:6px;background:#fff;font-size:16px">
-      <option value="A">A 型</option>
-      <option value="B">B 型</option>
-      <option value="AB" selected>AB 型</option>
-      <option value="O">O 型</option>
+      <option value="A">A {tu(lang, '型')}</option>
+      <option value="B">B {tu(lang, '型')}</option>
+      <option value="AB" selected>AB {tu(lang, '型')}</option>
+      <option value="O">O {tu(lang, '型')}</option>
     </select>
-    <div class="field-label" style="margin-top:12px"><span>母亲血型</span></div>
+    <div class="field-label" style="margin-top:12px"><span>{tu(lang, '母亲血型')}</span></div>
     <select id="bt-mom" style="width:100%;padding:10px;border:1px solid var(--border-color);border-radius:6px;background:#fff;font-size:16px">
-      <option value="A">A 型</option>
-      <option value="B">B 型</option>
-      <option value="AB">AB 型</option>
-      <option value="O" selected>O 型</option>
+      <option value="A">A {tu(lang, '型')}</option>
+      <option value="B">B {tu(lang, '型')}</option>
+      <option value="AB">AB {tu(lang, '型')}</option>
+      <option value="O" selected>O {tu(lang, '型')}</option>
     </select>
     <div style="margin-top:10px;font-size:13px;color:var(--text-sub);line-height:1.6">
-      ABO 血型由基因型决定：A（AA/AO）、B（BB/BO）、AB、O。本工具按基因型组合计算概率。
+      ABO {tu(lang, '血型由基因型决定')}：A（AA/AO）、B（BB/BO）、AB、O。{tu(lang, '本工具按基因型组合计算概率。')}
     </div>
   </div>
   <div>
-    <div class="field-label"><span>子女可能的血型</span></div>
+    <div class="field-label"><span>{tu(lang, '子女可能的血型')}</span></div>
     <div id="bt-out" style="padding:14px;background:rgba(0,0,0,.03);border-radius:8px"></div>
-    <div class="field-label" style="margin-top:12px"><span>父母可能的基因型</span></div>
+    <div class="field-label" style="margin-top:12px"><span>{tu(lang, '父母可能的基因型')}</span></div>
     <div id="bt-geno" style="font-size:13px;color:var(--text-sub)"></div>
     <div style="margin-top:12px;font-size:12px;color:var(--text-sub);line-height:1.7">
-      注：极罕见情况（如孟买血型）可能出现例外；RH 阴阳性单独遗传（Rh+ 为显性），本表仅覆盖 ABO 系统。
+      {tu(lang, '注：极罕见情况（如孟买血型）可能出现例外；RH 阴阳性单独遗传（Rh+ 为显性），本表仅覆盖 ABO 系统。')}
     </div>
   </div>
 </div>
 
-<script>
+<script>import { tu, currentLang } from '../../i18n/toolUi.ts';
+const LANG = currentLang();
+
 const $ = (id) => document.getElementById(id);
 // 表现型 → 可能基因型（概率均等简化）
 const GENO = {
@@ -76,7 +82,7 @@ function combine(){
       <div style="flex:1;height:14px;background:rgba(0,0,0,.06);border-radius:7px;overflow:hidden">
         <div style="width:${pct}%;height:100%;background:${colors[t]};opacity:${p>0?1:.25};border-radius:7px"></div>
       </div>
-      <span style="width:64px;text-align:right;font-weight:600">${p>0?pct.toFixed(1)+'%':'不可能'}</span>
+      <span style="width:64px;text-align:right;font-weight:600">${p>0?pct.toFixed(1)+'%':tu(LANG, '不可能')}</span>
     </div>`;
   }
   $('bt-out').innerHTML = html;

@@ -1,48 +1,54 @@
 ---
+import { tu } from '../../i18n/toolUi.ts';
 // JSON 转 Cookie：把 JSON 对象转成 Set-Cookie 格式串
+interface Props { lang?: string }
+const { lang = 'zh' } = Astro.props;
+
 ---
 
 <div class="pane">
   <div>
-    <div class="field-label"><span>输入 JSON</span></div>
+    <div class="field-label"><span>{tu(lang, '输入')} JSON</span></div>
     <textarea id="jc-in" placeholder='{"token":"abc123","user":"zhangsan"}'></textarea>
   </div>
   <div>
-    <div class="field-label"><span>Cookie 输出</span></div>
+    <div class="field-label"><span>Cookie {tu(lang, '输出')}</span></div>
     <textarea id="jc-out" readonly></textarea>
   </div>
 </div>
 <div class="btn-row">
-  <button id="jc-run" class="primary">转换为 Cookie</button>
-  <button id="jc-copy">复制结果</button>
+  <button id="jc-run" class="primary">{tu(lang, '转换为')} Cookie</button>
+  <button id="jc-copy">{tu(lang, '复制结果')}</button>
   <label style="font-size:13px;color:var(--text-sub);display:flex;align-items:center;gap:6px;margin:0;">
-    <input type="checkbox" id="jc-encode" checked /> URL 编码值
+    <input type="checkbox" id="jc-encode" checked /> URL {tu(lang, '编码值')}
   </label>
   <span id="jc-msg" class="msg"></span>
 </div>
 
-<script>
+<script>import { tu, currentLang } from '../../i18n/toolUi.ts';
+const LANG = currentLang();
+
   const $ = (id) => document.getElementById(id);
   const input = $('jc-in'), output = $('jc-out'), msg = $('jc-msg'), enc = $('jc-encode');
 
   $('jc-run').addEventListener('click', () => {
     try {
       const data = JSON.parse(input.value);
-      if (!data || typeof data !== 'object' || Array.isArray(data)) throw new Error('请输入 JSON 对象');
+      if (!data || typeof data !== 'object' || Array.isArray(data)) throw new Error(tu(LANG, '请输入 JSON 对象'));
       const parts = Object.keys(data).map((k) => {
         const v = data[k] === null || data[k] === undefined ? '' : String(data[k]);
         return `${k}=${enc.checked ? encodeURIComponent(v) : v}`;
       });
       output.value = parts.join('; ');
-      msg.textContent = '转换完成'; msg.className = 'msg ok';
+      msg.textContent = tu(LANG, '转换完成'); msg.className = 'msg ok';
     } catch (e) {
-      msg.textContent = 'JSON 解析失败：' + e.message; msg.className = 'msg err';
+      msg.textContent = tu(LANG, 'JSON 解析失败：') + e.message; msg.className = 'msg err';
     }
   });
 
   $('jc-copy').addEventListener('click', async () => {
     if (!output.value) return;
-    try { await navigator.clipboard.writeText(output.value); msg.textContent = '已复制'; msg.className = 'msg ok'; }
-    catch { msg.textContent = '复制失败'; msg.className = 'msg err'; }
+    try { await navigator.clipboard.writeText(output.value); msg.textContent = tu(LANG, '已复制'); msg.className = 'msg ok'; }
+    catch { msg.textContent = tu(LANG, '复制失败'); msg.className = 'msg err'; }
   });
 </script>

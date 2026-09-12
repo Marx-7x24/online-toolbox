@@ -1,7 +1,12 @@
 ---
+import { tu } from '../../i18n/toolUi.ts';
+
+interface Props { lang?: string }
+const { lang = 'zh' } = Astro.props;
+
 ---
 
-<div class="tip">照片在你本地排版，不上传服务器。排版图可直接送打印店或家用相纸打印。</div>
+<div class="tip">{tu(lang, '照片在你本地排版，不上传服务器。排版图可直接送打印店或家用相纸打印。')}</div>
 
 <div class="btn-row" style="align-items:center;">
   <input type="file" id="ip-file" accept="image/*" style="width:auto;font-family:inherit;padding:6px;border:none;" />
@@ -9,57 +14,59 @@
 
 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px;margin-top:12px;">
   <div>
-    <div class="field-label"><span>证件照规格</span></div>
+    <div class="field-label"><span>{tu(lang, '证件照规格')}</span></div>
     <select id="ip-size">
-      <option value="25,35">一寸照 25×35 mm</option>
-      <option value="22,32">小一寸 22×32 mm</option>
-      <option value="33,48">大一寸 33×48 mm</option>
-      <option value="35,49" selected>二寸照 35×49 mm</option>
-      <option value="35,45">小二寸 35×45 mm</option>
-      <option value="35,53">大二寸 35×53 mm</option>
-      <option value="26,32">护照/签证 26×32 mm</option>
-      <option value="50,50">正方形 50×50 mm</option>
+      <option value="25,35">{tu(lang, '一寸照')} 25×35 mm</option>
+      <option value="22,32">{tu(lang, '小一寸')} 22×32 mm</option>
+      <option value="33,48">{tu(lang, '大一寸')} 33×48 mm</option>
+      <option value="35,49" selected>{tu(lang, '二寸照')} 35×49 mm</option>
+      <option value="35,45">{tu(lang, '小二寸')} 35×45 mm</option>
+      <option value="35,53">{tu(lang, '大二寸')} 35×53 mm</option>
+      <option value="26,32">{tu(lang, '护照')}/{tu(lang, '签证')} 26×32 mm</option>
+      <option value="50,50">{tu(lang, '正方形')} 50×50 mm</option>
     </select>
   </div>
   <div>
-    <div class="field-label"><span>相纸尺寸</span></div>
+    <div class="field-label"><span>{tu(lang, '相纸尺寸')}</span></div>
     <select id="ip-paper">
-      <option value="89,127">五寸相纸 89×127 mm</option>
-      <option value="102,152" selected>六寸相纸 102×152 mm</option>
-      <option value="210,297">A4 纸 210×297 mm</option>
+      <option value="89,127">{tu(lang, '五寸相纸')} 89×127 mm</option>
+      <option value="102,152" selected>{tu(lang, '六寸相纸')} 102×152 mm</option>
+      <option value="210,297">A4 {tu(lang, '纸')} 210×297 mm</option>
     </select>
   </div>
   <div>
-    <div class="field-label"><span>打印精度</span></div>
+    <div class="field-label"><span>{tu(lang, '打印精度')}</span></div>
     <select id="ip-dpi">
       <option value="200">200 DPI</option>
-      <option value="300" selected>300 DPI（推荐）</option>
+      <option value="300" selected>300 DPI（{tu(lang, '推荐')}）</option>
       <option value="400">400 DPI</option>
     </select>
   </div>
   <div>
-    <div class="field-label"><span>照片留白</span><span id="ip-margin-val">2 mm</span></div>
+    <div class="field-label"><span>{tu(lang, '照片留白')}</span><span id="ip-margin-val">2 mm</span></div>
     <input type="range" id="ip-margin" min="0" max="6" value="2" style="padding:0;" />
   </div>
   <div>
-    <div class="field-label"><span>裁切线</span></div>
+    <div class="field-label"><span>{tu(lang, '裁切线')}</span></div>
     <select id="ip-line">
-      <option value="1">显示（方便裁剪）</option>
-      <option value="0">不显示</option>
+      <option value="1">{tu(lang, '显示（方便裁剪')}）</option>
+      <option value="0">{tu(lang, '不显示')}</option>
     </select>
   </div>
 </div>
 
 <div class="btn-row">
-  <button class="primary" id="ip-go">生成排版</button>
-  <button id="ip-dl">下载排版图</button>
-  <button id="ip-clear">清空</button>
+  <button class="primary" id="ip-go">{tu(lang, '生成排版')}</button>
+  <button id="ip-dl">{tu(lang, '下载排版图')}</button>
+  <button id="ip-clear">{tu(lang, '清空')}</button>
 </div>
 
 <p class="msg" id="ip-msg"></p>
 <div id="ip-box"></div>
 
-<script>
+<script>import { tu, currentLang } from '../../i18n/toolUi.ts';
+const LANG = currentLang();
+
   const $ = (id) => document.getElementById(id);
   let outUrl = '';
 
@@ -67,8 +74,8 @@
 
   $('ip-go').onclick = () => {
     const f = $('ip-file').files[0];
-    if (!f) { $('ip-msg').textContent = '请先选择照片'; $('ip-msg').className = 'msg err'; return; }
-    $('ip-msg').textContent = '生成中…';
+    if (!f) { $('ip-msg').textContent = tu(LANG, '请先选择照片'); $('ip-msg').className = 'msg err'; return; }
+    $('ip-msg').textContent = tu(LANG, '生成中…');
     $('ip-msg').className = 'msg';
 
     const img = new Image();
@@ -124,19 +131,19 @@
           `<div style="margin-top:14px;">
             <div class="field-label"><span>排版结果</span><span>${cols} 列 × ${rows} 行 = ${total} 张　${swMm}×${shMm}mm @${dpi}DPI</span></div>
             <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;overflow:auto;max-height:480px;display:flex;justify-content:center;">
-              <img src="${outUrl}" alt="证件照排版" style="max-width:100%;height:auto;" />
+              <img src="${outUrl}" alt=tu(LANG, "证件照排版") style="max-width:100%;height:auto;" />
             </div>
           </div>`;
         $('ip-msg').textContent = `已排 ${total} 张，相纸 ${pw} × ${ph} px`;
         $('ip-msg').className = 'msg ok';
       }, 'image/jpeg', 0.95);
     };
-    img.onerror = () => { $('ip-msg').textContent = '无法读取该图片'; $('ip-msg').className = 'msg err'; };
+    img.onerror = () => { $('ip-msg').textContent = tu(LANG, '无法读取该图片'); $('ip-msg').className = 'msg err'; };
     img.src = URL.createObjectURL(f);
   };
 
   $('ip-dl').onclick = () => {
-    if (!outUrl) { $('ip-msg').textContent = '请先生成'; $('ip-msg').className = 'msg err'; return; }
+    if (!outUrl) { $('ip-msg').textContent = tu(LANG, '请先生成'); $('ip-msg').className = 'msg err'; return; }
     const a = document.createElement('a');
     a.href = outUrl;
     a.download = 'id-photo-layout.jpg';

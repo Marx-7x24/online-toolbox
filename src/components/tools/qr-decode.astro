@@ -1,15 +1,19 @@
 ---
+import { tu } from '../../i18n/toolUi.ts';
 // 二维码解析：本地识别，图片不上传
+interface Props { lang?: string }
+const { lang = 'zh' } = Astro.props;
+
 ---
 <div class="pane">
   <div>
-    <div class="field-label"><span>上传含二维码的图片</span></div>
+    <div class="field-label"><span>{tu(lang, '上传含二维码的图片')}</span></div>
     <input type="file" id="qr-file" accept="image/*">
     <div id="qr-preview" class="qr-preview"></div>
   </div>
   <div>
-    <div class="field-label"><span>识别结果</span></div>
-    <textarea id="qr-out" readonly placeholder="识别后的内容将显示在这里"></textarea>
+    <div class="field-label"><span>{tu(lang, '识别结果')}</span></div>
+    <textarea id="qr-out" readonly placeholder={tu(lang, '识别后的内容将显示在这里')}></textarea>
   </div>
 </div>
 <div class="btn-row">
@@ -30,7 +34,9 @@
   .qr-preview img { max-width: 100%; }
 </style>
 
-<script>
+<script>import { tu, currentLang } from '../../i18n/toolUi.ts';
+const LANG = currentLang();
+
   import jsQR from 'jsqr';
   const $ = (id) => document.getElementById(id);
   const fileInput = $('qr-file'), preview = $('qr-preview'), out = $('qr-out'), msg = $('qr-msg');
@@ -50,12 +56,12 @@
       ctx.drawImage(img, 0, 0);
       let data;
       try { data = ctx.getImageData(0, 0, canvas.width, canvas.height); }
-      catch (err) { msg.textContent = '读取像素失败：' + err.message; msg.className = 'msg err'; return; }
+      catch (err) { msg.textContent = tu(LANG, '读取像素失败：') + err.message; msg.className = 'msg err'; return; }
       const code = jsQR(data.data, data.width, data.height);
-      if (code) { out.value = code.data; msg.textContent = '识别成功'; msg.className = 'msg ok'; }
-      else { out.value = ''; msg.textContent = '未识别到二维码，请换更清晰的图片'; msg.className = 'msg err'; }
+      if (code) { out.value = code.data; msg.textContent = tu(LANG, '识别成功'); msg.className = 'msg ok'; }
+      else { out.value = ''; msg.textContent = tu(LANG, '未识别到二维码，请换更清晰的图片'); msg.className = 'msg err'; }
     };
-    img.onerror = () => { msg.textContent = '图片加载失败'; msg.className = 'msg err'; };
+    img.onerror = () => { msg.textContent = tu(LANG, '图片加载失败'); msg.className = 'msg err'; };
     img.src = url;
   });
 </script>

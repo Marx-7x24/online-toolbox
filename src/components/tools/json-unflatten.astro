@@ -1,27 +1,33 @@
 ---
+import { tu } from '../../i18n/toolUi.ts';
 // JSON 反扁平化：把 a.b.c=1 形式的一层对象还原成嵌套结构
+interface Props { lang?: string }
+const { lang = 'zh' } = Astro.props;
+
 ---
 
 <div class="pane">
   <div>
-    <div class="field-label"><span>输入扁平 JSON</span></div>
+    <div class="field-label"><span>{tu(lang, '输入扁平')} JSON</span></div>
     <textarea id="ju-in" placeholder='{"user.name":"张三","user.age":20,"tags.0":"a","tags.1":"b"}'></textarea>
   </div>
   <div>
-    <div class="field-label"><span>嵌套输出</span></div>
+    <div class="field-label"><span>{tu(lang, '嵌套输出')}</span></div>
     <textarea id="ju-out" readonly></textarea>
   </div>
 </div>
 <div class="btn-row">
-  <button id="ju-run" class="primary">反扁平化</button>
-  <button id="ju-copy">复制结果</button>
+  <button id="ju-run" class="primary">{tu(lang, '反扁平化')}</button>
+  <button id="ju-copy">{tu(lang, '复制结果')}</button>
   <label style="font-size:13px;color:var(--text-sub);display:flex;align-items:center;gap:6px;margin:0;">
-    分隔符 <input type="text" id="ju-sep" value="." style="width:70px;height:36px;" />
+    {tu(lang, '分隔符')} <input type="text" id="ju-sep" value="." style="width:70px;height:36px;" />
   </label>
   <span id="ju-msg" class="msg"></span>
 </div>
 
-<script>
+<script>import { tu, currentLang } from '../../i18n/toolUi.ts';
+const LANG = currentLang();
+
   const $ = (id) => document.getElementById(id);
   const input = $('ju-in'), output = $('ju-out'), msg = $('ju-msg'), sep = $('ju-sep');
 
@@ -63,15 +69,15 @@
     try {
       const data = JSON.parse(input.value);
       output.value = JSON.stringify(unflatten(data, sep.value || '.'), null, 2);
-      msg.textContent = '已反扁平化'; msg.className = 'msg ok';
+      msg.textContent = tu(LANG, '已反扁平化'); msg.className = 'msg ok';
     } catch (e) {
-      msg.textContent = 'JSON 解析失败：' + e.message; msg.className = 'msg err';
+      msg.textContent = tu(LANG, 'JSON 解析失败：') + e.message; msg.className = 'msg err';
     }
   });
 
   $('ju-copy').addEventListener('click', async () => {
     if (!output.value) return;
-    try { await navigator.clipboard.writeText(output.value); msg.textContent = '已复制'; msg.className = 'msg ok'; }
-    catch { msg.textContent = '复制失败'; msg.className = 'msg err'; }
+    try { await navigator.clipboard.writeText(output.value); msg.textContent = tu(LANG, '已复制'); msg.className = 'msg ok'; }
+    catch { msg.textContent = tu(LANG, '复制失败'); msg.className = 'msg err'; }
   });
 </script>

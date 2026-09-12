@@ -1,27 +1,31 @@
 ---
+import { tu } from '../../i18n/toolUi.ts';
 // 文字绕圆圈：生成环形排列文字的 SVG，可下载
+interface Props { lang?: string }
+const { lang = 'zh' } = Astro.props;
+
 ---
 <div class="pane">
   <div>
-    <div class="field-label"><span>文字内容</span></div>
-    <input type="text" id="lc-text" value="在线工具箱 ONLINE TOOLBOX " style="width:100%;padding:8px;border:1px solid var(--border-color);border-radius:6px;box-sizing:border-box">
-    <div class="field-label" style="margin-top:12px"><span>半径</span></div>
+    <div class="field-label"><span>{tu(lang, '文字内容')}</span></div>
+    <input type="text" id="lc-text" value="{tu(lang, '在线工具箱')} ONLINE TOOLBOX" style="width:100%;padding:8px;border:1px solid var(--border-color);border-radius:6px;box-sizing:border-box">
+    <div class="field-label" style="margin-top:12px"><span>{tu(lang, '半径')}</span></div>
     <input type="range" id="lc-r" min="40" max="180" value="140" style="width:100%">
-    <div class="field-label" style="margin-top:12px"><span>字号</span></div>
+    <div class="field-label" style="margin-top:12px"><span>{tu(lang, '字号')}</span></div>
     <input type="range" id="lc-fs" min="10" max="48" value="22" style="width:100%">
-    <div class="field-label" style="margin-top:12px"><span>文字颜色</span></div>
+    <div class="field-label" style="margin-top:12px"><span>{tu(lang, '文字颜色')}</span></div>
     <input type="color" id="lc-color" value="#3e2eff" style="width:60px;height:34px;border:1px solid var(--border-color);border-radius:6px">
-    <div class="field-label" style="margin-top:12px"><span>方向</span></div>
+    <div class="field-label" style="margin-top:12px"><span>{tu(lang, '方向')}</span></div>
     <select id="lc-dir" style="width:100%;padding:8px;border:1px solid var(--border-color);border-radius:6px">
-      <option value="cw">顺时针</option>
-      <option value="ccw">逆时针</option>
+      <option value="cw">{tu(lang, '顺时针')}</option>
+      <option value="ccw">{tu(lang, '逆时针')}</option>
     </select>
     <div class="btn-row" style="margin-top:12px">
-      <button id="lc-dl" class="primary">下载 SVG</button>
+      <button id="lc-dl" class="primary">{tu(lang, '下载')} SVG</button>
     </div>
   </div>
   <div>
-    <div class="field-label"><span>预览</span></div>
+    <div class="field-label"><span>{tu(lang, '预览')}</span></div>
     <div id="lc-preview" style="display:flex;align-items:center;justify-content:center;background:var(--hover-bg);border:1px solid var(--border-color);border-radius:10px;min-height:320px"></div>
   </div>
 </div>

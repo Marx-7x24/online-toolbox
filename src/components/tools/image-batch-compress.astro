@@ -1,13 +1,17 @@
 ---
+import { tu } from '../../i18n/toolUi.ts';
 // 图片批量压缩：Canvas，本地处理
+interface Props { lang?: string }
+const { lang = 'zh' } = Astro.props;
+
 ---
 <div>
-  <div class="field-label"><span>上传多张图片</span></div>
+  <div class="field-label"><span>{tu(lang, '上传多张图片')}</span></div>
   <input type="file" id="bc2-file" accept="image/*" multiple>
-  <div class="field-label" style="margin-top:10px;"><span>质量 <span id="bc2-q-v">70%</span></span></div>
+  <div class="field-label" style="margin-top:10px;"><span>{tu(lang, '质量')} <span id="bc2-q-v">70%</span></span></div>
   <input type="range" id="bc2-q" min="10" max="95" value="70">
-  <div class="field-label" style="margin-top:10px;"><span>结果</span></div>
-  <div id="bc2-out" class="bc2-out">尚未处理</div>
+  <div class="field-label" style="margin-top:10px;"><span>{tu(lang, '结果')}</span></div>
+  <div id="bc2-out" class="bc2-out">{tu(lang, '尚未处理')}</div>
 </div>
 
 <style>
@@ -18,7 +22,9 @@
   .bc2-out .big { color: #e03131; }
 </style>
 
-<script>
+<script>import { tu, currentLang } from '../../i18n/toolUi.ts';
+const LANG = currentLang();
+
   const $ = (id) => document.getElementById(id);
   let files = [];
   function fmt(n) { return n > 1048576 ? (n / 1048576).toFixed(2) + 'MB' : (n / 1024).toFixed(1) + 'KB'; }
@@ -36,7 +42,7 @@
   async function compress() {
     const q = $('bc2-q').value / 100;
     const out = $('bc2-out');
-    out.innerHTML = '处理中…';
+    out.innerHTML = tu(LANG, '处理中…');
     out.innerHTML = '';
     for (const f of files) {
       try {
@@ -52,7 +58,7 @@
         const div = document.createElement('div'); div.className = 'row';
         const span = document.createElement('span');
         span.innerHTML = `${f.name} <span class="${after < before ? 'save' : 'big'}">${fmt(before)}→${fmt(after)} (${ratio}%)</span> `;
-        const a = document.createElement('a'); a.href = durl; a.download = 'min-' + f.name; a.textContent = '下载';
+        const a = document.createElement('a'); a.href = durl; a.download = 'min-' + f.name; a.textContent = tu(LANG, '下载');
         div.appendChild(span); div.appendChild(a);
         out.appendChild(div);
       } catch (err) {

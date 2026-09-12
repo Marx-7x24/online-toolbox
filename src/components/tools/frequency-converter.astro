@@ -1,46 +1,52 @@
 ---
+import { tu } from '../../i18n/toolUi.ts';
 // frequency-converter：纯前端单位换算（系数型）
 const UNITS = [{"sym":"Hz","zh":"赫兹","f":1},{"sym":"kHz","zh":"千赫兹","f":1000},{"sym":"MHz","zh":"兆赫兹","f":1000000},{"sym":"GHz","zh":"吉赫兹","f":1000000000},{"sym":"rpm","zh":"转/分钟","f":0.016666666666666666}];
 const BASE = { name: "赫兹", sym: "Hz" };
+interface Props { lang?: string }
+const { lang = 'zh' } = Astro.props;
+
 ---
 <div class="pane">
   <div>
-    <div class="field-label"><span>数值</span></div>
+    <div class="field-label"><span>{tu(lang, '数值')}</span></div>
     <input type="number" id="uc-val" value="1" step="any" style="width:100%;padding:8px;border:1px solid var(--border-color);border-radius:6px;box-sizing:border-box;font-size:16px">
-    <div class="field-label" style="margin-top:12px"><span>从</span></div>
+    <div class="field-label" style="margin-top:12px"><span>{tu(lang, '从')}</span></div>
     <select id="uc-from" style="width:100%;padding:8px;border:1px solid var(--border-color);border-radius:6px;background:#fff;font-size:14px">
-      <option value="Hz" data-f="1">赫兹 (Hz)</option>
-      <option value="kHz" data-f="1000">千赫兹 (kHz)</option>
-      <option value="MHz" data-f="1000000">兆赫兹 (MHz)</option>
-      <option value="GHz" data-f="1000000000">吉赫兹 (GHz)</option>
-      <option value="rpm" data-f="0.016666666666666666">转/分钟 (rpm)</option>
+      <option value="Hz" data-f="1">{tu(lang, '赫兹')} (Hz)</option>
+      <option value="kHz" data-f="1000">{tu(lang, '千赫兹')} (kHz)</option>
+      <option value="MHz" data-f="1000000">{tu(lang, '兆赫兹')} (MHz)</option>
+      <option value="GHz" data-f="1000000000">{tu(lang, '吉赫兹')} (GHz)</option>
+      <option value="rpm" data-f="0.016666666666666666">{tu(lang, '转')}/{tu(lang, '分钟')} (rpm)</option>
     </select>
     <div style="text-align:center;margin:8px 0">
-      <button id="uc-swap">⇅ 交换单位</button>
+      <button id="uc-swap">⇅ {tu(lang, '交换单位')}</button>
     </div>
-    <div class="field-label"><span>到</span></div>
+    <div class="field-label"><span>{tu(lang, '到')}</span></div>
     <select id="uc-to" style="width:100%;padding:8px;border:1px solid var(--border-color);border-radius:6px;background:#fff;font-size:14px">
-      <option value="Hz" data-f="1">赫兹 (Hz)</option>
-      <option value="kHz" data-f="1000">千赫兹 (kHz)</option>
-      <option value="MHz" data-f="1000000">兆赫兹 (MHz)</option>
-      <option value="GHz" data-f="1000000000">吉赫兹 (GHz)</option>
-      <option value="rpm" data-f="0.016666666666666666">转/分钟 (rpm)</option>
+      <option value="Hz" data-f="1">{tu(lang, '赫兹')} (Hz)</option>
+      <option value="kHz" data-f="1000">{tu(lang, '千赫兹')} (kHz)</option>
+      <option value="MHz" data-f="1000000">{tu(lang, '兆赫兹')} (MHz)</option>
+      <option value="GHz" data-f="1000000000">{tu(lang, '吉赫兹')} (GHz)</option>
+      <option value="rpm" data-f="0.016666666666666666">{tu(lang, '转')}/{tu(lang, '分钟')} (rpm)</option>
     </select>
     <div style="margin-top:16px;padding:14px;background:rgba(0,0,0,.03);border-radius:8px">
       <div id="uc-out" style="font-size:20px;font-weight:600;color:var(--primary-color);word-break:break-all;line-height:1.5">-</div>
-      <div style="font-size:12px;color:var(--text-sub);margin-top:4px">换算结果</div>
+      <div style="font-size:12px;color:var(--text-sub);margin-top:4px">{tu(lang, '换算结果')}</div>
     </div>
   </div>
   <div>
-    <div class="field-label"><span>等于以下所有单位</span></div>
+    <div class="field-label"><span>{tu(lang, '等于以下所有单位')}</span></div>
     <table id="uc-table" style="width:100%;border-collapse:collapse;font-size:14px"></table>
     <p class="msg" id="uc-msg"></p>
   </div>
 </div>
 
-<script>
+<script>import { tu, currentLang } from '../../i18n/toolUi.ts';
+const LANG = currentLang();
+
 const $ = (id) => document.getElementById(id);
-const UNITS = [{"sym":"Hz","zh":"赫兹","f":1},{"sym":"kHz","zh":"千赫兹","f":1000},{"sym":"MHz","zh":"兆赫兹","f":1000000},{"sym":"GHz","zh":"吉赫兹","f":1000000000},{"sym":"rpm","zh":"转/分钟","f":0.016666666666666666}];
+const UNITS = [{"sym":"Hz","zh":tu(LANG, "赫兹"),"f":1},{"sym":"kHz","zh":tu(LANG, "千赫兹"),"f":1000},{"sym":"MHz","zh":tu(LANG, "兆赫兹"),"f":1000000},{"sym":"GHz","zh":tu(LANG, "吉赫兹"),"f":1000000000},{"sym":"rpm","zh":tu(LANG, "转/分钟"),"f":0.016666666666666666}];
 function fmt(n){
   if (!isFinite(n)) return '-';
   if (n !== 0 && (Math.abs(n) < 1e-6 || Math.abs(n) >= 1e15)) return n.toExponential(6).replace(/(\.\d*?[1-9])0+e|\.0+e/g, '$1e');

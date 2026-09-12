@@ -1,17 +1,21 @@
 ---
+import { tu } from '../../i18n/toolUi.ts';
 // 图片矫正（透视变换）：拖动 4 个角点纠正倾斜文档/卡片
+interface Props { lang?: string }
+const { lang = 'zh' } = Astro.props;
+
 ---
 <div class="pane">
   <div>
-    <div class="field-label"><span>选择图片</span></div>
+    <div class="field-label"><span>{tu(lang, '选择图片')}</span></div>
     <input type="file" id="ir-file" accept="image/*">
     <div id="ir-info" class="msg"></div>
-    <p style="font-size:12px;color:#12px;color:#999;margin-top:8px">提示：拖动 4 个角点到文档/卡片的真实四角，自动透视矫正。</p>
-    <div class="field-label" style="margin-top:14px"><span>矫正预览</span></div>
+    <p style="font-size:12px;color:#12px;color:#999;margin-top:8px">{tu(lang, '提示：拖动 4 个角点到文档')}/{tu(lang, '卡片的真实四角，自动透视矫正。')}</p>
+    <div class="field-label" style="margin-top:14px"><span>{tu(lang, '矫正预览')}</span></div>
     <div id="ir-out" class="ir-out"></div>
   </div>
   <div>
-    <div class="field-label"><span>调整四角</span></div>
+    <div class="field-label"><span>{tu(lang, '调整四角')}</span></div>
     <div id="ir-stage" class="ir-stage">
       <canvas id="ir-canvas"></canvas>
       <div class="ir-corner" data-i="0" id="ir-c0">1</div>
@@ -22,9 +26,9 @@
   </div>
 </div>
 <div class="btn-row">
-  <button id="ir-run" class="primary">应用矫正</button>
-  <button id="ir-dl">下载</button>
-  <button id="ir-reset">重置</button>
+  <button id="ir-run" class="primary">{tu(lang, '应用矫正')}</button>
+  <button id="ir-dl">{tu(lang, '下载')}</button>
+  <button id="ir-reset">{tu(lang, '重置')}</button>
   <span id="ir-msg" class="msg"></span>
 </div>
 
@@ -37,7 +41,9 @@
   .ir-out:empty::before { content: '尚未矫正'; color: #999; }
 </style>
 
-<script>
+<script>import { tu, currentLang } from '../../i18n/toolUi.ts';
+const LANG = currentLang();
+
   const $ = (id) => document.getElementById(id);
   const stage = $('ir-stage'), canvas = $('ir-canvas');
   const ctx = canvas.getContext('2d');
@@ -192,7 +198,7 @@
     }
     octx.putImageData(outImg, 0, 0);
     outBlob = await new Promise(res => out.toBlob(res, 'image/png'));
-    $('ir-out').innerHTML = '<img alt="预览">';
+    $('ir-out').innerHTML = '<img alt=tu(LANG, "预览")>';
     $('ir-out').querySelector('img').src = URL.createObjectURL(outBlob);
     $('ir-msg').textContent = `矫正完成 · ${W}×${H}`;
     $('ir-msg').className = 'msg ok';

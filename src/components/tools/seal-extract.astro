@@ -1,7 +1,12 @@
 ---
+import { tu } from '../../i18n/toolUi.ts';
+
+interface Props { lang?: string }
+const { lang = 'zh' } = Astro.props;
+
 ---
 
-<div class="tip">适合从扫描件、合同照片里抠出红色印章，输出透明底 PNG。图片不上传服务器。</div>
+<div class="tip">{tu(lang, '适合从扫描件、合同照片里抠出红色印章，输出透明底 PNG。图片不上传服务器。')}</div>
 
 <div class="btn-row" style="align-items:center;">
   <input type="file" id="se-file" accept="image/*" style="width:auto;font-family:inherit;padding:6px;border:none;" />
@@ -9,53 +14,55 @@
 
 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-top:12px;">
   <div>
-    <div class="field-label"><span>红色敏感度</span><span id="se-th-val">40</span></div>
+    <div class="field-label"><span>{tu(lang, '红色敏感度')}</span><span id="se-th-val">40</span></div>
     <input type="range" id="se-th" min="5" max="120" value="40" style="padding:0;" />
-    <div style="font-size:12px;color:var(--text-hint);">调高＝只保留更纯的红</div>
+    <div style="font-size:12px;color:var(--text-hint);">{tu(lang, '调高')}＝{tu(lang, '只保留更纯的红')}</div>
   </div>
   <div>
-    <div class="field-label"><span>边缘强度</span><span id="se-edge-val">1.4</span></div>
+    <div class="field-label"><span>{tu(lang, '边缘强度')}</span><span id="se-edge-val">1.4</span></div>
     <input type="range" id="se-edge" min="5" max="40" value="14" style="padding:0;" />
-    <div style="font-size:12px;color:var(--text-hint);">调高＝印章更实，杂色更少</div>
+    <div style="font-size:12px;color:var(--text-hint);">{tu(lang, '调高')}＝{tu(lang, '印章更实，杂色更少')}</div>
   </div>
   <div>
-    <div class="field-label"><span>输出模式</span></div>
+    <div class="field-label"><span>{tu(lang, '输出模式')}</span></div>
     <select id="se-mode">
-      <option value="red">只保留红色印章</option>
-      <option value="ink">保留全部深色墨迹</option>
+      <option value="red">{tu(lang, '只保留红色印章')}</option>
+      <option value="ink">{tu(lang, '保留全部深色墨迹')}</option>
     </select>
   </div>
   <div>
-    <div class="field-label"><span>印章颜色</span></div>
+    <div class="field-label"><span>{tu(lang, '印章颜色')}</span></div>
     <input type="color" id="se-color" value="#d92c2c" style="width:60px;height:34px;padding:2px;" />
-    <label style="display:block;font-size:12px;margin-top:6px;"><input type="checkbox" id="se-recolor" checked /> 统一为纯色</label>
+    <label style="display:block;font-size:12px;margin-top:6px;"><input type="checkbox" id="se-recolor" checked /> {tu(lang, '统一为纯色')}</label>
   </div>
 </div>
 
 <div class="btn-row">
-  <button class="primary" id="se-go">提取</button>
-  <button id="se-dl">下载透明 PNG</button>
-  <button id="se-clear">清空</button>
+  <button class="primary" id="se-go">{tu(lang, '提取')}</button>
+  <button id="se-dl">{tu(lang, '下载透明')} PNG</button>
+  <button id="se-clear">{tu(lang, '清空')}</button>
 </div>
 
 <p class="msg" id="se-msg"></p>
 
 <div class="pane" id="se-preview" style="display:none;margin-top:14px;">
   <div>
-    <div class="field-label"><span>原图</span></div>
+    <div class="field-label"><span>{tu(lang, '原图')}</span></div>
     <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;display:flex;justify-content:center;overflow:auto;max-height:340px;">
-      <img id="se-src" alt="原图" style="max-width:100%;height:auto;" />
+      <img id="se-src" alt={tu(lang, '原图')} style="max-width:100%;height:auto;" />
     </div>
   </div>
   <div>
-    <div class="field-label"><span>提取结果（棋盘格＝透明）</span></div>
+    <div class="field-label"><span>{tu(lang, '提取结果（棋盘格')}＝{tu(lang, '透明')}）</span></div>
     <div style="border:1px solid var(--border);border-radius:8px;padding:12px;display:flex;justify-content:center;overflow:auto;max-height:340px;background-color:#fff;background-image:linear-gradient(45deg,#e5e5e5 25%,transparent 25%),linear-gradient(-45deg,#e5e5e5 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#e5e5e5 75%),linear-gradient(-45deg,transparent 75%,#e5e5e5 75%);background-size:16px 16px;background-position:0 0,0 8px,8px -8px,-8px 0;">
-      <img id="se-out" alt="提取结果" style="max-width:100%;height:auto;" />
+      <img id="se-out" alt={tu(lang, '提取结果')} style="max-width:100%;height:auto;" />
     </div>
   </div>
 </div>
 
-<script>
+<script>import { tu, currentLang } from '../../i18n/toolUi.ts';
+const LANG = currentLang();
+
   const $ = (id) => document.getElementById(id);
   let outUrl = '';
 
@@ -114,8 +121,8 @@
 
   $('se-go').onclick = () => {
     const f = $('se-file').files[0];
-    if (!f) { $('se-msg').textContent = '请先选择图片'; $('se-msg').className = 'msg err'; return; }
-    $('se-msg').textContent = '处理中…';
+    if (!f) { $('se-msg').textContent = tu(LANG, '请先选择图片'); $('se-msg').className = 'msg err'; return; }
+    $('se-msg').textContent = tu(LANG, '处理中…');
     $('se-msg').className = 'msg';
     const img = new Image();
     img.onload = () => {
@@ -130,12 +137,12 @@
         $('se-msg').className = 'msg ok';
       }, 'image/png');
     };
-    img.onerror = () => { $('se-msg').textContent = '无法读取该图片'; $('se-msg').className = 'msg err'; };
+    img.onerror = () => { $('se-msg').textContent = tu(LANG, '无法读取该图片'); $('se-msg').className = 'msg err'; };
     img.src = URL.createObjectURL(f);
   };
 
   $('se-dl').onclick = () => {
-    if (!outUrl) { $('se-msg').textContent = '请先提取'; $('se-msg').className = 'msg err'; return; }
+    if (!outUrl) { $('se-msg').textContent = tu(LANG, '请先提取'); $('se-msg').className = 'msg err'; return; }
     const a = document.createElement('a');
     a.href = outUrl;
     a.download = 'seal.png';

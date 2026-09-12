@@ -1,62 +1,69 @@
 ---
+import { tu } from '../../i18n/toolUi.ts';
+
+interface Props { lang?: string }
+const { lang = 'zh' } = Astro.props;
+
 ---
 
 <div class="pane">
   <div>
-    <div class="field-label"><span>原始内容</span></div>
-    <textarea id="u-in" placeholder="输入网址或参数值" spellcheck="false"></textarea>
+    <div class="field-label"><span>{tu(lang, '原始内容')}</span></div>
+    <textarea id="u-in" placeholder={tu(lang, '输入网址或参数值')} spellcheck="false"></textarea>
   </div>
   <div>
-    <div class="field-label"><span>处理结果</span></div>
-    <textarea id="u-out" placeholder="结果" spellcheck="false"></textarea>
+    <div class="field-label"><span>{tu(lang, '处理结果')}</span></div>
+    <textarea id="u-out" placeholder={tu(lang, '结果')} spellcheck="false"></textarea>
   </div>
 </div>
 
 <div class="btn-row">
-  <button class="primary" id="u-enc">编码 →</button>
-  <button id="u-dec">← 解码</button>
-  <button id="u-comp">按参数编码 →</button>
-  <button id="u-parse">解析查询参数</button>
-  <button id="u-copy">复制右侧</button>
-  <button id="u-clear">清空</button>
+  <button class="primary" id="u-enc">{tu(lang, '编码')} →</button>
+  <button id="u-dec">← {tu(lang, '解码')}</button>
+  <button id="u-comp">{tu(lang, '按参数编码')} →</button>
+  <button id="u-parse">{tu(lang, '解析查询参数')}</button>
+  <button id="u-copy">{tu(lang, '复制右侧')}</button>
+  <button id="u-clear">{tu(lang, '清空')}</button>
 </div>
 
 <div id="u-params"></div>
 <p class="msg" id="u-msg"></p>
 
-<script>
+<script>import { tu, currentLang } from '../../i18n/toolUi.ts';
+const LANG = currentLang();
+
   const $ = (id) => document.getElementById(id);
   const msg = $('u-msg');
   const setMsg = (t, type) => { msg.textContent = t; msg.className = 'msg ' + (type || 'ok'); };
 
   $('u-enc').onclick = () => {
     const v = $('u-in').value;
-    if (!v) return setMsg('请先输入内容', 'err');
+    if (!v) return setMsg(tu(LANG, '请先输入内容'), 'err');
     $('u-out').value = encodeURI(v);
-    setMsg('已按完整网址编码');
+    setMsg(tu(LANG, '已按完整网址编码'));
   };
 
   $('u-comp').onclick = () => {
     const v = $('u-in').value;
-    if (!v) return setMsg('请先输入内容', 'err');
+    if (!v) return setMsg(tu(LANG, '请先输入内容'), 'err');
     $('u-out').value = encodeURIComponent(v);
-    setMsg('已按参数值编码（空格转 %20，特殊字符全部转义）');
+    setMsg(tu(LANG, '已按参数值编码（空格转 %20，特殊字符全部转义）'));
   };
 
   $('u-dec').onclick = () => {
     const v = $('u-in').value.trim();
-    if (!v) return setMsg('请先输入内容', 'err');
-    try { $('u-out').value = decodeURIComponent(v); setMsg('解码完成'); }
-    catch (e) { setMsg('解码失败：不是合法的 URL 编码', 'err'); }
+    if (!v) return setMsg(tu(LANG, '请先输入内容'), 'err');
+    try { $('u-out').value = decodeURIComponent(v); setMsg(tu(LANG, '解码完成')); }
+    catch (e) { setMsg(tu(LANG, '解码失败：不是合法的 URL 编码'), 'err'); }
   };
 
   $('u-parse').onclick = () => {
     const v = $('u-in').value.trim();
-    if (!v) return setMsg('请先输入网址', 'err');
+    if (!v) return setMsg(tu(LANG, '请先输入网址'), 'err');
     let q = v;
     const i = v.indexOf('?');
     if (i > -1) q = v.slice(i + 1);
-    if (!q) return setMsg('网址中没有查询参数', 'err');
+    if (!q) return setMsg(tu(LANG, '网址中没有查询参数'), 'err');
     const rows = [];
     new URLSearchParams(q).forEach((val, key) => {
       rows.push(`<tr><th>${key.replace(/</g, '&lt;')}</th><td style="font-family:ui-monospace,monospace;word-break:break-all;">${val.replace(/</g, '&lt;')}</td></tr>`);
@@ -65,13 +72,13 @@
       ? '<div class="field-label" style="margin-top:14px;"><span>查询参数</span><span>' + rows.length + ' 项</span></div>' +
         '<table class="result-table" style="max-width:640px;">' + rows.join('') + '</table>'
       : '';
-    setMsg('共解析出 ' + rows.length + ' 个参数');
+    setMsg(tu(LANG, '共解析出 ') + rows.length + tu(LANG, ' 个参数'));
   };
 
   $('u-copy').onclick = async () => {
-    if (!$('u-out').value) return setMsg('右侧为空', 'err');
+    if (!$('u-out').value) return setMsg(tu(LANG, '右侧为空'), 'err');
     await navigator.clipboard.writeText($('u-out').value);
-    setMsg('已复制');
+    setMsg(tu(LANG, '已复制'));
   };
 
   $('u-clear').onclick = () => {

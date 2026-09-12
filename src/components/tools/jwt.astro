@@ -1,21 +1,28 @@
 ---
+import { tu } from '../../i18n/toolUi.ts';
+
+interface Props { lang?: string }
+const { lang = 'zh' } = Astro.props;
+
 ---
 
-<div class="tip">只做本地解码查看，**不验证签名**——签名验证必须在服务端用密钥完成。请勿在此粘贴生产环境的高权限令牌。</div>
+<div class="tip">{tu(lang, '只做本地解码查看')}，**{tu(lang, '不验证签名')}**——{tu(lang, '签名验证必须在服务端用密钥完成。请勿在此粘贴生产环境的高权限令牌。')}</div>
 
 <div class="field-label"><span>JWT Token</span></div>
-<textarea id="jw-in" placeholder="粘贴 eyJhbGciOi... 开头的 token" style="min-height:100px;" spellcheck="false"></textarea>
+<textarea id="jw-in" placeholder="{tu(lang, '粘贴 eyJhbGciOi... 开头的')} token" style="min-height:100px;" spellcheck="false"></textarea>
 
 <div class="btn-row">
-  <button class="primary" id="jw-go">解码</button>
-  <button id="jw-sample">填入示例</button>
-  <button id="jw-clear">清空</button>
+  <button class="primary" id="jw-go">{tu(lang, '解码')}</button>
+  <button id="jw-sample">{tu(lang, '填入示例')}</button>
+  <button id="jw-clear">{tu(lang, '清空')}</button>
 </div>
 
 <p class="msg" id="jw-msg"></p>
 <div id="jw-out"></div>
 
-<script>
+<script>import { tu, currentLang } from '../../i18n/toolUi.ts';
+const LANG = currentLang();
+
   const $ = (id) => document.getElementById(id);
 
   function b64urlDecode(s) {
@@ -38,7 +45,7 @@
   function run() {
     const msg = $('jw-msg');
     const raw = $('jw-in').value.trim().replace(/^Bearer\s+/i, '');
-    if (!raw) { $('jw-out').innerHTML = ''; msg.textContent = '请输入 token'; msg.className = 'msg err'; return; }
+    if (!raw) { $('jw-out').innerHTML = ''; msg.textContent = tu(LANG, '请输入 token'); msg.className = 'msg err'; return; }
 
     const parts = raw.split('.');
     if (parts.length !== 3) {
@@ -54,7 +61,7 @@
       payload = JSON.parse(b64urlDecode(parts[1]));
     } catch (e) {
       $('jw-out').innerHTML = '';
-      msg.textContent = '解码失败：不是合法的 JWT（Base64URL 解析出错）';
+      msg.textContent = tu(LANG, '解码失败：不是合法的 JWT（Base64URL 解析出错）');
       msg.className = 'msg err';
       return;
     }
@@ -63,11 +70,11 @@
     const rows = [];
     const add = (k, v) => rows.push(`<tr><th>${k}</th><td>${v}</td></tr>`);
 
-    add('算法 alg', esc(header.alg || '未声明'));
-    add('类型 typ', esc(header.typ || '未声明'));
-    if (header.kid) add('密钥 ID', esc(header.kid));
+    add(tu(LANG, '算法 alg'), esc(header.alg || tu(LANG, '未声明')));
+    add(tu(LANG, '类型 typ'), esc(header.typ || tu(LANG, '未声明')));
+    if (header.kid) add(tu(LANG, '密钥 ID'), esc(header.kid));
 
-    const CLAIM = { iss: '签发者', sub: '主体', aud: '受众', jti: '令牌 ID', nbf: '生效时间', iat: '签发时间', exp: '过期时间' };
+    const CLAIM = { iss: tu(LANG, '签发者'), sub: tu(LANG, '主体'), aud: tu(LANG, '受众'), jti: tu(LANG, '令牌 ID'), nbf: tu(LANG, '生效时间'), iat: tu(LANG, '签发时间'), exp: tu(LANG, '过期时间') };
     for (const [k, label] of Object.entries(CLAIM)) {
       if (payload[k] === undefined) continue;
       if ((k === 'exp' || k === 'iat' || k === 'nbf') && typeof payload[k] === 'number') {
@@ -89,7 +96,7 @@
     }
 
     const extra = Object.keys(payload).filter((k) => !CLAIM[k]);
-    if (extra.length) add('其他声明', esc(extra.join('、')));
+    if (extra.length) add(tu(LANG, '其他声明'), esc(extra.join('、')));
 
     $('jw-out').innerHTML =
       '<table class="result-table" style="margin-top:14px;max-width:640px;">' + rows.join('') + '</table>' +
@@ -100,7 +107,7 @@
       </div>`;
 
     const expired = payload.exp && payload.exp < now;
-    msg.textContent = expired ? '解码成功（令牌已过期）' : '解码成功';
+    msg.textContent = expired ? '解码成功（令牌已过期）' : tu(LANG, '解码成功');
     msg.className = expired ? 'msg err' : 'msg ok';
   }
 
@@ -110,7 +117,7 @@
     const b64 = (o) => btoa(unescape(encodeURIComponent(JSON.stringify(o)))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
     const now = Math.floor(Date.now() / 1000);
     $('jw-in').value = b64({ alg: 'HS256', typ: 'JWT' }) + '.' +
-      b64({ sub: '1234567890', name: '张三', iat: now, exp: now + 3600 }) + '.' +
+      b64({ sub: '1234567890', name: tu(LANG, '张三'), iat: now, exp: now + 3600 }) + '.' +
       'SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c';
     run();
   };

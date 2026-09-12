@@ -1,23 +1,27 @@
 ---
+import { tu } from '../../i18n/toolUi.ts';
 // 图片取色器：上传图片取颜色，HEX/RGB/HSL 切换，可放大镜精确取色
+interface Props { lang?: string }
+const { lang = 'zh' } = Astro.props;
+
 ---
 <div class="pane">
   <div>
-    <div class="field-label"><span>选择图片</span></div>
+    <div class="field-label"><span>{tu(lang, '选择图片')}</span></div>
     <input type="file" id="cp-file" accept="image/*">
-    <div class="field-label" style="margin-top:14px"><span>放大倍数 <span id="cp-zv">6</span>×</span></div>
+    <div class="field-label" style="margin-top:14px"><span>{tu(lang, '放大倍数')} <span id="cp-zv">6</span>×</span></div>
     <input type="range" id="cp-zoom" min="2" max="20" value="6" style="width:100%">
-    <div class="field-label" style="margin-top:14px"><span>鼠标点击图片下方像素取色</span></div>
+    <div class="field-label" style="margin-top:14px"><span>{tu(lang, '鼠标点击图片下方像素取色')}</span></div>
     <div id="cp-wrap" class="cp-wrap">
       <canvas id="cp-canvas"></canvas>
       <div id="cp-loupe" class="cp-loupe" style="display:none"><canvas id="cp-loupe-canvas" width="120" height="120"></canvas></div>
     </div>
   </div>
   <div>
-    <div class="field-label"><span>当前颜色</span></div>
+    <div class="field-label"><span>{tu(lang, '当前颜色')}</span></div>
     <div id="cp-swatch" class="cp-swatch"></div>
-    <div id="cp-readout" class="cp-readout">尚未取色</div>
-    <div class="field-label" style="margin-top:14px"><span>历史色板（点击复制）</span></div>
+    <div id="cp-readout" class="cp-readout">{tu(lang, '尚未取色')}</div>
+    <div class="field-label" style="margin-top:14px"><span>{tu(lang, '历史色板（点击复制')}）</span></div>
     <div id="cp-history" class="cp-history"></div>
   </div>
 </div>

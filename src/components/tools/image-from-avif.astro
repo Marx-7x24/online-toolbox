@@ -1,30 +1,34 @@
 ---
+import { tu } from '../../i18n/toolUi.ts';
 // AVIF → JPG/PNG（浏览器原生 AVIF 解码 + Canvas 重新编码）
+interface Props { lang?: string }
+const { lang = 'zh' } = Astro.props;
+
 ---
 <div class="pane">
   <div>
-    <div class="field-label"><span>选择 AVIF 图片</span></div>
+    <div class="field-label"><span>{tu(lang, '选择 AVIF 图片')}</span></div>
     <input type="file" id="ifavif-file" accept=".avif,image/avif">
     <div id="ifavif-info" class="msg"></div>
-    <div class="field-label" style="margin-top:14px"><span>输出格式</span></div>
+    <div class="field-label" style="margin-top:14px"><span>{tu(lang, '输出格式')}</span></div>
     <select id="ifavif-fmt" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:6px">
       <option value="image/jpeg">JPG</option>
       <option value="image/png">PNG</option>
       <option value="image/webp">WebP</option>
     </select>
-    <div class="field-label" style="margin-top:14px"><span>画质 <span id="ifavif-qv">92%</span></span></div>
+    <div class="field-label" style="margin-top:14px"><span>{tu(lang, '画质')} <span id="ifavif-qv">92%</span></span></div>
     <input type="range" id="ifavif-q" min="1" max="100" value="92" style="width:100%">
-    <p style="font-size:12px;color:#999;margin-top:8px">需要浏览器支持 AVIF 解码（Chrome 85+/Edge 85+/Firefox 93+/Safari 16+）。</p>
+    <p style="font-size:12px;color:#999;margin-top:8px">{tu(lang, '需要浏览器支持 AVIF 解码')}（Chrome 85+/Edge 85+/Firefox 93+/Safari 16+）。</p>
   </div>
   <div>
-    <div class="field-label"><span>输出预览</span></div>
+    <div class="field-label"><span>{tu(lang, '输出预览')}</span></div>
     <div id="ifavif-preview" class="ifavif-preview"></div>
   </div>
 </div>
 <div class="btn-row">
-  <button id="ifavif-run" class="primary">开始转换</button>
-  <button id="ifavif-dl">下载</button>
-  <button id="ifavif-reset">重置</button>
+  <button id="ifavif-run" class="primary">{tu(lang, '开始转换')}</button>
+  <button id="ifavif-dl">{tu(lang, '下载')}</button>
+  <button id="ifavif-reset">{tu(lang, '重置')}</button>
   <span id="ifavif-msg" class="msg"></span>
 </div>
 
@@ -34,7 +38,9 @@
   .ifavif-preview:empty::before { content: '尚未选择图片'; color: #999; }
 </style>
 
-<script>
+<script>import { tu, currentLang } from '../../i18n/toolUi.ts';
+const LANG = currentLang();
+
   const $ = (id) => document.getElementById(id);
   let sourceFile = null;
   let outBlob = null;
@@ -51,9 +57,9 @@
   });
 
   $('ifavif-run').addEventListener('click', async () => {
-    if (!sourceFile) { $('ifavif-msg').textContent = '请先选择 AVIF 图片'; $('ifavif-msg').className = 'msg err'; return; }
+    if (!sourceFile) { $('ifavif-msg').textContent = tu(LANG, '请先选择 AVIF 图片'); $('ifavif-msg').className = 'msg err'; return; }
     try {
-      if (!('createImageBitmap' in window)) throw new Error('浏览器不支持，请升级到最新版');
+      if (!('createImageBitmap' in window)) throw new Error(tu(LANG, '浏览器不支持，请升级到最新版'));
       const bitmap = await createImageBitmap(sourceFile);
       const canvas = document.createElement('canvas');
       canvas.width = bitmap.width; canvas.height = bitmap.height;
@@ -65,20 +71,20 @@
       }
       ctx.drawImage(bitmap, 0, 0);
       const q = Number($('ifavif-q').value) / 100;
-      outBlob = await new Promise((res, rej) => canvas.toBlob(b => b ? res(b) : rej(new Error('编码失败')), fmt, q));
+      outBlob = await new Promise((res, rej) => canvas.toBlob(b => b ? res(b) : rej(new Error(tu(LANG, '编码失败'))), fmt, q));
       outExt = fmt === 'image/jpeg' ? 'jpg' : fmt.split('/')[1];
-      $('ifavif-preview').innerHTML = '<img alt="预览">';
+      $('ifavif-preview').innerHTML = '<img alt=tu(LANG, "预览")>';
       $('ifavif-preview').querySelector('img').src = URL.createObjectURL(outBlob);
       $('ifavif-msg').textContent = `转换成功 · ${(outBlob.size/1024).toFixed(1)} KB · ${bitmap.width}×${bitmap.height}`;
       $('ifavif-msg').className = 'msg ok';
     } catch (err) {
-      $('ifavif-msg').textContent = '转换失败：' + err.message;
+      $('ifavif-msg').textContent = tu(LANG, '转换失败：') + err.message;
       $('ifavif-msg').className = 'msg err';
     }
   });
 
   $('ifavif-dl').addEventListener('click', () => {
-    if (!outBlob) { $('ifavif-msg').textContent = '请先转换'; $('ifavif-msg').className = 'msg err'; return; }
+    if (!outBlob) { $('ifavif-msg').textContent = tu(LANG, '请先转换'); $('ifavif-msg').className = 'msg err'; return; }
     const a = document.createElement('a');
     a.href = URL.createObjectURL(outBlob);
     a.download = (sourceFile.name.replace(/\.[^.]+$/, '') || 'image') + '.' + outExt;

@@ -1,51 +1,55 @@
 ---
+import { tu } from '../../i18n/toolUi.ts';
 // 微信群聊天模拟器：多成员群聊，自定义每条消息发送者，群截图导出 PNG
+interface Props { lang?: string }
+const { lang = 'zh' } = Astro.props;
+
 ---
 <div class="pane">
   <div>
-    <div class="field-label"><span>群名</span></div>
-    <input type="text" id="wg-name" value="一家人" style="width:100%;padding:7px;border:1px solid var(--border-color);border-radius:6px;box-sizing:border-box">
+    <div class="field-label"><span>{tu(lang, '群名')}</span></div>
+    <input type="text" id="wg-name" value={tu(lang, '一家人')} style="width:100%;padding:7px;border:1px solid var(--border-color);border-radius:6px;box-sizing:border-box">
 
-    <div class="field-label" style="margin-top:12px"><span>群成员</span></div>
+    <div class="field-label" style="margin-top:12px"><span>{tu(lang, '群成员')}</span></div>
     <div id="wg-members" style="display:flex;flex-direction:column;gap:6px"></div>
     <div class="btn-row" style="margin-top:6px">
-      <button id="wg-add-member" class="primary">+ 添加成员</button>
+      <button id="wg-add-member" class="primary">+ {tu(lang, '添加成员')}</button>
     </div>
 
-    <div class="field-label" style="margin-top:16px"><span>手机时间</span></div>
+    <div class="field-label" style="margin-top:16px"><span>{tu(lang, '手机时间')}</span></div>
     <input type="text" id="wg-sb-time" value="14:30" style="width:100%;padding:7px;border:1px solid var(--border-color);border-radius:6px;box-sizing:border-box">
-    <div class="field-label" style="margin-top:12px"><span>信号强度</span></div>
+    <div class="field-label" style="margin-top:12px"><span>{tu(lang, '信号强度')}</span></div>
     <select id="wg-sb-signal" style="width:100%;padding:7px;border:1px solid var(--border-color);border-radius:6px;background:#fff">
-      <option value="1">1 格</option><option value="2">2 格</option><option value="3">3 格</option><option value="4" selected>4 格</option>
+      <option value="1">1 {tu(lang, '格')}</option><option value="2">2 {tu(lang, '格')}</option><option value="3">3 {tu(lang, '格')}</option><option value="4" selected>4 {tu(lang, '格')}</option>
     </select>
-    <div class="field-label" style="margin-top:12px"><span>手机网络</span></div>
+    <div class="field-label" style="margin-top:12px"><span>{tu(lang, '手机网络')}</span></div>
     <select id="wg-sb-net" style="width:100%;padding:7px;border:1px solid var(--border-color);border-radius:6px;background:#fff">
       <option value="5G" selected>5G</option><option value="4G">4G</option>
     </select>
-    <div class="field-label" style="margin-top:12px"><span>剩余电量</span></div>
+    <div class="field-label" style="margin-top:12px"><span>{tu(lang, '剩余电量')}</span></div>
     <input type="range" id="wg-sb-bat" min="0" max="100" value="80" style="width:100%">
 
-    <div class="field-label" style="margin-top:14px"><span>发消息</span></div>
+    <div class="field-label" style="margin-top:14px"><span>{tu(lang, '发消息')}</span></div>
     <div style="display:flex;gap:8px;align-items:center">
       <select id="wg-sender" style="flex:1;padding:7px;border:1px solid var(--border-color);border-radius:6px;background:#fff"></select>
     </div>
-    <textarea id="wg-text" placeholder="输入一条消息…" style="width:100%;height:60px;margin-top:6px;padding:8px;border:1px solid var(--border-color);border-radius:6px;box-sizing:border-box;font-size:14px;resize:vertical"></textarea>
-    <input type="text" id="wg-time" placeholder="时间（可选，如 14:30）" style="width:100%;margin-top:6px;padding:7px;border:1px solid var(--border-color);border-radius:6px;box-sizing:border-box">
+    <textarea id="wg-text" placeholder={tu(lang, '输入一条消息…')} style="width:100%;height:60px;margin-top:6px;padding:8px;border:1px solid var(--border-color);border-radius:6px;box-sizing:border-box;font-size:14px;resize:vertical"></textarea>
+    <input type="text" id="wg-time" placeholder={tu(lang, '时间（可选，如 14:30）')} style="width:100%;margin-top:6px;padding:7px;border:1px solid var(--border-color);border-radius:6px;box-sizing:border-box">
     <div class="btn-row" style="margin-top:10px">
-      <button id="wg-add" class="primary">添加消息</button>
-      <button id="wg-undo">撤销</button>
-      <button id="wg-clear">清空</button>
+      <button id="wg-add" class="primary">{tu(lang, '添加消息')}</button>
+      <button id="wg-undo">{tu(lang, '撤销')}</button>
+      <button id="wg-clear">{tu(lang, '清空')}</button>
     </div>
   </div>
   <div>
-    <div class="field-label"><span>预览</span></div>
+    <div class="field-label"><span>{tu(lang, '预览')}</span></div>
     <div id="wg-screen" style="max-width:340px;margin:0 auto;background:#ededed;border-radius:14px;overflow:hidden;box-shadow:0 4px 18px rgba(0,0,0,.12)">
       <div class="sb-statusbar"><span class="sb-time">14:30</span><span class="sb-right"><span class="sb-signal"></span><span class="sb-net">5G</span><span class="sb-battery"><i></i></span></span></div>
       <div id="wg-header" style="background:#ededed;padding:10px 12px;font-size:15px;font-weight:600;text-align:center;color:#111;border-bottom:1px solid #d9d9d9"></div>
       <div id="wg-chat" style="padding:12px 10px;min-height:300px;display:flex;flex-direction:column;gap:10px"></div>
     </div>
     <div class="btn-row" style="justify-content:center">
-      <button id="wg-export" class="primary">生成微信对话截图</button>
+      <button id="wg-export" class="primary">{tu(lang, '生成微信对话截图')}</button>
     </div>
     <p class="msg" id="wg-msg"></p>
   </div>
@@ -66,13 +70,15 @@
   .wg-member-row .wg-del { background:#fee;color:#c33;border:0;border-radius:5px;padding:3px 8px;cursor:pointer;font-size:12px; }
 </style>
 
-<script>
+<script>import { tu, currentLang } from '../../i18n/toolUi.ts';
+const LANG = currentLang();
+
 import { bindStatusBar } from '../../scripts/statusbar.js';
 const $ = (id) => document.getElementById(id);
 let members = [
-  { id: 1, name: '老妈', color: '#F08C8C', avatar: null },
-  { id: 2, name: '老爸', color: '#7CB7F0', avatar: null },
-  { id: 3, name: '我',   color: '#07C160', avatar: null },
+  { id: 1, name: tu(LANG, '老妈'), color: '#F08C8C', avatar: null },
+  { id: 2, name: tu(LANG, '老爸'), color: '#7CB7F0', avatar: null },
+  { id: 3, name: tu(LANG, '我'),   color: '#07C160', avatar: null },
 ];
 let msgs = [];
 let nextId = 4;
@@ -86,8 +92,8 @@ function renderMembers(){
   box.innerHTML = members.map(m => `
     <div class="wg-member-row" data-mid="${m.id}">
       <input type="color" value="${m.color}" data-k="color">
-      <input type="text" value="${escapeHtml(m.name)}" data-k="name" placeholder="昵称">
-      <input type="file" accept="image/*" data-k="avatar" title="头像">
+      <input type="text" value="${escapeHtml(m.name)}" data-k="name" placeholder=tu(LANG, "昵称")>
+      <input type="file" accept="image/*" data-k="avatar" title=tu(LANG, "头像")>
       <button type="button" class="wg-del">删</button>
     </div>
   `).join('');
@@ -101,7 +107,7 @@ function renderMembers(){
       r.readAsDataURL(f);
     });
     row.querySelector('.wg-del').addEventListener('click', () => {
-      if (members.length <= 2){ $('wg-msg').textContent='至少保留 2 个成员'; $('wg-msg').className='msg err'; return; }
+      if (members.length <= 2){ $('wg-msg').textContent=tu(LANG, '至少保留 2 个成员'); $('wg-msg').className='msg err'; return; }
       members = members.filter(x => x.id !== mid); renderMembers(); renderSender(); renderChat();
     });
   });
@@ -112,31 +118,31 @@ function renderSender(){
 }
 
 function renderChat(){
-  $('wg-header').textContent = $('wg-name').value || '群聊';
+  $('wg-header').textContent = $('wg-name').value || tu(LANG, '群聊');
   const box = $('wg-chat');
   if (!msgs.length){ box.innerHTML = '<div style="color:#9aa0a6;font-size:13px;text-align:center;margin:auto">添加消息开始模拟群聊</div>'; return; }
   box.innerHTML = msgs.map(m => {
     const mem = memberById(m.senderId); if (!mem) return '';
     const time = m.time ? `<div class="wg-time">${escapeHtml(m.time)}</div>` : '';
-    const rowCls = mem.name === '我' ? 'wg-row me' : 'wg-row';
+    const rowCls = mem.name === tu(LANG, '我') ? 'wg-row me' : 'wg-row';
     return time + `<div class="${rowCls}">${avatarOf(mem)}<div class="wg-bubble-wrap"><div class="wg-name">${escapeHtml(mem.name)}</div><div class="wg-bubble">${escapeHtml(m.text)}</div></div></div>`;
   }).join('');
   box.scrollTop = box.scrollHeight;
 }
 
 function add(){
-  const text = $('wg-text').value.trim(); if (!text){ $('wg-msg').textContent='请输入消息内容'; $('wg-msg').className='msg err'; return; }
+  const text = $('wg-text').value.trim(); if (!text){ $('wg-msg').textContent=tu(LANG, '请输入消息内容'); $('wg-msg').className='msg err'; return; }
   msgs.push({ senderId: +$('wg-sender').value, text, time: $('wg-time').value.trim() });
   $('wg-text').value=''; $('wg-time').value='';
-  renderChat(); $('wg-msg').textContent='已添加'; $('wg-msg').className='msg ok';
+  renderChat(); $('wg-msg').textContent=tu(LANG, '已添加'); $('wg-msg').className='msg ok';
 }
 $('wg-add').addEventListener('click', add);
 $('wg-text').addEventListener('keydown', e => { if (e.key==='Enter' && (e.ctrlKey||e.metaKey)) add(); });
 $('wg-undo').addEventListener('click', () => { msgs.pop(); renderChat(); });
-$('wg-clear').addEventListener('click', () => { if (msgs.length && confirm('清空全部消息？')) { msgs=[]; renderChat(); } });
+$('wg-clear').addEventListener('click', () => { if (msgs.length && confirm(tu(LANG, '清空全部消息？'))) { msgs=[]; renderChat(); } });
 $('wg-name').addEventListener('input', () => $('wg-header').textContent = $('wg-name').value);
 $('wg-add-member').addEventListener('click', () => {
-  members.push({ id: nextId++, name: '成员' + nextId, color: '#'+Math.floor(Math.random()*0xffffff).toString(16).padStart(6,'0'), avatar: null });
+  members.push({ id: nextId++, name: tu(LANG, '成员') + nextId, color: '#'+Math.floor(Math.random()*0xffffff).toString(16).padStart(6,'0'), avatar: null });
   renderMembers(); renderSender();
 });
 
@@ -163,7 +169,7 @@ function drawAv(ctx, m, x, y, size){
   ctx.restore();
 }
 $('wg-export').addEventListener('click', () => {
-  if (!msgs.length){ $('wg-msg').textContent='请先添加消息'; $('wg-msg').className='msg err'; return; }
+  if (!msgs.length){ $('wg-msg').textContent=tu(LANG, '请先添加消息'); $('wg-msg').className='msg err'; return; }
   const W=375, pad=10, av=34, gap=8, fs=14, bw=9, bh=7, nameH=14, maxBub=230;
   const cnv = document.createElement('canvas'); const ctx = cnv.getContext('2d');
   ctx.font = `${fs}px "PingFang SC","Microsoft YaHei",sans-serif`;
@@ -179,7 +185,7 @@ $('wg-export').addEventListener('click', () => {
   ctx.fillStyle = '#ededed'; ctx.fillRect(0,0,W,cnv.height);
   ctx.fillStyle = '#ededed'; ctx.fillRect(0,0,W,54);
   ctx.fillStyle = '#111'; ctx.font = '600 16px "PingFang SC",sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
-  ctx.fillText($('wg-name').value || '群聊', W/2, 27);
+  ctx.fillText($('wg-name').value || tu(LANG, '群聊'), W/2, 27);
   ctx.strokeStyle = '#d9d9d9'; ctx.beginPath(); ctx.moveTo(0,54); ctx.lineTo(W,54); ctx.stroke();
   let y = 54 + 14;
   ctx.textAlign='left'; ctx.textBaseline='alphabetic';
@@ -191,7 +197,7 @@ $('wg-export').addEventListener('click', () => {
       ctx.fillText(msgs[layout.indexOf({mem,lines,bubH,itemH})].time, W/2, yy+10); ctx.textAlign='left'; yy += 18;
     }
     drawAv(ctx, mem, pad, yy, av);
-    const isMe = mem.name === '我';
+    const isMe = mem.name === tu(LANG, '我');
     const bx = isMe ? W-pad-av-gap-maxBub : pad+av+gap;
     // 昵称
     ctx.fillStyle = '#888'; ctx.font = '11px sans-serif';
@@ -209,7 +215,7 @@ $('wg-export').addEventListener('click', () => {
   });
   cnv.toBlob(b => {
     const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download='wechat-group.png'; a.click();
-    $('wg-msg').textContent='已导出 wechat-group.png'; $('wg-msg').className='msg ok';
+    $('wg-msg').textContent=tu(LANG, '已导出 wechat-group.png'); $('wg-msg').className='msg ok';
   });
 });
 </script>

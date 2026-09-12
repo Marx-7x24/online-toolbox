@@ -1,30 +1,34 @@
 ---
+import { tu } from '../../i18n/toolUi.ts';
 // Cron 可视化生成：本地拼接
+interface Props { lang?: string }
+const { lang = 'zh' } = Astro.props;
+
 ---
 <div>
-  <div class="field-label"><span>分钟（0-59，* 表示每分）</span></div>
+  <div class="field-label"><span>{tu(lang, '分钟')}（0-59，* {tu(lang, '表示每分')}）</span></div>
   <input type="text" id="cb-min" value="*">
-  <div class="field-label" style="margin-top:10px;"><span>小时（0-23）</span></div>
+  <div class="field-label" style="margin-top:10px;"><span>{tu(lang, '小时')}（0-23）</span></div>
   <input type="text" id="cb-hour" value="*">
-  <div class="field-label" style="margin-top:10px;"><span>日（1-31）</span></div>
+  <div class="field-label" style="margin-top:10px;"><span>{tu(lang, '日')}（1-31）</span></div>
   <input type="text" id="cb-dom" value="*">
-  <div class="field-label" style="margin-top:10px;"><span>月（1-12）</span></div>
+  <div class="field-label" style="margin-top:10px;"><span>{tu(lang, '月')}（1-12）</span></div>
   <input type="text" id="cb-mon" value="*">
-  <div class="field-label" style="margin-top:10px;"><span>星期（0-6，0=周日）</span></div>
+  <div class="field-label" style="margin-top:10px;"><span>{tu(lang, '星期')}（0-6，0={tu(lang, '周日')}）</span></div>
   <input type="text" id="cb-dow" value="*">
-  <div class="field-label" style="margin-top:12px;"><span>生成的表达式</span></div>
+  <div class="field-label" style="margin-top:12px;"><span>{tu(lang, '生成的表达式')}</span></div>
   <div id="cb-out" class="cb-out">* * * * *</div>
   <div class="cb-presets">
-    <button data-p="* * * * *">每分钟</button>
-    <button data-p="*/5 * * * *">每 5 分</button>
-    <button data-p="0 * * * *">每小时</button>
-    <button data-p="0 0 * * *">每天 0 点</button>
-    <button data-p="0 0 * * 1">每周一 0 点</button>
-    <button data-p="0 0 1 * *">每月 1 号</button>
+    <button data-p="* * * * *">{tu(lang, '每分钟')}</button>
+    <button data-p="*/5 * * * *">{tu(lang, '每 5 分')}</button>
+    <button data-p="0 * * * *">{tu(lang, '每小时')}</button>
+    <button data-p="0 0 * * *">{tu(lang, '每天 0 点')}</button>
+    <button data-p="0 0 * * 1">{tu(lang, '每周一 0 点')}</button>
+    <button data-p="0 0 1 * *">{tu(lang, '每月 1 号')}</button>
   </div>
 </div>
 <div class="btn-row">
-  <button id="cb-copy">复制表达式</button>
+  <button id="cb-copy">{tu(lang, '复制表达式')}</button>
   <span id="cb-msg" class="msg"></span>
 </div>
 
@@ -41,7 +45,9 @@
   .cb-presets { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
 </style>
 
-<script>
+<script>import { tu, currentLang } from '../../i18n/toolUi.ts';
+const LANG = currentLang();
+
   const $ = (id) => document.getElementById(id);
   const FIELDS = ['cb-min', 'cb-hour', 'cb-dom', 'cb-mon', 'cb-dow'];
   function build() {
@@ -55,8 +61,8 @@
     build();
   }));
   $('cb-copy').addEventListener('click', async () => {
-    try { await navigator.clipboard.writeText($('cb-out').textContent); $('cb-msg').textContent = '已复制'; $('cb-msg').className = 'msg ok'; }
-    catch { $('cb-msg').textContent = '复制失败'; $('cb-msg').className = 'msg err'; }
+    try { await navigator.clipboard.writeText($('cb-out').textContent); $('cb-msg').textContent = tu(LANG, '已复制'); $('cb-msg').className = 'msg ok'; }
+    catch { $('cb-msg').textContent = tu(LANG, '复制失败'); $('cb-msg').className = 'msg err'; }
   });
   build();
 </script>

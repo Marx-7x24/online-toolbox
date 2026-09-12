@@ -1,70 +1,77 @@
 ---
+import { tu } from '../../i18n/toolUi.ts';
+
+interface Props { lang?: string }
+const { lang = 'zh' } = Astro.props;
+
 ---
 
-<div class="tip">农历数据来自浏览器内置的 Chinese 日历，无需联网。不同浏览器显示格式可能略有差异。</div>
+<div class="tip">{tu(lang, '农历数据来自浏览器内置的 Chinese 日历，无需联网。不同浏览器显示格式可能略有差异。')}</div>
 
 <div style="display:flex;gap:14px;flex-wrap:wrap;margin-bottom:14px;">
-  <button class="primary" id="ln-mode-s">公历 → 农历</button>
-  <button id="ln-mode-l">农历 → 公历</button>
+  <button class="primary" id="ln-mode-s">{tu(lang, '公历')} → {tu(lang, '农历')}</button>
+  <button id="ln-mode-l">{tu(lang, '农历')} → {tu(lang, '公历')}</button>
 </div>
 
 <div id="ln-solar-box">
   <div style="max-width:300px;">
-    <div class="field-label"><span>公历日期</span></div>
+    <div class="field-label"><span>{tu(lang, '公历日期')}</span></div>
     <input type="date" id="ln-date" />
   </div>
   <div class="btn-row">
-    <button class="primary" id="ln-go-s">查询</button>
-    <button id="ln-today">今天</button>
+    <button class="primary" id="ln-go-s">{tu(lang, '查询')}</button>
+    <button id="ln-today">{tu(lang, '今天')}</button>
   </div>
 </div>
 
 <div id="ln-lunar-box" style="display:none;">
   <div style="display:flex;gap:12px;flex-wrap:wrap;">
     <div style="min-width:130px;">
-      <div class="field-label"><span>农历年</span></div>
+      <div class="field-label"><span>{tu(lang, '农历年')}</span></div>
       <input type="number" id="ln-y" value="2026" min="1900" max="2100" />
     </div>
     <div style="min-width:120px;">
-      <div class="field-label"><span>农历月</span></div>
+      <div class="field-label"><span>{tu(lang, '农历月')}</span></div>
       <select id="ln-m">
-        <option value="1">正月</option><option value="2">二月</option><option value="3">三月</option>
-        <option value="4">四月</option><option value="5">五月</option><option value="6">六月</option>
-        <option value="7">七月</option><option value="8">八月</option><option value="9">九月</option>
-        <option value="10">十月</option><option value="11">冬月</option><option value="12">腊月</option>
+        <option value="1">{tu(lang, '正月')}</option><option value="2">{tu(lang, '二月')}</option><option value="3">{tu(lang, '三月')}</option>
+        <option value="4">{tu(lang, '四月')}</option><option value="5">{tu(lang, '五月')}</option><option value="6">{tu(lang, '六月')}</option>
+        <option value="7">{tu(lang, '七月')}</option><option value="8">{tu(lang, '八月')}</option><option value="9">{tu(lang, '九月')}</option>
+        <option value="10">{tu(lang, '十月')}</option><option value="11">{tu(lang, '冬月')}</option><option value="12">{tu(lang, '腊月')}</option>
       </select>
     </div>
     <div style="min-width:110px;">
-      <div class="field-label"><span>农历日</span></div>
+      <div class="field-label"><span>{tu(lang, '农历日')}</span></div>
       <select id="ln-d"></select>
     </div>
     <div style="min-width:120px;">
-      <div class="field-label"><span>是否闰月</span></div>
+      <div class="field-label"><span>{tu(lang, '是否闰月')}</span></div>
       <select id="ln-leap">
-        <option value="0">否</option>
-        <option value="1">是</option>
+        <option value="0">{tu(lang, '否')}</option>
+        <option value="1">{tu(lang, '是')}</option>
       </select>
     </div>
   </div>
   <div class="btn-row">
-    <button class="primary" id="ln-go-l">查询</button>
+    <button class="primary" id="ln-go-l">{tu(lang, '查询')}</button>
   </div>
 </div>
 
 <p class="msg" id="ln-msg"></p>
 <div id="ln-out"></div>
 
-<script>
+<script>import { tu, currentLang } from '../../i18n/toolUi.ts';
+const LANG = currentLang();
+
   const $ = (id) => document.getElementById(id);
-  const GAN = ['甲','乙','丙','丁','戊','己','庚','辛','壬','癸'];
-  const ZHI = ['子','丑','寅','卯','辰','巳','午','未','申','酉','戌','亥'];
-  const ANIMAL = ['鼠','牛','虎','兔','龙','蛇','马','羊','猴','鸡','狗','猪'];
-  const MONTH_NAME = ['','正月','二月','三月','四月','五月','六月','七月','八月','九月','十月','冬月','腊月'];
-  const DAY_NAME = ['','初一','初二','初三','初四','初五','初六','初七','初八','初九','初十','十一','十二','十三','十四','十五','十六','十七','十八','十九','二十','廿一','廿二','廿三','廿四','廿五','廿六','廿七','廿八','廿九','三十'];
+  const GAN = [tu(LANG, '甲'),tu(LANG, '乙'),tu(LANG, '丙'),tu(LANG, '丁'),tu(LANG, '戊'),tu(LANG, '己'),tu(LANG, '庚'),tu(LANG, '辛'),tu(LANG, '壬'),tu(LANG, '癸')];
+  const ZHI = [tu(LANG, '子'),tu(LANG, '丑'),tu(LANG, '寅'),tu(LANG, '卯'),tu(LANG, '辰'),tu(LANG, '巳'),tu(LANG, '午'),tu(LANG, '未'),tu(LANG, '申'),tu(LANG, '酉'),tu(LANG, '戌'),tu(LANG, '亥')];
+  const ANIMAL = [tu(LANG, '鼠'),tu(LANG, '牛'),tu(LANG, '虎'),tu(LANG, '兔'),tu(LANG, '龙'),tu(LANG, '蛇'),tu(LANG, '马'),tu(LANG, '羊'),tu(LANG, '猴'),tu(LANG, '鸡'),tu(LANG, '狗'),tu(LANG, '猪')];
+  const MONTH_NAME = ['',tu(LANG, '正月'),tu(LANG, '二月'),tu(LANG, '三月'),tu(LANG, '四月'),tu(LANG, '五月'),tu(LANG, '六月'),tu(LANG, '七月'),tu(LANG, '八月'),tu(LANG, '九月'),tu(LANG, '十月'),tu(LANG, '冬月'),tu(LANG, '腊月')];
+  const DAY_NAME = ['',tu(LANG, '初一'),tu(LANG, '初二'),tu(LANG, '初三'),tu(LANG, '初四'),tu(LANG, '初五'),tu(LANG, '初六'),tu(LANG, '初七'),tu(LANG, '初八'),tu(LANG, '初九'),tu(LANG, '初十'),tu(LANG, '十一'),tu(LANG, '十二'),tu(LANG, '十三'),tu(LANG, '十四'),tu(LANG, '十五'),tu(LANG, '十六'),tu(LANG, '十七'),tu(LANG, '十八'),tu(LANG, '十九'),tu(LANG, '二十'),tu(LANG, '廿一'),tu(LANG, '廿二'),tu(LANG, '廿三'),tu(LANG, '廿四'),tu(LANG, '廿五'),tu(LANG, '廿六'),tu(LANG, '廿七'),tu(LANG, '廿八'),tu(LANG, '廿九'),tu(LANG, '三十')];
   const FESTIVAL = {
-    '1-1': '春节', '1-15': '元宵节', '2-2': '龙抬头', '5-5': '端午节',
-    '7-7': '七夕', '7-15': '中元节', '8-15': '中秋节', '9-9': '重阳节',
-    '12-8': '腊八节', '12-23': '北方小年', '12-24': '南方小年',
+    '1-1': tu(LANG, '春节'), '1-15': tu(LANG, '元宵节'), '2-2': tu(LANG, '龙抬头'), '5-5': tu(LANG, '端午节'),
+    '7-7': tu(LANG, '七夕'), '7-15': tu(LANG, '中元节'), '8-15': tu(LANG, '中秋节'), '9-9': tu(LANG, '重阳节'),
+    '12-8': tu(LANG, '腊八节'), '12-23': tu(LANG, '北方小年'), '12-24': tu(LANG, '南方小年'),
   };
 
   const fmt = new Intl.DateTimeFormat('zh-CN-u-ca-chinese', { year: 'numeric', month: 'numeric', day: 'numeric' });
@@ -74,10 +81,10 @@
     s = s.replace(/[月日年]/g, '');
     if (/^\d+$/.test(s)) return parseInt(s, 10);
     let leap = false;
-    if (s.startsWith('闰')) { leap = true; s = s.slice(1); }
+    if (s.startsWith(tu(LANG, '闰'))) { leap = true; s = s.slice(1); }
     let n = 0;
-    if (s.includes('十')) {
-      const [a, b] = s.split('十');
+    if (s.includes(tu(LANG, '十'))) {
+      const [a, b] = s.split(tu(LANG, '十'));
       n = (a ? map[a] || 0 : 1) * 10 + (b ? map[b] || 0 : 0);
     } else {
       n = map[s] || 0;
@@ -121,17 +128,17 @@
     const l = toLunar(date);
     const g = ganzhi(l.year);
     const fest = FESTIVAL[l.month + '-' + l.day];
-    const solarStr = `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日 星期${'日一二三四五六'[date.getDay()]}`;
+    const solarStr = `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日 星期${tu(LANG, '日一二三四五六')[date.getDay()]}`;
     $('ln-out').innerHTML = `
       <table class="result-table" style="margin-top:14px;max-width:520px;">
         <tr><th>公历</th><td>${solarStr}</td></tr>
-        <tr><th>农历</th><td>${l.year}年${l.leap ? '闰' : ''}${MONTH_NAME[l.month]}${DAY_NAME[l.day] || l.day + '日'}</td></tr>
+        <tr><th>农历</th><td>${l.year}年${l.leap ? '闰' : ''}${MONTH_NAME[l.month]}${DAY_NAME[l.day] || l.day + tu(LANG, '日')}</td></tr>
         <tr><th>干支</th><td>${g.gz}年（${g.gan}·${g.zhi}）</td></tr>
         <tr><th>生肖</th><td>${g.animal}</td></tr>
         ${fest ? `<tr><th>节日</th><td style="color:var(--danger);">${fest}</td></tr>` : ''}
         <tr><th>原始输出</th><td style="color:var(--text-hint);font-size:12px;">${l.raw}</td></tr>
       </table>`;
-    $('ln-msg').textContent = '查询完成';
+    $('ln-msg').textContent = tu(LANG, '查询完成');
     $('ln-msg').className = 'msg ok';
   }
 
@@ -161,7 +168,7 @@
   };
 
   $('ln-go-s').onclick = () => {
-    if (!$('ln-date').value) { $('ln-msg').textContent = '请选择日期'; $('ln-msg').className = 'msg err'; return; }
+    if (!$('ln-date').value) { $('ln-msg').textContent = tu(LANG, '请选择日期'); $('ln-msg').className = 'msg err'; return; }
     showSolar(new Date($('ln-date').value + 'T12:00:00'));
   };
   $('ln-today').onclick = () => {
@@ -173,15 +180,15 @@
   $('ln-go-l').onclick = () => {
     const y = +$('ln-y').value, m = +$('ln-m').value, dd = +$('ln-d').value, leap = $('ln-leap').value === '1';
     const r = toSolar(y, m, dd, leap);
-    if (!r) { $('ln-msg').textContent = '未找到对应的公历日期，请检查输入'; $('ln-msg').className = 'msg err'; $('ln-out').innerHTML = ''; return; }
+    if (!r) { $('ln-msg').textContent = tu(LANG, '未找到对应的公历日期，请检查输入'); $('ln-msg').className = 'msg err'; $('ln-out').innerHTML = ''; return; }
     const g = ganzhi(y);
     $('ln-out').innerHTML = `
       <table class="result-table" style="margin-top:14px;max-width:520px;">
         <tr><th>农历</th><td>${y}年${leap ? '闰' : ''}${MONTH_NAME[m]}${DAY_NAME[dd]}</td></tr>
-        <tr><th>公历</th><td style="font-size:16px;font-weight:500;">${r.getFullYear()}年${r.getMonth() + 1}月${r.getDate()}日 星期${'日一二三四五六'[r.getDay()]}</td></tr>
+        <tr><th>公历</th><td style="font-size:16px;font-weight:500;">${r.getFullYear()}年${r.getMonth() + 1}月${r.getDate()}日 星期${tu(LANG, '日一二三四五六')[r.getDay()]}</td></tr>
         <tr><th>干支生肖</th><td>${g.gz}年 · ${g.animal}</td></tr>
       </table>`;
-    $('ln-msg').textContent = '转换完成';
+    $('ln-msg').textContent = tu(LANG, '转换完成');
     $('ln-msg').className = 'msg ok';
   };
 

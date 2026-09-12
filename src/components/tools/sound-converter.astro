@@ -1,40 +1,46 @@
 ---
+import { tu } from '../../i18n/toolUi.ts';
 // 声音强度单位换算：dB ↔ 声压 Pa / 声压比 / 声功率比
+interface Props { lang?: string }
+const { lang = 'zh' } = Astro.props;
+
 ---
 <div class="pane">
   <div>
-    <div class="field-label"><span>数值</span></div>
+    <div class="field-label"><span>{tu(lang, '数值')}</span></div>
     <input type="number" id="sc-val" value="60" step="any" style="width:100%;padding:8px;border:1px solid var(--border-color);border-radius:6px;box-sizing:border-box;font-size:16px">
-    <div class="field-label" style="margin-top:12px"><span>从</span></div>
+    <div class="field-label" style="margin-top:12px"><span>{tu(lang, '从')}</span></div>
     <select id="sc-from" style="width:100%;padding:8px;border:1px solid var(--border-color);border-radius:6px;background:#fff">
-      <option value="db" selected>声压级 dB (SPL)</option>
-      <option value="pa">声压 (Pa)</option>
-      <option value="pratio">声压比 (p/p₀)</option>
-      <option value="wratio">声功率比 (W/W₀)</option>
+      <option value="db" selected>{tu(lang, '声压级')} dB (SPL)</option>
+      <option value="pa">{tu(lang, '声压')} (Pa)</option>
+      <option value="pratio">{tu(lang, '声压比')} (p/p₀)</option>
+      <option value="wratio">{tu(lang, '声功率比')} (W/W₀)</option>
     </select>
-    <div class="field-label" style="margin-top:12px"><span>到</span></div>
+    <div class="field-label" style="margin-top:12px"><span>{tu(lang, '到')}</span></div>
     <select id="sc-to" style="width:100%;padding:8px;border:1px solid var(--border-color);border-radius:6px;background:#fff">
-      <option value="pa" selected>声压 (Pa)</option>
-      <option value="db">声压级 dB (SPL)</option>
-      <option value="pratio">声压比 (p/p₀)</option>
-      <option value="wratio">声功率比 (W/W₀)</option>
+      <option value="pa" selected>{tu(lang, '声压')} (Pa)</option>
+      <option value="db">{tu(lang, '声压级')} dB (SPL)</option>
+      <option value="pratio">{tu(lang, '声压比')} (p/p₀)</option>
+      <option value="wratio">{tu(lang, '声功率比')} (W/W₀)</option>
     </select>
     <div style="margin-top:16px;padding:14px;background:rgba(0,0,0,.03);border-radius:8px">
       <div id="sc-out" style="font-size:20px;font-weight:600;color:var(--primary-color);word-break:break-all">-</div>
     </div>
   </div>
   <div>
-    <div class="field-label"><span>全部等价值</span></div>
+    <div class="field-label"><span>{tu(lang, '全部等价值')}</span></div>
     <table id="sc-table" style="width:100%;border-collapse:collapse;font-size:14px"></table>
     <div style="margin-top:12px;font-size:12px;color:var(--text-sub);line-height:1.7">
-      参考声压 p₀ = 20 μPa（人耳 1kHz 可听阈）。常见参考：图书馆 40dB、交谈 60dB、地铁 90dB、痛阈 120dB。
+      {tu(lang, '参考声压')} p₀ = 20 μPa（{tu(lang, '人耳 1kHz 可听阈）。常见参考：图书馆 40dB、交谈 60dB、地铁 90dB、痛阈 120dB。')}
     </div>
   </div>
 </div>
 
-<script>
+<script>import { tu, currentLang } from '../../i18n/toolUi.ts';
+const LANG = currentLang();
+
 const $ = (id) => document.getElementById(id);
-const NAME = { db:'声压级 dB (SPL)', pa:'声压 (Pa)', pratio:'声压比 (p/p₀)', wratio:'声功率比 (W/W₀)' };
+const NAME = { db:tu(LANG, '声压级 dB (SPL)'), pa:tu(LANG, '声压 (Pa)'), pratio:tu(LANG, '声压比 (p/p₀)'), wratio:tu(LANG, '声功率比 (W/W₀)') };
 const P0 = 2e-5;
 // 统一先转到 dB SPL
 function toDb(v, u){

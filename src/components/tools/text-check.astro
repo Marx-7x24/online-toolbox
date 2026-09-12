@@ -1,17 +1,21 @@
 ---
+import { tu } from '../../i18n/toolUi.ts';
 // 文本合规检查：字数统计 + 敏感词高亮，本地处理
+interface Props { lang?: string }
+const { lang = 'zh' } = Astro.props;
+
 ---
 <div>
-  <div class="field-label"><span>待检测文本</span></div>
-  <textarea id="tc-text" placeholder="粘贴要检查的文本" rows="5"></textarea>
-  <div class="field-label" style="margin-top:10px;"><span>自定义敏感词（每行一个，与内置合并）</span></div>
-  <textarea id="tc-custom" placeholder="可补充业务词表" rows="2"></textarea>
-  <div class="tc-stats" id="tc-stats">统计：—</div>
-  <div class="field-label" style="margin-top:10px;"><span>高亮预览（命中词标红）</span></div>
-  <div id="tc-out" class="tc-out">等待检测</div>
+  <div class="field-label"><span>{tu(lang, '待检测文本')}</span></div>
+  <textarea id="tc-text" placeholder={tu(lang, '粘贴要检查的文本')} rows="5"></textarea>
+  <div class="field-label" style="margin-top:10px;"><span>{tu(lang, '自定义敏感词（每行一个，与内置合并')}）</span></div>
+  <textarea id="tc-custom" placeholder={tu(lang, '可补充业务词表')} rows="2"></textarea>
+  <div class="tc-stats" id="tc-stats">{tu(lang, '统计')}：—</div>
+  <div class="field-label" style="margin-top:10px;"><span>{tu(lang, '高亮预览（命中词标红')}）</span></div>
+  <div id="tc-out" class="tc-out">{tu(lang, '等待检测')}</div>
 </div>
 <div class="btn-row">
-  <button id="tc-run" class="primary">检测</button>
+  <button id="tc-run" class="primary">{tu(lang, '检测')}</button>
   <span id="tc-msg" class="msg"></span>
 </div>
 
@@ -21,13 +25,15 @@
   .tc-out mark { background: #ffdeeb; color: #c2255c; padding: 0 2px; border-radius: 3px; }
 </style>
 
-<script>
+<script>import { tu, currentLang } from '../../i18n/toolUi.ts';
+const LANG = currentLang();
+
   const $ = (id) => document.getElementById(id);
-  const BUILTIN = ['违禁', '私彩', '赌博', '色情', '暴利', '代开发票', '办证', '高仿', '假证', '刷单', '返利盘'];
+  const BUILTIN = [tu(LANG, '违禁'), tu(LANG, '私彩'), tu(LANG, '赌博'), tu(LANG, '色情'), tu(LANG, '暴利'), tu(LANG, '代开发票'), tu(LANG, '办证'), tu(LANG, '高仿'), tu(LANG, '假证'), tu(LANG, '刷单'), tu(LANG, '返利盘')];
   const esc = (s) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   $('tc-run').addEventListener('click', () => {
     const text = $('tc-text').value;
-    if (!text) { $('tc-out').textContent = '等待检测'; $('tc-stats').textContent = '统计：—'; return; }
+    if (!text) { $('tc-out').textContent = tu(LANG, '等待检测'); $('tc-stats').textContent = tu(LANG, '统计：—'); return; }
     const cn = (text.match(/[一-龥]/g) || []).length;
     const en = (text.match(/[A-Za-z0-9]+/g) || []).length;
     const lines = text.split('\n').length;

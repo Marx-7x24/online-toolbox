@@ -1,70 +1,76 @@
 ---
+import { tu } from '../../i18n/toolUi.ts';
 // length-converter：纯前端单位换算（系数型）
 const UNITS = [{"sym":"km","zh":"千米","f":1000},{"sym":"m","zh":"米","f":1},{"sym":"dm","zh":"分米","f":0.1},{"sym":"cm","zh":"厘米","f":0.01},{"sym":"mm","zh":"毫米","f":0.001},{"sym":"μm","zh":"微米","f":0.000001},{"sym":"nm","zh":"纳米","f":1e-9},{"sym":"li","zh":"里","f":500},{"sym":"zhang","zh":"丈","f":3.3333333333333335},{"sym":"chi","zh":"尺","f":0.3333333333333333},{"sym":"cun","zh":"寸","f":0.03333333333333333},{"sym":"mi","zh":"英里","f":1609.344},{"sym":"yd","zh":"码","f":0.9144},{"sym":"ft","zh":"英尺","f":0.3048},{"sym":"in","zh":"英寸","f":0.0254},{"sym":"nmi","zh":"海里","f":1852},{"sym":"ly","zh":"光年","f":9460700000000000}];
 const BASE = { name: "米", sym: "m" };
+interface Props { lang?: string }
+const { lang = 'zh' } = Astro.props;
+
 ---
 <div class="pane">
   <div>
-    <div class="field-label"><span>数值</span></div>
+    <div class="field-label"><span>{tu(lang, '数值')}</span></div>
     <input type="number" id="uc-val" value="1" step="any" style="width:100%;padding:8px;border:1px solid var(--border-color);border-radius:6px;box-sizing:border-box;font-size:16px">
-    <div class="field-label" style="margin-top:12px"><span>从</span></div>
+    <div class="field-label" style="margin-top:12px"><span>{tu(lang, '从')}</span></div>
     <select id="uc-from" style="width:100%;padding:8px;border:1px solid var(--border-color);border-radius:6px;background:#fff;font-size:14px">
-      <option value="km" data-f="1000">千米 (km)</option>
-      <option value="m" data-f="1">米 (m)</option>
-      <option value="dm" data-f="0.1">分米 (dm)</option>
-      <option value="cm" data-f="0.01">厘米 (cm)</option>
-      <option value="mm" data-f="0.001">毫米 (mm)</option>
-      <option value="μm" data-f="0.000001">微米 (μm)</option>
-      <option value="nm" data-f="1e-9">纳米 (nm)</option>
-      <option value="li" data-f="500">里 (li)</option>
-      <option value="zhang" data-f="3.3333333333333335">丈 (zhang)</option>
-      <option value="chi" data-f="0.3333333333333333">尺 (chi)</option>
-      <option value="cun" data-f="0.03333333333333333">寸 (cun)</option>
-      <option value="mi" data-f="1609.344">英里 (mi)</option>
-      <option value="yd" data-f="0.9144">码 (yd)</option>
-      <option value="ft" data-f="0.3048">英尺 (ft)</option>
-      <option value="in" data-f="0.0254">英寸 (in)</option>
-      <option value="nmi" data-f="1852">海里 (nmi)</option>
-      <option value="ly" data-f="9460700000000000">光年 (ly)</option>
+      <option value="km" data-f="1000">{tu(lang, '千米')} (km)</option>
+      <option value="m" data-f="1">{tu(lang, '米')} (m)</option>
+      <option value="dm" data-f="0.1">{tu(lang, '分米')} (dm)</option>
+      <option value="cm" data-f="0.01">{tu(lang, '厘米')} (cm)</option>
+      <option value="mm" data-f="0.001">{tu(lang, '毫米')} (mm)</option>
+      <option value="μm" data-f="0.000001">{tu(lang, '微米')} (μm)</option>
+      <option value="nm" data-f="1e-9">{tu(lang, '纳米')} (nm)</option>
+      <option value="li" data-f="500">{tu(lang, '里')} (li)</option>
+      <option value="zhang" data-f="3.3333333333333335">{tu(lang, '丈')} (zhang)</option>
+      <option value="chi" data-f="0.3333333333333333">{tu(lang, '尺')} (chi)</option>
+      <option value="cun" data-f="0.03333333333333333">{tu(lang, '寸')} (cun)</option>
+      <option value="mi" data-f="1609.344">{tu(lang, '英里')} (mi)</option>
+      <option value="yd" data-f="0.9144">{tu(lang, '码')} (yd)</option>
+      <option value="ft" data-f="0.3048">{tu(lang, '英尺')} (ft)</option>
+      <option value="in" data-f="0.0254">{tu(lang, '英寸')} (in)</option>
+      <option value="nmi" data-f="1852">{tu(lang, '海里')} (nmi)</option>
+      <option value="ly" data-f="9460700000000000">{tu(lang, '光年')} (ly)</option>
     </select>
     <div style="text-align:center;margin:8px 0">
-      <button id="uc-swap">⇅ 交换单位</button>
+      <button id="uc-swap">⇅ {tu(lang, '交换单位')}</button>
     </div>
-    <div class="field-label"><span>到</span></div>
+    <div class="field-label"><span>{tu(lang, '到')}</span></div>
     <select id="uc-to" style="width:100%;padding:8px;border:1px solid var(--border-color);border-radius:6px;background:#fff;font-size:14px">
-      <option value="km" data-f="1000">千米 (km)</option>
-      <option value="m" data-f="1">米 (m)</option>
-      <option value="dm" data-f="0.1">分米 (dm)</option>
-      <option value="cm" data-f="0.01">厘米 (cm)</option>
-      <option value="mm" data-f="0.001">毫米 (mm)</option>
-      <option value="μm" data-f="0.000001">微米 (μm)</option>
-      <option value="nm" data-f="1e-9">纳米 (nm)</option>
-      <option value="li" data-f="500">里 (li)</option>
-      <option value="zhang" data-f="3.3333333333333335">丈 (zhang)</option>
-      <option value="chi" data-f="0.3333333333333333">尺 (chi)</option>
-      <option value="cun" data-f="0.03333333333333333">寸 (cun)</option>
-      <option value="mi" data-f="1609.344">英里 (mi)</option>
-      <option value="yd" data-f="0.9144">码 (yd)</option>
-      <option value="ft" data-f="0.3048">英尺 (ft)</option>
-      <option value="in" data-f="0.0254">英寸 (in)</option>
-      <option value="nmi" data-f="1852">海里 (nmi)</option>
-      <option value="ly" data-f="9460700000000000">光年 (ly)</option>
+      <option value="km" data-f="1000">{tu(lang, '千米')} (km)</option>
+      <option value="m" data-f="1">{tu(lang, '米')} (m)</option>
+      <option value="dm" data-f="0.1">{tu(lang, '分米')} (dm)</option>
+      <option value="cm" data-f="0.01">{tu(lang, '厘米')} (cm)</option>
+      <option value="mm" data-f="0.001">{tu(lang, '毫米')} (mm)</option>
+      <option value="μm" data-f="0.000001">{tu(lang, '微米')} (μm)</option>
+      <option value="nm" data-f="1e-9">{tu(lang, '纳米')} (nm)</option>
+      <option value="li" data-f="500">{tu(lang, '里')} (li)</option>
+      <option value="zhang" data-f="3.3333333333333335">{tu(lang, '丈')} (zhang)</option>
+      <option value="chi" data-f="0.3333333333333333">{tu(lang, '尺')} (chi)</option>
+      <option value="cun" data-f="0.03333333333333333">{tu(lang, '寸')} (cun)</option>
+      <option value="mi" data-f="1609.344">{tu(lang, '英里')} (mi)</option>
+      <option value="yd" data-f="0.9144">{tu(lang, '码')} (yd)</option>
+      <option value="ft" data-f="0.3048">{tu(lang, '英尺')} (ft)</option>
+      <option value="in" data-f="0.0254">{tu(lang, '英寸')} (in)</option>
+      <option value="nmi" data-f="1852">{tu(lang, '海里')} (nmi)</option>
+      <option value="ly" data-f="9460700000000000">{tu(lang, '光年')} (ly)</option>
     </select>
     <div style="margin-top:16px;padding:14px;background:rgba(0,0,0,.03);border-radius:8px">
       <div id="uc-out" style="font-size:20px;font-weight:600;color:var(--primary-color);word-break:break-all;line-height:1.5">-</div>
-      <div style="font-size:12px;color:var(--text-sub);margin-top:4px">换算结果</div>
+      <div style="font-size:12px;color:var(--text-sub);margin-top:4px">{tu(lang, '换算结果')}</div>
     </div>
   </div>
   <div>
-    <div class="field-label"><span>等于以下所有单位</span></div>
+    <div class="field-label"><span>{tu(lang, '等于以下所有单位')}</span></div>
     <table id="uc-table" style="width:100%;border-collapse:collapse;font-size:14px"></table>
     <p class="msg" id="uc-msg"></p>
   </div>
 </div>
 
-<script>
+<script>import { tu, currentLang } from '../../i18n/toolUi.ts';
+const LANG = currentLang();
+
 const $ = (id) => document.getElementById(id);
-const UNITS = [{"sym":"km","zh":"千米","f":1000},{"sym":"m","zh":"米","f":1},{"sym":"dm","zh":"分米","f":0.1},{"sym":"cm","zh":"厘米","f":0.01},{"sym":"mm","zh":"毫米","f":0.001},{"sym":"μm","zh":"微米","f":0.000001},{"sym":"nm","zh":"纳米","f":1e-9},{"sym":"li","zh":"里","f":500},{"sym":"zhang","zh":"丈","f":3.3333333333333335},{"sym":"chi","zh":"尺","f":0.3333333333333333},{"sym":"cun","zh":"寸","f":0.03333333333333333},{"sym":"mi","zh":"英里","f":1609.344},{"sym":"yd","zh":"码","f":0.9144},{"sym":"ft","zh":"英尺","f":0.3048},{"sym":"in","zh":"英寸","f":0.0254},{"sym":"nmi","zh":"海里","f":1852},{"sym":"ly","zh":"光年","f":9460700000000000}];
+const UNITS = [{"sym":"km","zh":tu(LANG, "千米"),"f":1000},{"sym":"m","zh":tu(LANG, "米"),"f":1},{"sym":"dm","zh":tu(LANG, "分米"),"f":0.1},{"sym":"cm","zh":tu(LANG, "厘米"),"f":0.01},{"sym":"mm","zh":tu(LANG, "毫米"),"f":0.001},{"sym":"μm","zh":tu(LANG, "微米"),"f":0.000001},{"sym":"nm","zh":tu(LANG, "纳米"),"f":1e-9},{"sym":"li","zh":tu(LANG, "里"),"f":500},{"sym":"zhang","zh":tu(LANG, "丈"),"f":3.3333333333333335},{"sym":"chi","zh":tu(LANG, "尺"),"f":0.3333333333333333},{"sym":"cun","zh":tu(LANG, "寸"),"f":0.03333333333333333},{"sym":"mi","zh":tu(LANG, "英里"),"f":1609.344},{"sym":"yd","zh":tu(LANG, "码"),"f":0.9144},{"sym":"ft","zh":tu(LANG, "英尺"),"f":0.3048},{"sym":"in","zh":tu(LANG, "英寸"),"f":0.0254},{"sym":"nmi","zh":tu(LANG, "海里"),"f":1852},{"sym":"ly","zh":tu(LANG, "光年"),"f":9460700000000000}];
 function fmt(n){
   if (!isFinite(n)) return '-';
   if (n !== 0 && (Math.abs(n) < 1e-6 || Math.abs(n) >= 1e15)) return n.toExponential(6).replace(/(\.\d*?[1-9])0+e|\.0+e/g, '$1e');

@@ -1,35 +1,41 @@
 ---
+import { tu } from '../../i18n/toolUi.ts';
 // 鞋子尺码换算：男女款 中国/欧码/美码/英码/厘米 互查
+interface Props { lang?: string }
+const { lang = 'zh' } = Astro.props;
+
 ---
 <div class="pane">
   <div>
-    <div class="field-label"><span>性别款型</span></div>
+    <div class="field-label"><span>{tu(lang, '性别款型')}</span></div>
     <div style="display:flex;gap:12px">
-      <label style="font-size:15px"><input type="radio" name="ss-sex" value="men" checked> 男款</label>
-      <label style="font-size:15px"><input type="radio" name="ss-sex" value="women"> 女款</label>
+      <label style="font-size:15px"><input type="radio" name="ss-sex" value="men" checked> {tu(lang, '男款')}</label>
+      <label style="font-size:15px"><input type="radio" name="ss-sex" value="women"> {tu(lang, '女款')}</label>
     </div>
-    <div class="field-label" style="margin-top:14px"><span>已知尺码</span></div>
+    <div class="field-label" style="margin-top:14px"><span>{tu(lang, '已知尺码')}</span></div>
     <select id="ss-from" style="width:100%;padding:9px;border:1px solid var(--border-color);border-radius:6px;background:#fff">
-      <option value="cn">中国码 (CN)</option>
-      <option value="eu" selected>欧码 (EU)</option>
-      <option value="us">美码 (US)</option>
-      <option value="uk">英码 (UK)</option>
-      <option value="cm">脚长 (cm)</option>
+      <option value="cn">{tu(lang, '中国码')} (CN)</option>
+      <option value="eu" selected>{tu(lang, '欧码')} (EU)</option>
+      <option value="us">{tu(lang, '美码')} (US)</option>
+      <option value="uk">{tu(lang, '英码')} (UK)</option>
+      <option value="cm">{tu(lang, '脚长')} (cm)</option>
     </select>
-    <div class="field-label" style="margin-top:12px"><span>尺码 / 脚长</span></div>
+    <div class="field-label" style="margin-top:12px"><span>{tu(lang, '尺码')} / {tu(lang, '脚长')}</span></div>
     <input type="number" id="ss-val" value="42" step="0.5" style="width:100%;padding:9px;border:1px solid var(--border-color);border-radius:6px;box-sizing:border-box;font-size:16px">
-    <div style="margin-top:10px;font-size:12px;color:var(--text-sub)">脚长为内长参考（赤脚站立测脚趾到脚跟），不同品牌略有差异。</div>
+    <div style="margin-top:10px;font-size:12px;color:var(--text-sub)">{tu(lang, '脚长为内长参考（赤脚站立测脚趾到脚跟），不同品牌略有差异。')}</div>
   </div>
   <div>
-    <div class="field-label"><span>对照结果</span></div>
+    <div class="field-label"><span>{tu(lang, '对照结果')}</span></div>
     <table id="ss-table" style="width:100%;border-collapse:collapse;font-size:15px"></table>
     <div style="margin-top:12px;font-size:12px;color:var(--text-sub);line-height:1.7">
-      建议以脚长（cm）为准：下午测量（脚会略胀），穿厚袜测运动鞋加 0.5cm。各品牌存在 ±0.5 码偏差，此表为通用对照。
+      {tu(lang, '建议以脚长（cm）为准：下午测量（脚会略胀），穿厚袜测运动鞋加 0.5cm。各品牌存在')} ±0.5 {tu(lang, '码偏差，此表为通用对照。')}
     </div>
   </div>
 </div>
 
-<script>
+<script>import { tu, currentLang } from '../../i18n/toolUi.ts';
+const LANG = currentLang();
+
 const $ = (id) => document.getElementById(id);
 // 通用对照表：[cm, CN, EU, US, UK]（男女不同）
 const MEN = [
@@ -45,7 +51,7 @@ const WOMEN = [
   [24.6, 39, 39, 8, 6], [25.1, 40, 40, 8.5, 6.5], [25.4, 40.5, 40.5, 9, 7],
   [25.9, 41, 41, 9.5, 7.5], [26.3, 42, 42, 10, 8],
 ];
-const COLS = [['cm','脚长 cm'],['cn','中国码 CN'],['eu','欧码 EU'],['us','美码 US'],['uk','英码 UK']];
+const COLS = [['cm',tu(LANG, '脚长 cm')],['cn',tu(LANG, '中国码 CN')],['eu',tu(LANG, '欧码 EU')],['us',tu(LANG, '美码 US')],['uk',tu(LANG, '英码 UK')]];
 const IDX = { cm:0, cn:1, eu:2, us:3, uk:4 };
 
 function nearest(row, v){

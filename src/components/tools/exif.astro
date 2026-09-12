@@ -1,11 +1,15 @@
 ---
+import { tu } from '../../i18n/toolUi.ts';
 // 图片 EXIF 查看：exifr，本地解析
+interface Props { lang?: string }
+const { lang = 'zh' } = Astro.props;
+
 ---
 <div>
-  <div class="field-label"><span>上传图片（JPEG/HEIC/TIFF 等）</span></div>
+  <div class="field-label"><span>{tu(lang, '上传图片')}（JPEG/HEIC/TIFF {tu(lang, '等')}）</span></div>
   <input type="file" id="exif-file" accept="image/*">
-  <div class="field-label" style="margin-top:12px;"><span>EXIF 信息</span></div>
-  <div id="exif-out" class="exif-out">尚未选择文件</div>
+  <div class="field-label" style="margin-top:12px;"><span>EXIF {tu(lang, '信息')}</span></div>
+  <div id="exif-out" class="exif-out">{tu(lang, '尚未选择文件')}</div>
 </div>
 
 <style>
@@ -24,18 +28,20 @@
   .exif-out td:last-child { word-break: break-all; }
 </style>
 
-<script>
+<script>import { tu, currentLang } from '../../i18n/toolUi.ts';
+const LANG = currentLang();
+
   import exifr from 'exifr';
   const $ = (id) => document.getElementById(id);
   $('exif-file').addEventListener('change', async (e) => {
     const file = e.target.files[0];
     if (!file) return;
     const out = $('exif-out');
-    out.innerHTML = '解析中…';
+    out.innerHTML = tu(LANG, '解析中…');
     try {
       const data = await exifr.parse(file, { reviveValues: true });
       if (!data || !Object.keys(data).length) {
-        out.textContent = '该图片未包含 EXIF 信息（可能已在保存时被清除）。';
+        out.textContent = tu(LANG, '该图片未包含 EXIF 信息（可能已在保存时被清除）。');
         return;
       }
       const rows = Object.entries(data).map(([k, v]) => {
@@ -47,7 +53,7 @@
       }).join('');
       out.innerHTML = `<table>${rows}</table>`;
     } catch (err) {
-      out.textContent = '解析失败：' + err.message;
+      out.textContent = tu(LANG, '解析失败：') + err.message;
     }
   });
 </script>

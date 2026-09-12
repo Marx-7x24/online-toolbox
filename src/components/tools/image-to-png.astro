@@ -1,21 +1,25 @@
 ---
+import { tu } from '../../i18n/toolUi.ts';
 // 任意图片格式 → PNG（浏览器端 Canvas 编码）
+interface Props { lang?: string }
+const { lang = 'zh' } = Astro.props;
+
 ---
 <div class="pane">
   <div>
-    <div class="field-label"><span>选择图片</span></div>
+    <div class="field-label"><span>{tu(lang, '选择图片')}</span></div>
     <input type="file" id="itpng-file" accept="image/*">
     <div id="itpng-info" class="msg"></div>
   </div>
   <div>
-    <div class="field-label"><span>PNG 预览</span></div>
+    <div class="field-label"><span>PNG {tu(lang, '预览')}</span></div>
     <div id="itpng-preview" class="itpng-preview"></div>
   </div>
 </div>
 <div class="btn-row">
-  <button id="itpng-run" class="primary">转换为 PNG</button>
-  <button id="itpng-dl">下载 PNG</button>
-  <button id="itpng-reset">重置</button>
+  <button id="itpng-run" class="primary">{tu(lang, '转换为')} PNG</button>
+  <button id="itpng-dl">{tu(lang, '下载')} PNG</button>
+  <button id="itpng-reset">{tu(lang, '重置')}</button>
   <span id="itpng-msg" class="msg"></span>
 </div>
 
@@ -25,7 +29,9 @@
   .itpng-preview:empty::before { content: '尚未选择图片'; color: #999; }
 </style>
 
-<script>
+<script>import { tu, currentLang } from '../../i18n/toolUi.ts';
+const LANG = currentLang();
+
   const $ = (id) => document.getElementById(id);
   let sourceFile = null;
   let pngBlob = null;
@@ -39,25 +45,25 @@
   });
 
   $('itpng-run').addEventListener('click', async () => {
-    if (!sourceFile) { $('itpng-msg').textContent = '请先选择图片'; $('itpng-msg').className = 'msg err'; return; }
+    if (!sourceFile) { $('itpng-msg').textContent = tu(LANG, '请先选择图片'); $('itpng-msg').className = 'msg err'; return; }
     try {
       const bitmap = await createImageBitmap(sourceFile);
       const canvas = document.createElement('canvas');
       canvas.width = bitmap.width; canvas.height = bitmap.height;
       canvas.getContext('2d').drawImage(bitmap, 0, 0);
-      pngBlob = await new Promise((res, rej) => canvas.toBlob(b => b ? res(b) : rej(new Error('PNG 编码失败')), 'image/png'));
-      $('itpng-preview').innerHTML = `<img alt="预览">`;
+      pngBlob = await new Promise((res, rej) => canvas.toBlob(b => b ? res(b) : rej(new Error(tu(LANG, 'PNG 编码失败'))), 'image/png'));
+      $('itpng-preview').innerHTML = `<img alt=tu(LANG, "预览")>`;
       $('itpng-preview').querySelector('img').src = URL.createObjectURL(pngBlob);
       $('itpng-msg').textContent = `转换成功 · ${(pngBlob.size/1024).toFixed(1)} KB`;
       $('itpng-msg').className = 'msg ok';
     } catch (err) {
-      $('itpng-msg').textContent = '转换失败：' + err.message;
+      $('itpng-msg').textContent = tu(LANG, '转换失败：') + err.message;
       $('itpng-msg').className = 'msg err';
     }
   });
 
   $('itpng-dl').addEventListener('click', () => {
-    if (!pngBlob) { $('itpng-msg').textContent = '请先转换'; $('itpng-msg').className = 'msg err'; return; }
+    if (!pngBlob) { $('itpng-msg').textContent = tu(LANG, '请先转换'); $('itpng-msg').className = 'msg err'; return; }
     const a = document.createElement('a');
     a.href = URL.createObjectURL(pngBlob);
     a.download = (sourceFile.name.replace(/\.[^.]+$/, '') || 'image') + '.png';

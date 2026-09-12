@@ -1,39 +1,45 @@
 ---
+import { tu } from '../../i18n/toolUi.ts';
 // IP地址与INT互转：IPv4 ↔ 32位整数，附十六进制/二进制
+interface Props { lang?: string }
+const { lang = 'zh' } = Astro.props;
+
 ---
 <div class="pane">
   <div>
-    <div class="field-label"><span>IPv4 地址</span></div>
-    <input type="text" id="i2-ip" value="192.168.1.1" placeholder="如 192.168.1.1" style="width:100%;padding:9px;border:1px solid var(--border-color);border-radius:6px;box-sizing:border-box;font-family:ui-monospace,monospace">
+    <div class="field-label"><span>IPv4 {tu(lang, '地址')}</span></div>
+    <input type="text" id="i2-ip" value="192.168.1.1" placeholder={tu(lang, '如 192.168.1.1')} style="width:100%;padding:9px;border:1px solid var(--border-color);border-radius:6px;box-sizing:border-box;font-family:ui-monospace,monospace">
     <div class="btn-row" style="margin-top:10px">
-      <button id="i2-to-int" class="primary">IP → 整数</button>
+      <button id="i2-to-int" class="primary">IP → {tu(lang, '整数')}</button>
     </div>
     <div style="margin-top:14px;padding:14px;background:rgba(0,0,0,.03);border-radius:8px">
       <table style="width:100%;border-collapse:collapse;font-size:14px">
-        <tr style="border-bottom:1px solid var(--border-color)"><td style="padding:7px 4px;color:var(--text-sub)">十进制 INT</td><td id="i2-int" style="padding:7px 4px;text-align:right;font-family:ui-monospace,monospace;font-weight:600">-</td></tr>
-        <tr style="border-bottom:1px solid var(--border-color)"><td style="padding:7px 4px;color:var(--text-sub)">十六进制</td><td id="i2-hex" style="padding:7px 4px;text-align:right;font-family:ui-monospace,monospace;font-weight:600">-</td></tr>
-        <tr><td style="padding:7px 4px;color:var(--text-sub)">二进制</td><td id="i2-bin" style="padding:7px 4px;text-align:right;font-family:ui-monospace,monospace;font-weight:600;word-break:break-all">-</td></tr>
+        <tr style="border-bottom:1px solid var(--border-color)"><td style="padding:7px 4px;color:var(--text-sub)">{tu(lang, '十进制')} INT</td><td id="i2-int" style="padding:7px 4px;text-align:right;font-family:ui-monospace,monospace;font-weight:600">-</td></tr>
+        <tr style="border-bottom:1px solid var(--border-color)"><td style="padding:7px 4px;color:var(--text-sub)">{tu(lang, '十六进制')}</td><td id="i2-hex" style="padding:7px 4px;text-align:right;font-family:ui-monospace,monospace;font-weight:600">-</td></tr>
+        <tr><td style="padding:7px 4px;color:var(--text-sub)">{tu(lang, '二进制')}</td><td id="i2-bin" style="padding:7px 4px;text-align:right;font-family:ui-monospace,monospace;font-weight:600;word-break:break-all">-</td></tr>
       </table>
     </div>
     <p class="msg" id="i2-msg"></p>
   </div>
   <div>
-    <div class="field-label"><span>整数 / 十六进制</span></div>
-    <input type="text" id="i2-num" value="3232235777" placeholder="如 3232235777 或 0xC0A80101" style="width:100%;padding:9px;border:1px solid var(--border-color);border-radius:6px;box-sizing:border-box;font-family:ui-monospace,monospace">
+    <div class="field-label"><span>{tu(lang, '整数')} / {tu(lang, '十六进制')}</span></div>
+    <input type="text" id="i2-num" value="3232235777" placeholder="{tu(lang, '如 3232235777 或')} 0xC0A80101" style="width:100%;padding:9px;border:1px solid var(--border-color);border-radius:6px;box-sizing:border-box;font-family:ui-monospace,monospace">
     <div class="btn-row" style="margin-top:10px">
-      <button id="i2-to-ip" class="primary">整数 → IP</button>
+      <button id="i2-to-ip" class="primary">{tu(lang, '整数')} → IP</button>
     </div>
     <div style="margin-top:14px;padding:14px;background:rgba(0,0,0,.03);border-radius:8px">
       <div id="i2-out" style="font-size:20px;font-weight:600;font-family:ui-monospace,monospace;color:var(--primary-color)">-</div>
     </div>
     <p class="msg" id="i2-msg2"></p>
     <div style="margin-top:12px;font-size:12px;color:var(--text-sub);line-height:1.7">
-      换算规则：IP 四段各自乘 256 的对应幂后相加，如 192.168.1.1 = 192×256³ + 168×256² + 1×256 + 1 = 3232235777。数据库存储 IP 常用 INT UNSIGNED。
+      {tu(lang, '换算规则：IP 四段各自乘 256 的对应幂后相加，如')} 192.168.1.1 = 192×256³ + 168×256² + 1×256 + 1 = 3232235777。{tu(lang, '数据库存储 IP 常用 INT UNSIGNED。')}
     </div>
   </div>
 </div>
 
-<script>
+<script>import { tu, currentLang } from '../../i18n/toolUi.ts';
+const LANG = currentLang();
+
 const $ = (id) => document.getElementById(id);
 function ipToInt(ip){
   const parts = ip.trim().split('.');
@@ -52,7 +58,7 @@ function intToIp(n){
 }
 $('i2-to-int').addEventListener('click', () => {
   const n = ipToInt($('i2-ip').value);
-  if (n === null){ $('i2-msg').textContent = 'IP 格式不正确（示例 192.168.1.1）'; $('i2-msg').className = 'msg err'; return; }
+  if (n === null){ $('i2-msg').textContent = tu(LANG, 'IP 格式不正确（示例 192.168.1.1）'); $('i2-msg').className = 'msg err'; return; }
   $('i2-msg').textContent = ''; $('i2-msg').className = 'msg';
   $('i2-int').textContent = n;
   $('i2-hex').textContent = '0x' + (n >>> 0).toString(16).toUpperCase().padStart(8, '0');
@@ -64,7 +70,7 @@ $('i2-to-ip').addEventListener('click', () => {
   if (/^0x[0-9a-f]+$/i.test(raw)) n = parseInt(raw, 16);
   else if (/^\d+$/.test(raw)) n = parseInt(raw, 10);
   if (n === null || isNaN(n) || n < 0 || n > 4294967295){
-    $('i2-msg2').textContent = '请输入 0~4294967295 的整数或 0x 开头的十六进制'; $('i2-msg2').className = 'msg err'; return;
+    $('i2-msg2').textContent = tu(LANG, '请输入 0~4294967295 的整数或 0x 开头的十六进制'); $('i2-msg2').className = 'msg err'; return;
   }
   $('i2-msg2').textContent = ''; $('i2-msg2').className = 'msg';
   $('i2-out').textContent = intToIp(n);

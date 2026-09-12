@@ -1,17 +1,21 @@
 ---
+import { tu } from '../../i18n/toolUi.ts';
 // 色温换算：色温 K → 近似 RGB/十六进制（Tanner Helland 近似算法）
+interface Props { lang?: string }
+const { lang = 'zh' } = Astro.props;
+
 ---
 <div class="pane">
   <div>
-    <div class="field-label"><span>色温（开尔文 K）</span></div>
+    <div class="field-label"><span>{tu(lang, '色温（开尔文')} K）</span></div>
     <input type="number" id="ct-k" value="6500" min="1000" max="40000" step="100" style="width:100%;padding:8px;border:1px solid var(--border-color);border-radius:6px;box-sizing:border-box;font-size:16px">
     <input type="range" id="ct-range" min="1000" max="20000" step="100" value="6500" style="width:100%;margin-top:10px">
     <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
-      <button data-k="2700" type="button">2700K 暖黄</button>
-      <button data-k="4000" type="button">4000K 暖白</button>
-      <button data-k="5000" type="button">5000K 正白</button>
-      <button data-k="6500" type="button">6500K 冷白</button>
-      <button data-k="8000" type="button">8000K 冷蓝</button>
+      <button data-k="2700" type="button">2700K {tu(lang, '暖黄')}</button>
+      <button data-k="4000" type="button">4000K {tu(lang, '暖白')}</button>
+      <button data-k="5000" type="button">5000K {tu(lang, '正白')}</button>
+      <button data-k="6500" type="button">6500K {tu(lang, '冷白')}</button>
+      <button data-k="8000" type="button">8000K {tu(lang, '冷蓝')}</button>
     </div>
     <div style="margin-top:16px;padding:14px;background:rgba(0,0,0,.03);border-radius:8px">
       <div style="display:flex;align-items:center;gap:12px">
@@ -24,15 +28,17 @@
     </div>
   </div>
   <div>
-    <div class="field-label"><span>常见色温对照</span></div>
+    <div class="field-label"><span>{tu(lang, '常见色温对照')}</span></div>
     <table id="ct-table" style="width:100%;border-collapse:collapse;font-size:14px"></table>
     <div style="margin-top:12px;font-size:12px;color:var(--text-sub);line-height:1.7">
-      参考值：蜡烛 1850K｜白炽灯 2700K｜日光 5500K｜阴天 6500K｜蓝天 12000K+。算法为 Tanner Helland 近似，仅供调色参考。
+      {tu(lang, '参考值：蜡烛')} 1850K｜{tu(lang, '白炽灯')} 2700K｜{tu(lang, '日光')} 5500K｜{tu(lang, '阴天')} 6500K｜{tu(lang, '蓝天 12000K+。算法为 Tanner Helland 近似，仅供调色参考。')}
     </div>
   </div>
 </div>
 
-<script>
+<script>import { tu, currentLang } from '../../i18n/toolUi.ts';
+const LANG = currentLang();
+
 const $ = (id) => document.getElementById(id);
 // Tanner Helland 色温 → RGB 近似
 function kelvinToRgb(kelvin){
@@ -56,9 +62,9 @@ function render(){
   $('ct-rgb').textContent = `rgb(${r}, ${g}, ${b})`;
   // 对照表
   const presets = [
-    ['1850K', 1850, '蜡烛'], ['2700K', 2700, '白炽灯'], ['3200K', 3200, '影棚灯'],
-    ['4000K', 4000, '暖白 LED'], ['5000K', 5000, '正白'], ['5500K', 5500, '正午日光'],
-    ['6500K', 6500, '阴天/显示器'], ['8000K', 8000, '蓝天阴影'], ['12000K', 12000, '晴空'],
+    ['1850K', 1850, tu(LANG, '蜡烛')], ['2700K', 2700, tu(LANG, '白炽灯')], ['3200K', 3200, tu(LANG, '影棚灯')],
+    ['4000K', 4000, tu(LANG, '暖白 LED')], ['5000K', 5000, tu(LANG, '正白')], ['5500K', 5500, tu(LANG, '正午日光')],
+    ['6500K', 6500, tu(LANG, '阴天/显示器')], ['8000K', 8000, tu(LANG, '蓝天阴影')], ['12000K', 12000, tu(LANG, '晴空')],
   ];
   let html = '';
   for (const [label, kk, note] of presets){

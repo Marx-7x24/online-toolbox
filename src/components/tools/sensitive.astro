@@ -1,20 +1,24 @@
 ---
+import { tu } from '../../i18n/toolUi.ts';
 // 文本敏感词检测：本地词表 + 自定义词表
+interface Props { lang?: string }
+const { lang = 'zh' } = Astro.props;
+
 ---
 <div class="pane">
   <div>
-    <div class="field-label"><span>待检测文本</span></div>
-    <textarea id="sw-text" placeholder="粘贴要检测的文本"></textarea>
-    <div class="field-label" style="margin-top:10px;"><span>自定义敏感词（每行一个）</span></div>
-    <textarea id="sw-custom" placeholder="可补充业务自有词表，与内置词表合并"></textarea>
+    <div class="field-label"><span>{tu(lang, '待检测文本')}</span></div>
+    <textarea id="sw-text" placeholder={tu(lang, '粘贴要检测的文本')}></textarea>
+    <div class="field-label" style="margin-top:10px;"><span>{tu(lang, '自定义敏感词（每行一个')}）</span></div>
+    <textarea id="sw-custom" placeholder={tu(lang, '可补充业务自有词表，与内置词表合并')}></textarea>
   </div>
   <div>
-    <div class="field-label"><span>检测结果</span></div>
-    <div id="sw-out" class="sw-out">尚未检测</div>
+    <div class="field-label"><span>{tu(lang, '检测结果')}</span></div>
+    <div id="sw-out" class="sw-out">{tu(lang, '尚未检测')}</div>
   </div>
 </div>
 <div class="btn-row">
-  <button id="sw-run" class="primary">检测</button>
+  <button id="sw-run" class="primary">{tu(lang, '检测')}</button>
   <span id="sw-msg" class="msg"></span>
 </div>
 
@@ -32,10 +36,12 @@
   .sw-hit { color: #d6336c; font-weight: 600; }
 </style>
 
-<script>
+<script>import { tu, currentLang } from '../../i18n/toolUi.ts';
+const LANG = currentLang();
+
   const $ = (id) => document.getElementById(id);
   // 内置演示词表（少量常见合规风险词，用户应以自有业务词表替换）
-  const BUILTIN = ['违禁', '私彩', '赌博', '色情', '暴利', '代开发票', '办证', '高仿', '假证', '刷单', '返利盘'];
+  const BUILTIN = [tu(LANG, '违禁'), tu(LANG, '私彩'), tu(LANG, '赌博'), tu(LANG, '色情'), tu(LANG, '暴利'), tu(LANG, '代开发票'), tu(LANG, '办证'), tu(LANG, '高仿'), tu(LANG, '假证'), tu(LANG, '刷单'), tu(LANG, '返利盘')];
   function detect(text, words) {
     const hits = [];
     for (const w of words) {
@@ -50,11 +56,11 @@
   }
   $('sw-run').addEventListener('click', () => {
     const text = $('sw-text').value;
-    if (!text) { $('sw-out').textContent = '请先输入文本'; return; }
+    if (!text) { $('sw-out').textContent = tu(LANG, '请先输入文本'); return; }
     const custom = $('sw-custom').value.split('\n').map((x) => x.trim()).filter(Boolean);
     const words = [...new Set([...BUILTIN, ...custom])];
     const hits = detect(text, words);
-    if (!hits.length) { $('sw-out').textContent = '未检测到敏感词 ✓'; $('sw-msg').textContent = '通过'; $('sw-msg').className = 'msg ok'; return; }
+    if (!hits.length) { $('sw-out').textContent = tu(LANG, '未检测到敏感词 ✓'); $('sw-msg').textContent = tu(LANG, '通过'); $('sw-msg').className = 'msg ok'; return; }
     // 统计每个词出现次数
     const cnt = {};
     hits.forEach((h) => { cnt[h.word] = (cnt[h.word] || 0) + 1; });

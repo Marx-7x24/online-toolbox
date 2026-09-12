@@ -1,38 +1,45 @@
 ---
+import { tu } from '../../i18n/toolUi.ts';
+
+interface Props { lang?: string }
+const { lang = 'zh' } = Astro.props;
+
 ---
 
-<div class="tip">使用 BigInt 运算，支持超过 53 位的大整数精确转换。</div>
+<div class="tip">{tu(lang, '使用 BigInt 运算，支持超过 53 位的大整数精确转换。')}</div>
 
 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px;">
   <div>
-    <div class="field-label"><span>二进制 BIN</span></div>
+    <div class="field-label"><span>{tu(lang, '二进制')} BIN</span></div>
     <input type="text" id="x-bin" placeholder="1010" spellcheck="false" />
   </div>
   <div>
-    <div class="field-label"><span>八进制 OCT</span></div>
+    <div class="field-label"><span>{tu(lang, '八进制')} OCT</span></div>
     <input type="text" id="x-oct" placeholder="12" spellcheck="false" />
   </div>
   <div>
-    <div class="field-label"><span>十进制 DEC</span></div>
+    <div class="field-label"><span>{tu(lang, '十进制')} DEC</span></div>
     <input type="text" id="x-dec" placeholder="10" spellcheck="false" />
   </div>
   <div>
-    <div class="field-label"><span>十六进制 HEX</span></div>
+    <div class="field-label"><span>{tu(lang, '十六进制')} HEX</span></div>
     <input type="text" id="x-hex" placeholder="A" spellcheck="false" />
   </div>
 </div>
 
 <div class="btn-row">
-  <button class="primary" id="x-go">转换</button>
-  <button id="x-swap16">字节序反转</button>
-  <button id="x-sample">填入示例</button>
-  <button id="x-clear">清空</button>
+  <button class="primary" id="x-go">{tu(lang, '转换')}</button>
+  <button id="x-swap16">{tu(lang, '字节序反转')}</button>
+  <button id="x-sample">{tu(lang, '填入示例')}</button>
+  <button id="x-clear">{tu(lang, '清空')}</button>
 </div>
 
 <p class="msg" id="x-msg"></p>
 <div id="x-extra"></div>
 
-<script>
+<script>import { tu, currentLang } from '../../i18n/toolUi.ts';
+const LANG = currentLang();
+
   const $ = (id) => document.getElementById(id);
   const fields = { 2: 'x-bin', 8: 'x-oct', 10: 'x-dec', 16: 'x-hex' };
   let lastSource = null;
@@ -64,9 +71,9 @@
   function run() {
     const msg = $('x-msg');
     const base = detectSource();
-    if (base === null) return setMsg(msg, '请在任一输入框中填入数值', 'err');
+    if (base === null) return setMsg(msg, tu(LANG, '请在任一输入框中填入数值'), 'err');
     const raw = $(fields[base]).value.trim().replace(/[_\s]/g, '');
-    if (!raw) return setMsg(msg, '请输入数值', 'err');
+    if (!raw) return setMsg(msg, tu(LANG, '请输入数值'), 'err');
     try {
       const value = base === 10 ? raw : (base === 16 ? '0x' + raw : base === 8 ? '0o' + raw : '0b' + raw);
       const r = convert(base, value);
@@ -81,7 +88,7 @@
         '</table>';
       setMsg(msg, `已从 ${base} 进制转换`);
     } catch (e) {
-      setMsg(msg, '转换失败：' + (base === 2 ? '只能是 0/1' : base === 8 ? '只能是 0-7' : base === 16 ? '只能是 0-9 A-F' : '请输入整数'), 'err');
+      setMsg(msg, tu(LANG, '转换失败：') + (base === 2 ? '只能是 0/1' : base === 8 ? '只能是 0-7' : base === 16 ? '只能是 0-9 A-F' : tu(LANG, '请输入整数')), 'err');
     }
   }
 

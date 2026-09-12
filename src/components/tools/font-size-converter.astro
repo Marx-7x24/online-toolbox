@@ -1,52 +1,58 @@
 ---
+import { tu } from '../../i18n/toolUi.ts';
 // font-size-converter：纯前端单位换算（系数型）
 const UNITS = [{"sym":"px","zh":"像素","f":1},{"sym":"pt","zh":"点","f":1.3333333333333333},{"sym":"em","zh":"em(基准16px)","f":16},{"sym":"rem","zh":"rem(基准16px)","f":16},{"sym":"pc","zh":"派卡","f":16},{"sym":"in","zh":"英寸","f":96},{"sym":"cm","zh":"厘米","f":37.795275591},{"sym":"mm","zh":"毫米","f":3.779527559}];
 const BASE = { name: "像素", sym: "px" };
+interface Props { lang?: string }
+const { lang = 'zh' } = Astro.props;
+
 ---
 <div class="pane">
   <div>
-    <div class="field-label"><span>数值</span></div>
+    <div class="field-label"><span>{tu(lang, '数值')}</span></div>
     <input type="number" id="uc-val" value="1" step="any" style="width:100%;padding:8px;border:1px solid var(--border-color);border-radius:6px;box-sizing:border-box;font-size:16px">
-    <div class="field-label" style="margin-top:12px"><span>从</span></div>
+    <div class="field-label" style="margin-top:12px"><span>{tu(lang, '从')}</span></div>
     <select id="uc-from" style="width:100%;padding:8px;border:1px solid var(--border-color);border-radius:6px;background:#fff;font-size:14px">
-      <option value="px" data-f="1">像素 (px)</option>
-      <option value="pt" data-f="1.3333333333333333">点 (pt)</option>
-      <option value="em" data-f="16">em(基准16px) (em)</option>
-      <option value="rem" data-f="16">rem(基准16px) (rem)</option>
-      <option value="pc" data-f="16">派卡 (pc)</option>
-      <option value="in" data-f="96">英寸 (in)</option>
-      <option value="cm" data-f="37.795275591">厘米 (cm)</option>
-      <option value="mm" data-f="3.779527559">毫米 (mm)</option>
+      <option value="px" data-f="1">{tu(lang, '像素')} (px)</option>
+      <option value="pt" data-f="1.3333333333333333">{tu(lang, '点')} (pt)</option>
+      <option value="em" data-f="16">em({tu(lang, '基准')}16px) (em)</option>
+      <option value="rem" data-f="16">rem({tu(lang, '基准')}16px) (rem)</option>
+      <option value="pc" data-f="16">{tu(lang, '派卡')} (pc)</option>
+      <option value="in" data-f="96">{tu(lang, '英寸')} (in)</option>
+      <option value="cm" data-f="37.795275591">{tu(lang, '厘米')} (cm)</option>
+      <option value="mm" data-f="3.779527559">{tu(lang, '毫米')} (mm)</option>
     </select>
     <div style="text-align:center;margin:8px 0">
-      <button id="uc-swap">⇅ 交换单位</button>
+      <button id="uc-swap">⇅ {tu(lang, '交换单位')}</button>
     </div>
-    <div class="field-label"><span>到</span></div>
+    <div class="field-label"><span>{tu(lang, '到')}</span></div>
     <select id="uc-to" style="width:100%;padding:8px;border:1px solid var(--border-color);border-radius:6px;background:#fff;font-size:14px">
-      <option value="px" data-f="1">像素 (px)</option>
-      <option value="pt" data-f="1.3333333333333333">点 (pt)</option>
-      <option value="em" data-f="16">em(基准16px) (em)</option>
-      <option value="rem" data-f="16">rem(基准16px) (rem)</option>
-      <option value="pc" data-f="16">派卡 (pc)</option>
-      <option value="in" data-f="96">英寸 (in)</option>
-      <option value="cm" data-f="37.795275591">厘米 (cm)</option>
-      <option value="mm" data-f="3.779527559">毫米 (mm)</option>
+      <option value="px" data-f="1">{tu(lang, '像素')} (px)</option>
+      <option value="pt" data-f="1.3333333333333333">{tu(lang, '点')} (pt)</option>
+      <option value="em" data-f="16">em({tu(lang, '基准')}16px) (em)</option>
+      <option value="rem" data-f="16">rem({tu(lang, '基准')}16px) (rem)</option>
+      <option value="pc" data-f="16">{tu(lang, '派卡')} (pc)</option>
+      <option value="in" data-f="96">{tu(lang, '英寸')} (in)</option>
+      <option value="cm" data-f="37.795275591">{tu(lang, '厘米')} (cm)</option>
+      <option value="mm" data-f="3.779527559">{tu(lang, '毫米')} (mm)</option>
     </select>
     <div style="margin-top:16px;padding:14px;background:rgba(0,0,0,.03);border-radius:8px">
       <div id="uc-out" style="font-size:20px;font-weight:600;color:var(--primary-color);word-break:break-all;line-height:1.5">-</div>
-      <div style="font-size:12px;color:var(--text-sub);margin-top:4px">换算结果</div>
+      <div style="font-size:12px;color:var(--text-sub);margin-top:4px">{tu(lang, '换算结果')}</div>
     </div>
   </div>
   <div>
-    <div class="field-label"><span>等于以下所有单位</span></div>
+    <div class="field-label"><span>{tu(lang, '等于以下所有单位')}</span></div>
     <table id="uc-table" style="width:100%;border-collapse:collapse;font-size:14px"></table>
     <p class="msg" id="uc-msg"></p>
   </div>
 </div>
 
-<script>
+<script>import { tu, currentLang } from '../../i18n/toolUi.ts';
+const LANG = currentLang();
+
 const $ = (id) => document.getElementById(id);
-const UNITS = [{"sym":"px","zh":"像素","f":1},{"sym":"pt","zh":"点","f":1.3333333333333333},{"sym":"em","zh":"em(基准16px)","f":16},{"sym":"rem","zh":"rem(基准16px)","f":16},{"sym":"pc","zh":"派卡","f":16},{"sym":"in","zh":"英寸","f":96},{"sym":"cm","zh":"厘米","f":37.795275591},{"sym":"mm","zh":"毫米","f":3.779527559}];
+const UNITS = [{"sym":"px","zh":tu(LANG, "像素"),"f":1},{"sym":"pt","zh":tu(LANG, "点"),"f":1.3333333333333333},{"sym":"em","zh":tu(LANG, "em(基准16px)"),"f":16},{"sym":"rem","zh":tu(LANG, "rem(基准16px)"),"f":16},{"sym":"pc","zh":tu(LANG, "派卡"),"f":16},{"sym":"in","zh":tu(LANG, "英寸"),"f":96},{"sym":"cm","zh":tu(LANG, "厘米"),"f":37.795275591},{"sym":"mm","zh":tu(LANG, "毫米"),"f":3.779527559}];
 function fmt(n){
   if (!isFinite(n)) return '-';
   if (n !== 0 && (Math.abs(n) < 1e-6 || Math.abs(n) >= 1e15)) return n.toExponential(6).replace(/(\.\d*?[1-9])0+e|\.0+e/g, '$1e');

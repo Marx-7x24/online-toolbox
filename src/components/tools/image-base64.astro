@@ -1,21 +1,25 @@
 ---
+import { tu } from '../../i18n/toolUi.ts';
 // 图片 Base64 双向：FileReader / Canvas，本地处理
+interface Props { lang?: string }
+const { lang = 'zh' } = Astro.props;
+
 ---
 <div class="pane">
   <div>
-    <div class="field-label"><span>图片 → Base64</span></div>
+    <div class="field-label"><span>{tu(lang, '图片')} → Base64</span></div>
     <input type="file" id="ib-file" accept="image/*">
     <div id="ib-preview" class="ib-preview"></div>
   </div>
   <div>
-    <div class="field-label"><span>Base64 数据</span></div>
-    <textarea id="ib-out" placeholder="选择图片后自动生成 data URL；也可粘贴 data URL 后下载图片"></textarea>
+    <div class="field-label"><span>Base64 {tu(lang, '数据')}</span></div>
+    <textarea id="ib-out" placeholder="{tu(lang, '选择图片后自动生成 data URL；也可粘贴 data URL 后下载图片')}"></textarea>
   </div>
 </div>
 <div class="btn-row">
-  <button id="ib-gen" class="primary">图片转 Base64</button>
-  <button id="ib-dl">Base64 转图片下载</button>
-  <button id="ib-copy">复制</button>
+  <button id="ib-gen" class="primary">{tu(lang, '图片转')} Base64</button>
+  <button id="ib-dl">Base64 {tu(lang, '转图片下载')}</button>
+  <button id="ib-copy">{tu(lang, '复制')}</button>
   <span id="ib-msg" class="msg"></span>
 </div>
 
@@ -24,7 +28,9 @@
   .ib-preview img { max-width: 100%; }
 </style>
 
-<script>
+<script>import { tu, currentLang } from '../../i18n/toolUi.ts';
+const LANG = currentLang();
+
   const $ = (id) => document.getElementById(id);
   let dataUrl = '';
   $('ib-file').addEventListener('change', (e) => {
@@ -37,26 +43,26 @@
       const img = new Image();
       img.onload = () => { $('ib-preview').innerHTML = ''; $('ib-preview').appendChild(img); };
       img.src = dataUrl;
-      $('ib-msg').textContent = '已生成'; $('ib-msg').className = 'msg ok';
+      $('ib-msg').textContent = tu(LANG, '已生成'); $('ib-msg').className = 'msg ok';
     };
     reader.readAsDataURL(file);
   });
   $('ib-gen').addEventListener('click', () => {
-    if (!dataUrl) { $('ib-msg').textContent = '请先选择图片'; $('ib-msg').className = 'msg err'; return; }
+    if (!dataUrl) { $('ib-msg').textContent = tu(LANG, '请先选择图片'); $('ib-msg').className = 'msg err'; return; }
     $('ib-out').value = dataUrl;
   });
   $('ib-dl').addEventListener('click', () => {
     const v = $('ib-out').value.trim();
     const m = v.match(/^data:image\/([a-zA-Z0-9.+-]+);base64,(.+)$/);
-    if (!m) { $('ib-msg').textContent = '不是合法的图片 data URL'; $('ib-msg').className = 'msg err'; return; }
+    if (!m) { $('ib-msg').textContent = tu(LANG, '不是合法的图片 data URL'); $('ib-msg').className = 'msg err'; return; }
     const blob = new Blob([Uint8Array.from(atob(m[2]), (c) => c.charCodeAt(0))], { type: 'image/' + m[1] });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a'); a.href = url; a.download = 'image.' + (m[1] === 'jpeg' ? 'jpg' : m[1]); a.click();
-    $('ib-msg').textContent = '已下载'; $('ib-msg').className = 'msg ok';
+    $('ib-msg').textContent = tu(LANG, '已下载'); $('ib-msg').className = 'msg ok';
   });
   $('ib-copy').addEventListener('click', async () => {
     if (!$('ib-out').value) return;
-    try { await navigator.clipboard.writeText($('ib-out').value); $('ib-msg').textContent = '已复制'; $('ib-msg').className = 'msg ok'; }
-    catch { $('ib-msg').textContent = '复制失败'; $('ib-msg').className = 'msg err'; }
+    try { await navigator.clipboard.writeText($('ib-out').value); $('ib-msg').textContent = tu(LANG, '已复制'); $('ib-msg').className = 'msg ok'; }
+    catch { $('ib-msg').textContent = tu(LANG, '复制失败'); $('ib-msg').className = 'msg err'; }
   });
 </script>
