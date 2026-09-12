@@ -13,11 +13,12 @@ function isHiddenToolUrl(page) {
   }
 }
 
-// 站点域名：sitemap / canonical / SEO 全靠它。
-// 优先读环境变量 SITE_URL（部署时由 .env.cf 注入，不入库，杜绝误提交占位符）；
-// 本地未设置时回退占位符，保证本地构建照常可用。
+// 站点域名：sitemap / canonical / hreflang / 表单回调地址全靠它。
+// 优先读环境变量 SITE_URL（部署时注入）；未设置时回退到正式域名 www.wevva.top ——
+// 注意不要回退成 example.com 之类的占位符：一旦部署环境漏配 SITE_URL，
+// sitemap 会变成占位域名（GSC 直接判失败），表单 redirect 也会跳错地址。
 export default defineConfig({
-  site: process.env.SITE_URL || 'https://tool.example.com',
+  site: process.env.SITE_URL || 'https://www.wevva.top',
   output: 'static',
   integrations: [
     sitemap({

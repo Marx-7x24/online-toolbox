@@ -2,16 +2,29 @@
 import Base from '../../layouts/Base.astro';
 import { t } from '../../i18n/ui.ts';
 
-// 留言反馈页：静态站无后端，表单提交到第三方表单服务（Formspree / Web3Forms 等）。
-// 启用方式：部署环境设置 PUBLIC_FEEDBACK_ENDPOINT=<表单服务给你的提交地址>，
-// 例如 https://formspree.io/f/xxxxxxxx —— 无需改代码，未设置时页面引导到 GitHub Issues。
+// 留言反馈页：静态站无后端，表单提交到第三方表单服务（当前用 Web3Forms）。
+//
+// Web3Forms 的要点：提交时必须在 body 里带 access_key（不是 URL 里），
+// 官方文档的原生 form 写法是 <input type="hidden" name="access_key">，
+// 这里用 fetch + JSON，所以 key 由下面的 accessKey 注入到 JSON body。
+// access_key 本身就是设计给前端暴露的，不属敏感凭据。
+//
+// 想换 key 或换服务商：部署环境设 PUBLIC_FEEDBACK_ENDPOINT / PUBLIC_FEEDBACK_KEY 即可，
+// 未配置时使用下面的默认值；两个都不设才回退到 GitHub Issues 引导。
 export function getStaticPaths() {
   return ['zh', 'en'].map((lang) => ({ params: { lang }, props: { lang } }));
 }
 const { lang } = Astro.props;
 
-const endpoint: string = import.meta.env.PUBLIC_FEEDBACK_ENDPOINT || '';
+const endpoint: string =
+  import.meta.env.PUBLIC_FEEDBACK_ENDPOINT || 'https://api.web3forms.com/submit';
+const accessKey: string =
+  import.meta.env.PUBLIC_FEEDBACK_KEY || '02e92a6f-31fa-4347-a312-bac23c1c0bfc';
 const repoIssues = 'https://github.com/Marx-7x24/online-toolbox/issues';
+
+// 提交成功后 Web3Forms redirect 回来的地址（用 Astro.site，随 SITE_URL 自动正确）
+const base = Astro.site ?? new URL('https://www.wevva.top');
+const thankYouUrl = new URL(`/${lang}/feedback/?sent=1`, base).href;
 ---
 
 <Base
@@ -25,11 +38,32 @@ const repoIssues = 'https://github.com/Marx-7x24/online-toolbox/issues';
     <p>{t(lang, 'feedbackIntro')}</p>
   </div>
 
+  {/* 提交成功后 Web3Forms 跳回 ?sent=1 显示感谢提示。
+      注意：静态站在构建时读不到 query string，所以必须用客户端 JS 判断，
+      不能写成 Astro.url.searchParams（那样恒为 false，提示永远不出现）。 */}
+  <div class="fb-done" id="fb-done" hidden>
+    <span class="fb-done__icon">✓</span>
+    <span>{t(lang, 'feedbackOk')}</span>
+  </div>
+
   <div class="static-page">
     {
       endpoint ? (
-        <form id="fb-form" class="fb-form" novalidate>
-          {/* honeypot：正常用户看不到也填不到，机器人填了就丢弃 */}
+        // 原生 form POST（官方推荐写法）：不走 fetch，因此完全没有 CORS 问题，
+        // 兼容性最好；access_key 通过隐藏字段随表单一起提交。
+        <form
+          id="fb-form"
+          class="fb-form"
+          action={endpoint}
+          method="POST"
+        >
+          <input type="hidden" name="access_key" value={accessKey} />
+          <input type="hidden" name="subject" id="fb-subject" value={`[Wevva Tools] ${t(lang, 'fbTypeTool')}`} />
+          <input type="hidden" name="redirect" value={thankYouUrl} />
+
+          {/* honeypot：正常用户看不到也填不到，机器人填了就丢弃。
+              botcheck 是 Web3Forms 约定（勾选即机器人），_gotcha 兼容 Formspree */}
+          <input type="checkbox" name="botcheck" class="fb-hp" tabindex="-1" aria-hidden="true" />
           <input
             type="text"
             name="_gotcha"
@@ -89,64 +123,40 @@ const repoIssues = 'https://github.com/Marx-7x24/online-toolbox/issues';
   </div>
 </Base>
 
-{endpoint && (
-  <script
-    define:vars={{
-      endpoint,
-      iSending: t(lang, 'feedbackSending'),
-      iOk: t(lang, 'feedbackOk'),
-      iFail: t(lang, 'feedbackFail'),
-      iRequired: t(lang, 'feedbackRequired'),
-    }}
-  >
+<script>
+  // 原生 form 提交（无 fetch、无 CORS）。这里只做一件事：
+  // 把用户选的反馈类型同步到隐藏的 subject 字段，让邮件标题能一眼区分类型。
+  (function () {
     const form = document.getElementById('fb-form');
-    const msg = document.getElementById('fb-msg');
-    const btn = document.getElementById('fb-submit');
+    if (!form) return;
+    const typeSel = document.getElementById('fb-type');
+    const subject = document.getElementById('fb-subject');
+    if (!typeSel || !subject) return;
 
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const honeypot = form.querySelector('[name="_gotcha"]');
-      if (honeypot && honeypot.value) return; // 机器人，静默丢弃
+    const sync = () => {
+      const label = typeSel.options[typeSel.selectedIndex].text;
+      subject.value = '[Wevva Tools] ' + label;
+    };
+    typeSel.addEventListener('change', sync);
+    sync();
 
-      const message = (document.getElementById('fb-message').value || '').trim();
-      if (!message) {
-        msg.textContent = iRequired;
-        msg.className = 'fb-msg err';
-        return;
-      }
-
-      btn.disabled = true;
-      btn.textContent = iSending;
-      msg.textContent = '';
-
-      try {
-        const res = await fetch(endpoint, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-          body: JSON.stringify({
-            type: document.getElementById('fb-type').value,
-            message,
-            email: document.getElementById('fb-email').value || '',
-            _gotcha: honeypot ? honeypot.value : '',
-          }),
-        });
-        if (res.ok) {
-          form.reset();
-          msg.textContent = iOk;
-          msg.className = 'fb-msg ok';
-        } else {
-          throw new Error('HTTP ' + res.status);
-        }
-      } catch (err) {
-        msg.textContent = iFail;
-        msg.className = 'fb-msg err';
-      } finally {
-        btn.disabled = false;
-        btn.textContent = btn.dataset.label;
+    // 机器人防护：如果蜜罐被填/勾选，阻止提交
+    form.addEventListener('submit', function (e) {
+      const honey = form.querySelector('[name="_gotcha"]');
+      const bot = form.querySelector('[name="botcheck"]');
+      if ((honey && honey.value) || (bot && bot.checked)) {
+        e.preventDefault();
+        return false;
       }
     });
-  </script>
-)}
+
+    // Web3Forms 提交后跳回 ?sent=1，客户端显示感谢提示
+    var done = document.getElementById('fb-done');
+    if (done && /(^|[?&])sent=1(&|$)/.test(window.location.search)) {
+      done.hidden = false;
+    }
+  })();
+</script>
 
 <style>
   .fb-form { display: flex; flex-direction: column; gap: 6px; }
@@ -211,6 +221,20 @@ const repoIssues = 'https://github.com/Marx-7x24/online-toolbox/issues';
     color: var(--text-hint);
     line-height: 1.7;
   }
+  .fb-done {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0 0 14px;
+    padding: 12px 16px;
+    border-radius: 10px;
+    background: rgba(22, 163, 74, 0.1);
+    border: 1px solid rgba(22, 163, 74, 0.35);
+    color: #16a34a;
+    font-size: 14px;
+    font-weight: 600;
+  }
+  .fb-done__icon { font-size: 17px; }
   .fb-fallback { text-align: center; padding: 12px 0; }
   .fb-gh {
     display: inline-block;
