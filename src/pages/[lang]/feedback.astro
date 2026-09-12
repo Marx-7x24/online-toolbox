@@ -150,10 +150,19 @@ const thankYouUrl = new URL(`/${lang}/feedback/?sent=1`, base).href;
       }
     });
 
-    // Web3Forms 提交后跳回 ?sent=1，客户端显示感谢提示
+    // Web3Forms 提交后跳回 ?sent=1，客户端显示感谢提示。
+    // 显示后立刻把参数从地址栏抹掉，否则用户刷新、点历史返回或收藏该地址再进来，
+    // 都会重复看到「提交成功」——提示应当只出现一次。
     var done = document.getElementById('fb-done');
     if (done && /(^|[?&])sent=1(&|$)/.test(window.location.search)) {
       done.hidden = false;
+      try {
+        var clean = new URL(window.location.href);
+        clean.searchParams.delete('sent');
+        history.replaceState(null, '', clean.pathname + clean.search + clean.hash);
+      } catch (e) {
+        /* replaceState 失败不影响提示显示 */
+      }
     }
   })();
 </script>
