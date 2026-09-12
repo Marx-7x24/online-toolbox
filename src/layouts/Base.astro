@@ -151,6 +151,7 @@ const enUrl = new URL(`/en${pathNoLang}`, Astro.site).href;
             <a href={`/${lang}/category/${c.slug}/`}>{categoryI18n(c, lang).name}</a>
           ))}
           <a href={`/${lang}/about/`}>{t(lang, 'about')}</a>
+          <a href={`/${lang}/feedback/`}>{t(lang, 'feedback')}</a>
           <a href={`/${lang}/privacy/`}>{t(lang, 'privacy')}</a>
           <a href={`/${lang}/sitemap/`}>{t(lang, 'toolsIndex')}</a>
         </nav>

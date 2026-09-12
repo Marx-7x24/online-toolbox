@@ -1,0 +1,226 @@
+---
+import Base from '../../layouts/Base.astro';
+import { t } from '../../i18n/ui.ts';
+
+// 留言反馈页：静态站无后端，表单提交到第三方表单服务（Formspree / Web3Forms 等）。
+// 启用方式：部署环境设置 PUBLIC_FEEDBACK_ENDPOINT=<表单服务给你的提交地址>，
+// 例如 https://formspree.io/f/xxxxxxxx —— 无需改代码，未设置时页面引导到 GitHub Issues。
+export function getStaticPaths() {
+  return ['zh', 'en'].map((lang) => ({ params: { lang }, props: { lang } }));
+}
+const { lang } = Astro.props;
+
+const endpoint: string = import.meta.env.PUBLIC_FEEDBACK_ENDPOINT || '';
+const repoIssues = 'https://github.com/Marx-7x24/online-toolbox/issues';
+---
+
+<Base
+  title={`${t(lang, 'feedback')} - ${t(lang, 'siteName')}`}
+  description={t(lang, 'feedbackIntro')}
+  lang={lang}
+  active="feedback"
+>
+  <div class="tool-page-head">
+    <h1>{t(lang, 'feedback')}</h1>
+    <p>{t(lang, 'feedbackIntro')}</p>
+  </div>
+
+  <div class="static-page">
+    {
+      endpoint ? (
+        <form id="fb-form" class="fb-form" novalidate>
+          {/* honeypot：正常用户看不到也填不到，机器人填了就丢弃 */}
+          <input
+            type="text"
+            name="_gotcha"
+            class="fb-hp"
+            tabindex="-1"
+            autocomplete="off"
+            aria-hidden="true"
+          />
+
+          <label class="fb-label" for="fb-type">{t(lang, 'feedbackType')}</label>
+          <select id="fb-type" name="type" class="fb-input">
+            <option value="new-tool">{t(lang, 'fbTypeTool')}</option>
+            <option value="bug">{t(lang, 'fbTypeBug')}</option>
+            <option value="other">{t(lang, 'fbTypeOther')}</option>
+          </select>
+
+          <label class="fb-label" for="fb-message">{t(lang, 'feedbackContent')}</label>
+          <textarea
+            id="fb-message"
+            name="message"
+            class="fb-input fb-textarea"
+            rows="5"
+            placeholder={t(lang, 'feedbackContentPh')}
+            required
+          ></textarea>
+
+          <label class="fb-label" for="fb-email">{t(lang, 'feedbackEmail')}</label>
+          <input
+            type="email"
+            id="fb-email"
+            name="email"
+            class="fb-input"
+            placeholder={t(lang, 'feedbackEmailPh')}
+          />
+
+          <div class="fb-actions">
+            <button
+              type="submit"
+              class="fb-submit"
+              id="fb-submit"
+              data-label={t(lang, 'feedbackSubmit')}
+            >{t(lang, 'feedbackSubmit')}</button>
+            <span class="fb-msg" id="fb-msg" role="status"></span>
+          </div>
+
+          <p class="fb-note">{t(lang, 'feedbackPrivacy')}</p>
+        </form>
+      ) : (
+        <div class="fb-fallback">
+          <p>{t(lang, 'feedbackNoService')}</p>
+          <a class="fb-gh" href={repoIssues} target="_blank" rel="noopener noreferrer">
+            GitHub Issues →
+          </a>
+        </div>
+      )
+    }
+  </div>
+</Base>
+
+{endpoint && (
+  <script
+    define:vars={{
+      endpoint,
+      iSending: t(lang, 'feedbackSending'),
+      iOk: t(lang, 'feedbackOk'),
+      iFail: t(lang, 'feedbackFail'),
+      iRequired: t(lang, 'feedbackRequired'),
+    }}
+  >
+    const form = document.getElementById('fb-form');
+    const msg = document.getElementById('fb-msg');
+    const btn = document.getElementById('fb-submit');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const honeypot = form.querySelector('[name="_gotcha"]');
+      if (honeypot && honeypot.value) return; // 机器人，静默丢弃
+
+      const message = (document.getElementById('fb-message').value || '').trim();
+      if (!message) {
+        msg.textContent = iRequired;
+        msg.className = 'fb-msg err';
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = iSending;
+      msg.textContent = '';
+
+      try {
+        const res = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+          body: JSON.stringify({
+            type: document.getElementById('fb-type').value,
+            message,
+            email: document.getElementById('fb-email').value || '',
+            _gotcha: honeypot ? honeypot.value : '',
+          }),
+        });
+        if (res.ok) {
+          form.reset();
+          msg.textContent = iOk;
+          msg.className = 'fb-msg ok';
+        } else {
+          throw new Error('HTTP ' + res.status);
+        }
+      } catch (err) {
+        msg.textContent = iFail;
+        msg.className = 'fb-msg err';
+      } finally {
+        btn.disabled = false;
+        btn.textContent = btn.dataset.label;
+      }
+    });
+  </script>
+)}
+
+<style>
+  .fb-form { display: flex; flex-direction: column; gap: 6px; }
+  .fb-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-color);
+    margin-top: 10px;
+  }
+  .fb-input {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--main-bg);
+    color: var(--text-color);
+    font-size: 14px;
+    font-family: inherit;
+    box-sizing: border-box;
+    outline: none;
+    transition: border-color .15s, box-shadow .15s;
+  }
+  .fb-input:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px rgba(125, 116, 255, 0.18);
+  }
+  .fb-textarea { resize: vertical; min-height: 110px; line-height: 1.7; }
+  .fb-hp {
+    position: absolute;
+    left: -9999px;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+  }
+  .fb-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 16px;
+    flex-wrap: wrap;
+  }
+  .fb-submit {
+    padding: 10px 22px;
+    border: none;
+    border-radius: 8px;
+    background: var(--primary-color);
+    color: #fff;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    transition: opacity .15s;
+  }
+  .fb-submit:hover { opacity: .9; }
+  .fb-submit:disabled { opacity: .6; cursor: not-allowed; }
+  .fb-msg { font-size: 13px; }
+  .fb-msg.ok { color: #16a34a; }
+  .fb-msg.err { color: #dc2626; }
+  .fb-note {
+    margin: 14px 0 0;
+    font-size: 12.5px;
+    color: var(--text-hint);
+    line-height: 1.7;
+  }
+  .fb-fallback { text-align: center; padding: 12px 0; }
+  .fb-gh {
+    display: inline-block;
+    margin-top: 8px;
+    padding: 9px 20px;
+    border-radius: 8px;
+    background: var(--primary-color);
+    color: #fff;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 600;
+  }
+</style>
