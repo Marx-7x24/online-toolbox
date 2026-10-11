@@ -1,18 +1,169 @@
 ---
-// 根路径：跳转到默认语言 /zh/。
-// 上线后如主域名面向国外，可把下面 url 改成 /en/，或用 Cloudflare 重定向规则按域名分流。
+// 根路径 /：语言路由页（兜底版）。
+//
+// 线上正常情况这一页根本不会被浏览器看到 —— Cloudflare Pages Function
+// `functions/index.js` 会在边缘直接读 Accept-Language 头 302 到 /zh/ 或 /en/，
+// 没有 JS、没有闪烁、搜索引擎也能直接拿到最终 URL。
+//
+// 这一页存在的意义是三个兜底场景：
+//   1. 本地 `astro dev`、Netlify/Vercel 等没有 Pages Functions 的环境；
+//   2. Functions 部署失败时的降级路径；
+//   3. 用户禁用 JS 时，靠 meta refresh 仍然能到中文版。
+// 所以它自己也要做语言判断（用 navigator.languages，和边缘逻辑保持一致）。
+const DEFAULT_LANG = 'zh';
 ---
 
 <!doctype html>
 <html lang="zh">
 <head>
   <meta charset="UTF-8" />
-  <meta http-equiv="refresh" content="0; url=/zh/" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="robots" content="noindex, follow" />
+  <title>在线工具箱 · Wevva Tools</title>
+  <meta name="description" content="免费在线工具箱，200+ 实用小工具，中英文双版本。" />
   <link rel="canonical" href="/zh/" />
-  <title>在线工具箱</title>
-  <script>location.replace('/zh/')</script>
+  <link rel="alternate" hreflang="zh-CN" href="/zh/" />
+  <link rel="alternate" hreflang="en" href="/en/" />
+  <link rel="alternate" hreflang="x-default" href="/zh/" />
+  <!-- 无 JS 兜底：直接去中文版 -->
+  <meta http-equiv="refresh" content="0; url=/zh/" />
+  <style>
+    :root {
+      --bg: #f6f7f9;
+      --card: #ffffff;
+      --fg: #1c1f23;
+      --muted: #6b7280;
+      --border: #e5e7eb;
+      --accent: #2563eb;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #14161a;
+        --card: #1d2026;
+        --fg: #e8eaed;
+        --muted: #9aa0a6;
+        --border: #2b2f36;
+        --accent: #60a5fa;
+      }
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      padding: max(24px, env(safe-area-inset-top)) 20px max(24px, env(safe-area-inset-bottom));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--bg);
+      color: var(--fg);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
+        'Hiragino Sans GB', 'Microsoft YaHei', Roboto, Helvetica, Arial, sans-serif;
+      -webkit-text-size-adjust: 100%;
+    }
+    .card {
+      width: 100%;
+      max-width: 420px;
+      text-align: center;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 36px 24px 28px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, .06);
+    }
+    .spinner {
+      width: 32px;
+      height: 32px;
+      margin: 0 auto 18px;
+      border: 3px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin .8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @media (prefers-reduced-motion: reduce) {
+      .spinner { animation: none; }
+    }
+    h1 { font-size: 20px; margin: 0 0 8px; letter-spacing: .2px; }
+    p.tip { font-size: 14px; color: var(--muted); margin: 0 0 24px; line-height: 1.6; }
+    .btns { display: flex; flex-direction: column; gap: 10px; }
+    @media (min-width: 400px) { .btns { flex-direction: row; } }
+    .btns a {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 46px;            /* 移动端可点区域不小于 44px */
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      text-decoration: none;
+      color: var(--fg);
+      font-size: 15px;
+      background: transparent;
+      transition: border-color .15s, color .15s;
+    }
+    .btns a.primary {
+      border-color: transparent;
+      background: var(--accent);
+      color: #fff;
+      font-weight: 600;
+    }
+    .brand {
+      margin-top: 22px;
+      font-size: 12px;
+      color: var(--muted);
+      letter-spacing: .5px;
+    }
+  </style>
 </head>
 <body>
-  <p>正在跳转… <a href="/zh/">进入中文版</a> / <a href="/en/">English</a></p>
+  <main class="card">
+    <div class="spinner" aria-hidden="true"></div>
+    <h1 id="msg">正在为你选择语言…</h1>
+    <p class="tip" id="tip">正在跳转到中文版</p>
+    <div class="btns">
+      <a class="primary" id="go" href="/zh/">进入中文版</a>
+      <a id="go-en" href="/en/">English</a>
+    </div>
+    <div class="brand">Wevva Tools</div>
+  </main>
+
+  <script is:inline>
+    (function () {
+      // 与 functions/index.js 的判定保持一致：zh / cmn / yue 等 → 中文，其余 → 英文
+      var ZH = ['zh', 'cmn', 'yue', 'wuu', 'nan', 'hak', 'gan', 'hakka', 'cantonese'];
+      function isZh(tag) {
+        if (tag === '*') return true;
+        if (ZH.indexOf(tag) !== -1) return true;
+        var base = tag.split('-')[0];   // 覆盖 yue-Hant-HK / cmn-Hans 这类完整标签
+        return base === 'zh' || ZH.indexOf(base) !== -1;
+      }
+      function pick(list) {
+        for (var i = 0; i < list.length; i++) {
+          var tag = String(list[i] || '').toLowerCase();
+          if (!tag || isZh(tag)) return 'zh';
+          return 'en';
+        }
+        return 'zh';
+      }
+      var nav = navigator.languages && navigator.languages.length
+        ? navigator.languages
+        : [navigator.language || 'zh'];
+      var lang = pick(nav);
+
+      var msg = document.getElementById('msg');
+      var tip = document.getElementById('tip');
+      var go = document.getElementById('go');
+      var goEn = document.getElementById('go-en');
+      var dest = '/' + lang + '/';
+      var label = lang === 'zh' ? '进入中文版' : 'English';
+
+      if (msg) msg.textContent = lang === 'zh' ? '正在跳转到中文版' : 'Redirecting to English';
+      if (tip) tip.textContent = lang === 'zh' ? '正在跳转' : 'Redirecting';
+      if (go) { go.textContent = label; go.href = dest; go.className = 'primary'; }
+      if (goEn) { goEn.textContent = lang === 'zh' ? 'English' : '进入中文版'; goEn.href = '/' + (lang === 'zh' ? 'en' : 'zh') + '/'; goEn.className = ''; }
+
+      location.replace(dest);
+    })();
+  </script>
 </body>
 </html>
