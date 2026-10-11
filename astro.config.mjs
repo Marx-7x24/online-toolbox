@@ -13,6 +13,18 @@ function isHiddenToolUrl(page) {
   }
 }
 
+// 根路径 https://www.wevva.top/ 由 public/_redirects 做 301 → /zh/，
+// 它是「跳转页」而不是内容页。放进 sitemap 会被 Google 判成
+// 「网页会自动重定向」(Page with redirect) 而拒绝收录，所以这里直接剔掉，
+// 语言首页 /zh/ 与 /en/ 本身都在 sitemap 里，收录不会少。
+function isRootUrl(page) {
+  try {
+    return new URL(page).pathname === '/';
+  } catch (e) {
+    return false;
+  }
+}
+
 // 站点域名：sitemap / canonical / hreflang / 表单回调地址全靠它。
 // 优先读环境变量 SITE_URL（部署时注入）；未设置时回退到正式域名 www.wevva.top ——
 // 注意不要回退成 example.com 之类的占位符：一旦部署环境漏配 SITE_URL，
@@ -22,7 +34,7 @@ export default defineConfig({
   output: 'static',
   integrations: [
     sitemap({
-      filter: (page) => !isHiddenToolUrl(page),
+      filter: (page) => !isHiddenToolUrl(page) && !isRootUrl(page),
       // 每条 URL 带 lastmod（本次构建时间），提示 Google 内容新鲜度、利于重新抓取
       serialize(item) {
         return { ...item, lastmod: new Date().toISOString().slice(0, 10) };
